@@ -166,6 +166,48 @@ async def test_expand_rejects_non_positive_max_lines(settings_env, tmp_path):
     assert "max_lines" in r.content[0].text
 
 
+async def test_search_resolves_relative_unit_file_against_first_search_path(settings_env, tmp_path, monkeypatch):
+    """F13: colgrep is documented to always emit an absolute `unit.file`, but
+    if it ever emitted a relative one, `hit_id` must still be built from an
+    absolute path — resolved against the first search path — rather than a
+    relative `hit_id` that `expand` would then resolve against the server
+    process's own cwd instead of the searched project."""
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "mod.py").write_text("def real_func():\n    return 42\n")
+
+    fixture = [
+        {
+            "unit": {
+                "name": "real_func",
+                "qualified_name": "mod.py::real_func",
+                "file": "mod.py",  # relative — not what colgrep is documented to emit, but defend anyway
+                "line": 1,
+                "end_line": 1,
+                "language": "python",
+                "unit_type": "function",
+                "signature": "def real_func()",
+                "code": "def real_func():\n    return 42",
+            },
+            "score": 1.0,
+        }
+    ]
+    fixture_path = tmp_path / "hits.json"
+    fixture_path.write_text(json.dumps(fixture))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "real func", "paths": [str(proj)]})
+        hit = r.structured_content["hits"][0]
+        assert Path(hit["file"]).is_absolute()
+
+        expand_r = await c.call_tool("expand", {"hit_ids": [hit["hit_id"]]})
+
+    unit = expand_r.structured_content["units"][0]
+    assert unit["error"] is None
+    assert "real_func" in (unit["code"] or "")
+
+
 # --- concurrency (R01 §Concurrency invariant) --------------------------------
 
 
