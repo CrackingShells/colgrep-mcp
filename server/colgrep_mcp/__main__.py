@@ -24,7 +24,14 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args(argv)
 
-    settings = Settings.from_env()
+    try:
+        settings = Settings.from_env()
+    except ValueError as exc:
+        # A malformed `COLGREP_MCP_TIMEOUT`/`COLGREP_MCP_TEXT_BUDGET` must
+        # fail fast with a one-line, readable diagnostic on stderr — not a
+        # raw traceback as the operator's only clue (R01 §Configuration).
+        print(f"colgrep-mcp: {exc}", file=sys.stderr)
+        raise SystemExit(2) from None
     # Never let logging land on stdout: on the stdio transport, stdout is the
     # JSON-RPC channel itself, and anything else written there corrupts it.
     logging.basicConfig(level=settings.log_level, stream=sys.stderr, format="%(levelname)s %(name)s: %(message)s")
