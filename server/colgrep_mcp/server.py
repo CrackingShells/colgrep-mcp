@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+
 from mcp.server import MCPServer
+from mcp.server.mcpserver import Context
 
 from . import __version__
+from .adapter import ColgrepAdapter
+from .config import Settings
 
 INSTRUCTIONS = (
     "colgrep gives ranked semantic + keyword (hybrid) search over code units "
@@ -16,7 +23,36 @@ INSTRUCTIONS = (
     "repository call `index_build` first; `index_status` tells you whether that is needed."
 )
 
-mcp = MCPServer("colgrep", instructions=INSTRUCTIONS, version=__version__)
+
+
+@dataclass
+class AppContext:
+    """Process-wide state owned by the lifespan: one settings object, one adapter."""
+
+    settings: Settings
+    adapter: ColgrepAdapter
+
+
+@asynccontextmanager
+async def lifespan(server: MCPServer) -> AsyncIterator[AppContext]:
+    settings = Settings.from_env()
+    adapter = ColgrepAdapter(binary=settings.binary, timeout_s=settings.timeout_s)
+    yield AppContext(settings=settings, adapter=adapter)
+
+
+mcp = MCPServer("colgrep", instructions=INSTRUCTIONS, version=__version__, lifespan=lifespan)
+
+
+def get_app(ctx: Context) -> AppContext:
+    return ctx.request_context.lifespan_context
+
+
+def get_adapter(ctx: Context) -> ColgrepAdapter:
+    return get_app(ctx).adapter
+
+
+def get_settings(ctx: Context) -> Settings:
+    return get_app(ctx).settings
 
 
 def build() -> MCPServer:
