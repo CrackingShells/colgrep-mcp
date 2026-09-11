@@ -44,3 +44,5 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `plugin_packaging.md` | `task/plugin_packaging` | 2 (+1 lead: scripts/launch.sh) | `claude plugin validate .` passes; server connects under `--plugin-dir .` |
+| `agent_skill.md` | `task/agent_skill` | 1 | SKILL.md 105 lines, guide.md 126 lines; D5 wording fix deferred to docs_readme |
