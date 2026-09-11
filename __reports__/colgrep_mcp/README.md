@@ -4,7 +4,7 @@
 - `00-architecture_v0.md` — architecture analysis: tool/resource/prompt surface, adapter contract, error model, risks (latest)
 
 ## Round 01
-- `01-findings_mcp_feature_matrix_v0.md` — systematic MCP feature matrix with adopt/defer decisions (pending)
+- `01-findings_mcp_feature_matrix_v0.md` — systematic MCP feature matrix with adopt/defer decisions (latest)
 - `01-findings_colgrep_behaviour_v0.md` — measured colgrep CLI behaviour + evidence (pending)
 
 ## Status
