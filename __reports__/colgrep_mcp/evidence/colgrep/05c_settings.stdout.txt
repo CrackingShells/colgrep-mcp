@@ -1,0 +1,30 @@
+Current configuration:
+
+  model:       lightonai/LateOn-Code-edge (default)
+  precision:   int8 (build default)
+  coreml-cache: (default: ~/Library/Caches/next-plaid/coreml)
+  pool-factor: 2 (default)
+  parallel:    auto (runtime-resolved)
+  batch-size:  auto (runtime-resolved)
+  k:           25 (default)
+  n:           6 (default)
+  verbose:     false (default)
+  rel-paths:   true
+  hybrid:      true (default)
+  alpha:       0.60 (default)
+  max-depth:   1024 (default)
+  ignore:      .claude/worktrees, **/htn-creator-workspace/results
+  force-incl:  (none)
+
+Use --k or --n to set values. Use 0 to reset to default.
+Use --fp32 or --int8 to change model precision.
+Use --pool-factor to set embedding compression (1=disabled, 2+=enabled). Use 0 to reset.
+Use --parallel to set number of parallel ONNX sessions. Use 0 to reset to auto (CPU count).
+Use --batch-size to set batch size per session. Use 0 to reset to default (1).
+Use --max-recursion-depth to set parser recursion guard. Use 0 to reset to default.
+Use --verbose or --no-verbose to set default output mode.
+Use --relative-paths or --no-relative-paths to toggle relative/absolute paths.
+Use --hybrid-search or --no-hybrid-search to toggle FTS5 hybrid search.
+Use --alpha to set hybrid search balance (0=keyword, 1=semantic). Use 0 to reset.
+Use --ignore/--no-ignore to add/remove extra ignore patterns. --clear-ignore to reset.
+Use --force-include/--no-force-include to add/remove force-include patterns. --clear-force-include to reset.

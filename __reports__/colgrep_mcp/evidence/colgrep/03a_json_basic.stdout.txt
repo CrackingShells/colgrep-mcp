@@ -1,0 +1,151 @@
+[
+  {
+    "unit": {
+      "name": "parse_args",
+      "qualified_name": "src/click/core.py::Command::parse_args",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/core.py",
+      "line": 213,
+      "end_line": 3814,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def parse_args(self, ctx: Context, args: list[str]) -> list[str]:",
+      "docstring": null,
+      "parameters": [
+        "ctx",
+        "args"
+      ],
+      "return_type": "list[str]",
+      "extends": null,
+      "parent_class": "Command",
+      "calls": [
+        "NoArgsIsHelpError",
+        "fail",
+        "format",
+        "get_params",
+        "handle_parse_result",
+        "items",
+        "iter_params_for_processing",
+        "join",
+        "len",
+        "make_parser",
+        "map",
+        "ngettext",
+        "parse_args",
+        "update"
+      ],
+      "called_by": [
+        "Command",
+        "Group",
+        "OptParseCommand",
+        "make_context",
+        "parse_args",
+        "resolve_command",
+        "test_command_parse_args_collects_option_prefixes",
+        "test_custom_parser",
+        "test_group_parse_args_collects_base_option_prefixes"
+      ],
+      "complexity": 11,
+      "has_loops": true,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "_, args",
+        "ctx.args",
+        "ctx.params[name]",
+        "opts, args, param_order",
+        "parser"
+      ],
+      "imports": [
+        "gettext"
+      ],
+      "code": "    def parse_args(self, ctx: Context, args: list[str]) -> list[str]:\n        if not args and self.no_args_is_help and not ctx.resilient_parsing:\n            raise NoArgsIsHelpError(ctx)\n\n        parser = self.make_parser(ctx)\n        opts, args, param_order = parser.parse_args(args=args)\n\n        for param in iter_params_for_processing(param_order, self.get_params(ctx)):\n            _, args = param.handle_parse_result(ctx, opts, args)\n\n        # We now have all parameters' values into `ctx.params`, but the data may contain\n        # the `UNSET` sentinel.\n        # Convert `UNSET` to `None` to ensure that the user doesn't see `UNSET`.\n        #\n        # Waiting until after the initial parse to convert allows us to treat `UNSET`\n        # more like a missing value when multiple params use the same name.\n        # Refs:\n        # https://github.com/pallets/click/issues/3071\n        # https://github.com/pallets/click/pull/3079\n        for name, value in ctx.params.items():\n            if value is UNSET:\n                ctx.params[name] = None\n\n        if args and not ctx.allow_extra_args and not ctx.resilient_parsing:\n            ctx.fail(\n                ngettext(\n                    \"Got unexpected extra argument ({args})\",\n                    \"Got unexpected extra arguments ({args})\",\n                    len(args),\n                ).format(args=\" \".join(map(str, args)))\n            )\n\n        ctx.args = args\n        ctx._opt_prefixes.update(parser._opt_prefixes)\n        return args"
+    },
+    "score": 0.6407101
+  },
+  {
+    "unit": {
+      "name": "_Argument",
+      "qualified_name": "src/click/parser.py::_Argument",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/parser.py",
+      "line": 169,
+      "end_line": 533,
+      "language": "python",
+      "unit_type": "class",
+      "signature": "class _Argument:",
+      "docstring": null,
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "BadArgumentUsage",
+        "append",
+        "format",
+        "isinstance",
+        "len",
+        "sum"
+      ],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [
+        "holes",
+        "self.dest",
+        "self.nargs",
+        "self.obj",
+        "state.opts[self.dest]",
+        "value"
+      ],
+      "imports": [],
+      "code": "class _Argument:\n    def __init__(self, obj: CoreArgument, dest: str | None, nargs: int = 1):\n        self.dest = dest\n        self.nargs = nargs\n        self.obj = obj\n\n    def process(\n        self,\n        value: str | cabc.Sequence[str | T_UNSET] | T_UNSET,\n        state: _ParsingState,\n    ) -> None:\n        if self.nargs > 1:\n            assert isinstance(value, cabc.Sequence)\n            holes = sum(x is UNSET for x in value)\n            if holes == len(value):\n                value = UNSET\n            elif holes != 0:\n                raise BadArgumentUsage(\n                    _(\"Argument {name!r} takes {nargs} values.\").format(\n                        name=self.dest, nargs=self.nargs\n                    )\n                )\n\n        # We failed to collect any argument value so we consider the argument as unset.\n        if value == ():\n            value = UNSET\n\n        state.opts[self.dest] = value  # type: ignore\n        state.order.append(self.obj)"
+    },
+    "score": 0.6370346
+  },
+  {
+    "unit": {
+      "name": "test_required_argument",
+      "qualified_name": "tests/test_arguments.py::test_required_argument",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/tests/test_arguments.py",
+      "line": 10,
+      "end_line": 740,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def test_required_argument(value, expect_missing, processed_value):",
+      "docstring": "\"\"\"Test how a required argument is processing the provided values.",
+      "parameters": [
+        "value",
+        "expect_missing",
+        "processed_value"
+      ],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "Argument",
+        "Command",
+        "Context",
+        "process_value",
+        "raises",
+        "str"
+      ],
+      "called_by": [],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "argument",
+        "ctx",
+        "value"
+      ],
+      "imports": [
+        "click",
+        "pytest"
+      ],
+      "code": "def test_required_argument(value, expect_missing, processed_value):\n    \"\"\"Test how a required argument is processing the provided values.\"\"\"\n    ctx = click.Context(click.Command(\"\"))\n    argument = click.Argument([\"a\"], required=True)\n\n    if expect_missing:\n        with pytest.raises(click.MissingParameter) as excinfo:\n            argument.process_value(ctx, value)\n        assert str(excinfo.value) == \"Missing parameter: a\"\n\n    else:\n        value = argument.process_value(ctx, value)\n        assert value == processed_value"
+    },
+    "score": 0.6350781
+  }
+]

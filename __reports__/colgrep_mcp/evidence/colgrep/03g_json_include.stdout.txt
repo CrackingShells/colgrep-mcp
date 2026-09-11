@@ -1,0 +1,71 @@
+[
+  {
+    "unit": {
+      "name": "with_resource",
+      "qualified_name": "src/click/core.py::Context::with_resource",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/core.py",
+      "line": 1,
+      "end_line": 3806,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def with_resource(self, context_manager: AbstractContextManager[V]) -> V:",
+      "docstring": "\"\"\"Register a resource as if it were used in a ``with``\n        statement. The resource will be cleaned up when the context is\n        popped.\n\n        Uses :meth:`contextlib.ExitStack.enter_context`. It calls the\n        resource's ``__enter__()`` method and returns the result. When\n        the context is popped, it closes the stack, which calls the\n        resource's ``__exit__()`` method.\n\n        To register a cleanup function for something that isn't a\n        context manager, use :meth:`call_on_close`. Or use something\n        from :mod:`contextlib` to turn it into a context manager first.\n\n        .. code-block:: python\n\n            @click.group()\n            @click.option(\"--name\")\n            @click.pass_context\n            def cli(ctx):\n                ctx.obj = ctx.with_resource(connect_db(name))\n\n        :param context_manager: The context manager to enter.\n        :return: Whatever ``context_manager.__enter__()`` returns.\n\n        .. versionadded:: 8.0",
+      "parameters": [
+        "context_manager"
+      ],
+      "return_type": "V",
+      "extends": null,
+      "parent_class": "Context",
+      "calls": [
+        "enter_context"
+      ],
+      "called_by": [
+        "test_with_resource",
+        "test_with_resource_exception",
+        "test_with_resource_nested_exception"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "    def with_resource(self, context_manager: AbstractContextManager[V]) -> V:\n        \"\"\"Register a resource as if it were used in a ``with``\n        statement. The resource will be cleaned up when the context is\n        popped.\n\n        Uses :meth:`contextlib.ExitStack.enter_context`. It calls the\n        resource's ``__enter__()`` method and returns the result. When\n        the context is popped, it closes the stack, which calls the\n        resource's ``__exit__()`` method.\n\n        To register a cleanup function for something that isn't a\n        context manager, use :meth:`call_on_close`. Or use something\n        from :mod:`contextlib` to turn it into a context manager first.\n\n        .. code-block:: python\n\n            @click.group()\n            @click.option(\"--name\")\n            @click.pass_context\n            def cli(ctx):\n                ctx.obj = ctx.with_resource(connect_db(name))\n\n        :param context_manager: The context manager to enter.\n        :return: Whatever ``context_manager.__enter__()`` returns.\n\n        .. versionadded:: 8.0\n        \"\"\"\n        return self._exit_stack.enter_context(context_manager)"
+    },
+    "score": 1.1732485
+  },
+  {
+    "unit": {
+      "name": "indentation",
+      "qualified_name": "src/click/formatting.py::HelpFormatter::indentation",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/formatting.py",
+      "line": 110,
+      "end_line": 299,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def indentation(self) -> cabc.Generator[None]:",
+      "docstring": "\"\"\"A context manager that increases the indentation.",
+      "parameters": [],
+      "return_type": "cabc.Generator[None]",
+      "extends": null,
+      "parent_class": "HelpFormatter",
+      "calls": [
+        "dedent",
+        "indent"
+      ],
+      "called_by": [
+        "Command",
+        "format_epilog",
+        "format_help_text"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": true,
+      "variables": [],
+      "imports": [],
+      "code": "    @contextmanager\n    def indentation(self) -> cabc.Generator[None]:\n        \"\"\"A context manager that increases the indentation.\"\"\"\n        self.indent()\n        try:\n            yield\n        finally:\n            self.dedent()"
+    },
+    "score": 1.0037316
+  }
+]

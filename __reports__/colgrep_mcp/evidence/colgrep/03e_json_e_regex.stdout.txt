@@ -1,0 +1,106 @@
+[
+  {
+    "unit": {
+      "name": "parse_args",
+      "qualified_name": "src/click/core.py::Command::parse_args",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/core.py",
+      "line": 964,
+      "end_line": 3814,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def parse_args(self, ctx: Context, args: list[str]) -> list[str]:",
+      "docstring": null,
+      "parameters": [
+        "ctx",
+        "args"
+      ],
+      "return_type": "list[str]",
+      "extends": null,
+      "parent_class": "Command",
+      "calls": [
+        "NoArgsIsHelpError",
+        "fail",
+        "format",
+        "get_params",
+        "handle_parse_result",
+        "items",
+        "iter_params_for_processing",
+        "join",
+        "len",
+        "make_parser",
+        "map",
+        "ngettext",
+        "parse_args",
+        "update"
+      ],
+      "called_by": [
+        "Command",
+        "Group",
+        "OptParseCommand",
+        "make_context",
+        "parse_args",
+        "resolve_command",
+        "test_command_parse_args_collects_option_prefixes",
+        "test_custom_parser",
+        "test_group_parse_args_collects_base_option_prefixes"
+      ],
+      "complexity": 11,
+      "has_loops": true,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "_, args",
+        "ctx.args",
+        "ctx.params[name]",
+        "opts, args, param_order",
+        "parser"
+      ],
+      "imports": [
+        "gettext"
+      ],
+      "code": "    def parse_args(self, ctx: Context, args: list[str]) -> list[str]:\n        if not args and self.no_args_is_help and not ctx.resilient_parsing:\n            raise NoArgsIsHelpError(ctx)\n\n        parser = self.make_parser(ctx)\n        opts, args, param_order = parser.parse_args(args=args)\n\n        for param in iter_params_for_processing(param_order, self.get_params(ctx)):\n            _, args = param.handle_parse_result(ctx, opts, args)\n\n        # We now have all parameters' values into `ctx.params`, but the data may contain\n        # the `UNSET` sentinel.\n        # Convert `UNSET` to `None` to ensure that the user doesn't see `UNSET`.\n        #\n        # Waiting until after the initial parse to convert allows us to treat `UNSET`\n        # more like a missing value when multiple params use the same name.\n        # Refs:\n        # https://github.com/pallets/click/issues/3071\n        # https://github.com/pallets/click/pull/3079\n        for name, value in ctx.params.items():\n            if value is UNSET:\n                ctx.params[name] = None\n\n        if args and not ctx.allow_extra_args and not ctx.resilient_parsing:\n            ctx.fail(\n                ngettext(\n                    \"Got unexpected extra argument ({args})\",\n                    \"Got unexpected extra arguments ({args})\",\n                    len(args),\n                ).format(args=\" \".join(map(str, args)))\n            )\n\n        ctx.args = args\n        ctx._opt_prefixes.update(parser._opt_prefixes)\n        return args"
+    },
+    "score": 1.1026056
+  },
+  {
+    "unit": {
+      "name": "parse_args",
+      "qualified_name": "src/click/parser.py::_OptionParser::parse_args",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/parser.py",
+      "line": 224,
+      "end_line": 500,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def parse_args(",
+      "docstring": "\"\"\"Parses positional arguments and returns ``(values, args, order)``\n        for the parsed options and arguments as well as the leftover\n        arguments if there are any.  The order is a list of objects as they\n        appear on the command line.  If arguments appear multiple times they\n        will be memorized multiple times as well.",
+      "parameters": [
+        "args"
+      ],
+      "return_type": "tuple[dict[str, t.Any], list[str], list[CoreParameter]]",
+      "extends": null,
+      "parent_class": "_OptionParser",
+      "calls": [],
+      "called_by": [
+        "Command",
+        "Group",
+        "OptParseCommand",
+        "make_context",
+        "parse_args",
+        "resolve_command",
+        "test_command_parse_args_collects_option_prefixes",
+        "test_custom_parser",
+        "test_group_parse_args_collects_base_option_prefixes"
+      ],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": true,
+      "variables": [
+        "state"
+      ],
+      "imports": [],
+      "code": "    def parse_args(\n        self, args: list[str]\n    ) -> tuple[dict[str, t.Any], list[str], list[CoreParameter]]:\n        \"\"\"Parses positional arguments and returns ``(values, args, order)``\n        for the parsed options and arguments as well as the leftover\n        arguments if there are any.  The order is a list of objects as they\n        appear on the command line.  If arguments appear multiple times they\n        will be memorized multiple times as well.\n        \"\"\"\n        state = _ParsingState(args)\n        try:\n            self._process_args_for_options(state)\n            self._process_args_for_args(state)\n        except UsageError:\n            if self.ctx is None or not self.ctx.resilient_parsing:\n                raise\n        return state.opts, state.largs, state.order"
+    },
+    "score": 0.8438003
+  }
+]

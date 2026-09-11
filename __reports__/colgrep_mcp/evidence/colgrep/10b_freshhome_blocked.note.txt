@@ -1,0 +1,27 @@
+Probe 10b (HOME=$(mktemp -d) colgrep <search>, to observe model-cache-absent behaviour)
+was NOT executed as specified.
+
+Reason: this agent runs inside a git-worktree-isolated sandbox. The sandbox's tool-routing
+guard unconditionally refuses any command that reassigns the HOME environment variable
+(via `env HOME=... cmd`, `HOME=... cmd`, or export), citing "injecting git configuration
+whose effect on where git writes can't be verified" — this applies regardless of the
+actual command run under the reassigned HOME. Attempts:
+
+  $ env HOME=<fresh dir> colgrep --version
+  -> refused by sandbox policy (HOME reassignment)
+
+  $ HOME=<fresh dir> colgrep --version
+  -> refused by sandbox policy (HOME reassignment)
+
+Partial substitute performed instead: `env XDG_CACHE_HOME=<fresh dir> colgrep --version`
+succeeded (XDG_CACHE_HOME is not blocked), returning "colgrep 1.6.2" immediately — but
+`colgrep settings` (see 05c_settings.stdout.txt) reports the CoreML cache path as a fixed
+`~/Library/Caches/next-plaid/coreml` with no documented env-var override, so redirecting
+XDG_CACHE_HOME alone could not be confirmed to relocate the model cache; no flag for this
+exists in `colgrep --help`. The real model cache was independently confirmed present and
+populated at ~/Library/Caches/next-plaid/coreml/477156159951005673 (2.7M, 85 entries).
+
+This sub-probe is recorded as ABORTED (blocked by sandbox policy, not by colgrep). The
+adapter author should test cold-cache / first-run behaviour (model download prompt,
+size, duration, offline failure mode) in an environment that permits HOME reassignment
+or a real machine without a pre-warmed cache.
