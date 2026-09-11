@@ -17,6 +17,10 @@ Environment knobs:
                           for a search call, bypassing FAKE_COLGREP_HITS
                           entirely — used to simulate malformed/non-JSON
                           output for ColgrepParseError tests
+  FAKE_COLGREP_STATUS_PROJECT  when set, `status` reports this as the
+                          `Project:` line instead of echoing the requested
+                          path — simulates colgrep folding a path into an
+                          already-registered ancestor project (R05 D3)
 """
 import json
 import os
@@ -57,7 +61,8 @@ def main(argv):
         if os.environ.get("FAKE_COLGREP_INDEXED", "1") == "0":
             print(f"No index found for {path} [{MODEL}]\nRun `colgrep <query>` to create one.")
         else:
-            print(f"Project: {path}\nModel:   {MODEL}\nIndex:   /tmp/fake-indices/fake-corpus-deadbeef\n\nRun any search to update the index, or `colgrep clear` to rebuild from scratch.")
+            project = os.environ.get("FAKE_COLGREP_STATUS_PROJECT", path)
+            print(f"Project: {project}\nModel:   {MODEL}\nIndex:   /tmp/fake-indices/fake-corpus-deadbeef\n\nRun any search to update the index, or `colgrep clear` to rebuild from scratch.")
         return 0
     if sub == "init":
         path = next((a for a in args[1:] if not a.startswith("-")), ".")
