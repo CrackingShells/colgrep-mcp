@@ -1,24 +1,39 @@
-"""Read-only index inspection tools: `index_status`, `list_indexes`, `doctor`
-(R01 §Tools). `index_build`/`index_clear` are added in this leaf's Step 2.
+"""Index management tools: `index_status`, `list_indexes`, `doctor`, `index_build`,
+`index_clear` (R01 §Tools; R05 D2 heartbeat, D3 project-root refusal, M2 safe_log).
 """
 
 from __future__ import annotations
 
+import asyncio
 import shutil
+import time
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp.types import CallToolResult, TextContent, ToolAnnotations
+from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability, TextContent, ToolAnnotations
 
 from .adapter import ColgrepError, ColgrepFailed, ColgrepNotFound, ColgrepTimeout
-from .models import Doctor, IndexInfo, IndexList, IndexStatus
+from .locks import project_lock
+from .logging_utils import safe_log
+from .models import Doctor, IndexBuildResult, IndexClearResult, IndexInfo, IndexList, IndexStatus
 from .paths import default_root, resolve_paths
 from .server import get_adapter, get_settings
+
+#: Interval between indeterminate progress heartbeats during `index_build`
+#: (R05 D2: colgrep emits no per-file progress, only a final summary line).
+#: A module constant so tests can monkeypatch it down for fast heartbeat assertions.
+HEARTBEAT_S = 5.0
+
+
+class Confirm(BaseModel):
+    """Elicitation schema for `index_clear`'s human-in-the-loop confirmation."""
+
+    confirm: bool
 
 
 def _resolve_one(path: str | None, ctx: Context) -> Path:
@@ -77,6 +92,16 @@ def _render_doctor(doc: Doctor) -> str:
     for problem in doc.problems:
         lines.append(f"problem: {problem}")
     return "\n".join(lines)
+
+
+def _build_summary_line(result: IndexBuildResult) -> str:
+    if result.up_to_date:
+        return f"Index is up to date for {result.project}"
+    return (
+        f"Indexed {result.project} "
+        f"(added: {result.added}, changed: {result.changed}, deleted: {result.deleted}, "
+        f"unchanged: {result.unchanged})"
+    )
 
 
 # --- read-only tools ----------------------------------------------------------
@@ -172,6 +197,142 @@ async def doctor(*, ctx: Context) -> CallToolResult:
     )
 
 
+# --- mutating tools ------------------------------------------------------------
+
+
+async def index_build(
+    path: Annotated[
+        str | None,
+        Field(description="Project directory to (re)index; defaults to the resolved root."),
+    ] = None,
+    force_cpu: Annotated[bool, Field(description="Force CPU execution instead of GPU for this build.")] = False,
+    *,
+    ctx: Context,
+) -> CallToolResult:
+    """Build or refresh the colgrep index for a project, streaming heartbeat progress while it runs."""
+    adapter = get_adapter(ctx)
+    resolved = _resolve_one(path, ctx)
+
+    async def _forward_stderr(line: str) -> None:
+        await safe_log(ctx, "info", line)
+
+    streaming_adapter = adapter.with_stderr(_forward_stderr)
+
+    start = time.monotonic()
+    async with project_lock(resolved):
+        task: asyncio.Task[IndexBuildResult] = asyncio.ensure_future(
+            streaming_adapter.init(resolved, force_cpu=force_cpu)
+        )
+        try:
+            while True:
+                done, _pending = await asyncio.wait({task}, timeout=HEARTBEAT_S)
+                if task in done:
+                    break
+                elapsed_s = time.monotonic() - start
+                try:
+                    await ctx.report_progress(
+                        elapsed_s, total=None, message=f"indexing {resolved} … {int(elapsed_s)}s"
+                    )
+                except Exception:  # noqa: BLE001 - progress must never break the build
+                    pass
+
+            result = await task
+        except ColgrepError as exc:
+            raise _translate_error(exc) from exc
+
+    summary_line = _build_summary_line(result)
+    try:
+        await ctx.report_progress(1, total=1, message=summary_line)
+    except Exception:  # noqa: BLE001 - progress must never break the build
+        pass
+
+    try:
+        await ctx.notify_resource_updated("colgrep://indexes")
+    except Exception:  # noqa: BLE001 - resource-update notification is best-effort
+        pass
+
+    return CallToolResult(
+        content=[TextContent(type="text", text=summary_line)],
+        structured_content=result.model_dump(),
+    )
+
+
+async def index_clear(
+    path: Annotated[
+        str | None,
+        Field(description="Project directory whose index to delete; defaults to the resolved root."),
+    ] = None,
+    confirm: Annotated[
+        bool,
+        Field(description="Must be true to delete without an interactive confirmation prompt."),
+    ] = False,
+    *,
+    ctx: Context,
+) -> CallToolResult:
+    """Delete a project's colgrep index. Destructive: asks for confirmation unless confirm=true."""
+    adapter = get_adapter(ctx)
+    resolved = _resolve_one(path, ctx)
+
+    try:
+        st = await adapter.status(resolved)
+    except ColgrepError as exc:
+        raise _translate_error(exc) from exc
+
+    if st.indexed and Path(st.project).resolve() != resolved.resolve():
+        raise ToolError(
+            f"colgrep would clear the index for {st.project}, which also covers other directories. "
+            f"Call index_clear with path={st.project!r} (and confirm=true) if that is really intended."
+        )
+
+    if not confirm:
+        has_elicitation = False
+        try:
+            has_elicitation = ctx.session.check_client_capability(
+                ClientCapabilities(elicitation=ElicitationCapability())
+            )
+        except Exception:  # noqa: BLE001 - treat any capability-check failure as "unavailable"
+            has_elicitation = False
+
+        if not has_elicitation:
+            raise ToolError(
+                f"Refusing to delete without confirmation. Call again with confirm=true to delete the index "
+                f"for {resolved}."
+            )
+
+        res = None
+        try:
+            res = await ctx.elicit(
+                f"Delete the colgrep index for {resolved}? This cannot be undone.",
+                schema=Confirm,
+            )
+        except Exception:  # noqa: BLE001 - a failed elicitation is "no elicitation", not a crash
+            res = None
+
+        if res is None or res.action != "accept" or not res.data.confirm:
+            result = IndexClearResult(project=str(resolved), cleared=False)
+            return CallToolResult(
+                content=[TextContent(type="text", text="Not cleared (declined)")],
+                structured_content=result.model_dump(),
+            )
+
+    async with project_lock(resolved):
+        try:
+            await adapter.clear(resolved)
+        except ColgrepError as exc:
+            raise _translate_error(exc) from exc
+
+    result = IndexClearResult(project=str(resolved), cleared=True)
+    try:
+        await ctx.notify_resource_updated("colgrep://indexes")
+    except Exception:  # noqa: BLE001 - resource-update notification is best-effort
+        pass
+
+    return CallToolResult(
+        content=[TextContent(type="text", text=f"Cleared index for {resolved}")],
+        structured_content=result.model_dump(),
+    )
+
+
 # --- registration --------------------------------------------------------------
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
@@ -182,3 +343,13 @@ def register(mcp: MCPServer) -> None:
     mcp.tool(title="Index status", annotations=_READ_ONLY)(index_status)
     mcp.tool(title="List indexes", annotations=_READ_ONLY)(list_indexes)
     mcp.tool(title="Doctor", annotations=_READ_ONLY)(doctor)
+    mcp.tool(
+        title="Build or refresh index",
+        annotations=ToolAnnotations(
+            read_only_hint=False, destructive_hint=False, idempotent_hint=True, open_world_hint=False
+        ),
+    )(index_build)
+    mcp.tool(
+        title="Clear index",
+        annotations=ToolAnnotations(destructive_hint=True, open_world_hint=False),
+    )(index_clear)
