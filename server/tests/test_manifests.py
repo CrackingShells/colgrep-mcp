@@ -75,12 +75,13 @@ def test_mcp_configs_equivalent():
     agent_server = agent_mcp["mcpServers"]["colgrep"]
 
     assert agent_server["type"] == "stdio"
-    assert claude_server["command"] == agent_server["command"]
-
-    def normalize(args: list[str]) -> list[str]:
-        return [a.replace("${CLAUDE_PLUGIN_ROOT}", "${PLUGIN_ROOT}") for a in args]
-
-    assert normalize(claude_server["args"]) == agent_server["args"]
+    # Both ecosystems launch the same script; only the root placeholder differs
+    # (Agent Plugins forbids placeholders in `command`, so it uses a ./ path).
+    assert claude_server["command"] == "${CLAUDE_PLUGIN_ROOT}/scripts/launch.sh"
+    assert agent_server["command"] == "./scripts/launch.sh"
+    assert claude_server["args"] == agent_server["args"]
+    launcher = REPO_ROOT / "scripts" / "launch.sh"
+    assert launcher.exists() and launcher.stat().st_mode & 0o111, "launch.sh must be executable"
 
     for key in agent_server.get("env", {}):
         assert key not in FORBIDDEN_MCP_ENV_KEYS

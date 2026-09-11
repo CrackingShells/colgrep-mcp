@@ -3,17 +3,10 @@
   "mcpServers": {
     "colgrep": {
       "type": "stdio",
-      "command": "uv",
-      "args": [
-        "run",
-        "--quiet",
-        "--directory",
-        "${PLUGIN_ROOT}/server",
-        "colgrep-mcp"
-      ],
+      "command": "./scripts/launch.sh",
+      "args": [],
       "env": {
-        "UV_PROJECT_ENVIRONMENT": "${PLUGIN_DATA}/venv",
-        "PATH": "/opt/homebrew/bin:/usr/local/bin:/Users/hacker/.local/bin:/Users/hacker/.cargo/bin"
+        "UV_PROJECT_ENVIRONMENT": "${PLUGIN_DATA}/venv"
       }
     }
   }
