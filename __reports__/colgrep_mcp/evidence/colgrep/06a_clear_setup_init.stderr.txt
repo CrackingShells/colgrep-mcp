@@ -1,0 +1,3 @@
+🤖 Model: lightonai/LateOn-Code-edge (CPU)
+📂 Building index...
+Indexed /private/var/folders/nw/ddpd99c119j47w3s4gzv7sb00000gn/T/colgrep_clear_test (added: 1, changed: 0, deleted: 0, unchanged: 0)

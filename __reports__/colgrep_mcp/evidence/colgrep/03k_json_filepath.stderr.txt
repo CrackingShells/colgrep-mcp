@@ -1,0 +1,3 @@
+📋 Seeded index from worktree /private/tmp/scratchpad/corpus/click (152 files); re-embedding only changed files
+🤖 Model: lightonai/LateOn-Code-edge (CPU)
+📂 Building index...

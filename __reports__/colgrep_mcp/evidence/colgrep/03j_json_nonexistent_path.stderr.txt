@@ -1,0 +1,5 @@
+Error: Path does not exist: /private/tmp/scratchpad/corpus/this_path_does_not_exist_xyz
+
+Closest existing directory: /private/tmp/scratchpad/corpus
+Contents:
+  click/

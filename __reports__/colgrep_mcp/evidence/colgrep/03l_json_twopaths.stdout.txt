@@ -1,0 +1,136 @@
+[
+  {
+    "unit": {
+      "name": "parse_args",
+      "qualified_name": "click/core.py::Command::parse_args",
+      "file": "/private/tmp/scratchpad/corpus/click/src/click/core.py",
+      "line": 55,
+      "end_line": 3814,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def parse_args(self, ctx: Context, args: list[str]) -> list[str]:",
+      "docstring": null,
+      "parameters": [
+        "ctx",
+        "args"
+      ],
+      "return_type": "list[str]",
+      "extends": null,
+      "parent_class": "Command",
+      "calls": [
+        "NoArgsIsHelpError",
+        "fail",
+        "format",
+        "get_params",
+        "handle_parse_result",
+        "items",
+        "iter_params_for_processing",
+        "join",
+        "len",
+        "make_parser",
+        "map",
+        "ngettext",
+        "parse_args",
+        "update"
+      ],
+      "called_by": [
+        "Command",
+        "Group",
+        "make_context",
+        "parse_args",
+        "resolve_command"
+      ],
+      "complexity": 11,
+      "has_loops": true,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "_, args",
+        "ctx.args",
+        "ctx.params[name]",
+        "opts, args, param_order",
+        "parser"
+      ],
+      "imports": [
+        "gettext"
+      ],
+      "code": "    def parse_args(self, ctx: Context, args: list[str]) -> list[str]:\n        if not args and self.no_args_is_help and not ctx.resilient_parsing:\n            raise NoArgsIsHelpError(ctx)\n\n        parser = self.make_parser(ctx)\n        opts, args, param_order = parser.parse_args(args=args)\n\n        for param in iter_params_for_processing(param_order, self.get_params(ctx)):\n            _, args = param.handle_parse_result(ctx, opts, args)\n\n        # We now have all parameters' values into `ctx.params`, but the data may contain\n        # the `UNSET` sentinel.\n        # Convert `UNSET` to `None` to ensure that the user doesn't see `UNSET`.\n        #\n        # Waiting until after the initial parse to convert allows us to treat `UNSET`\n        # more like a missing value when multiple params use the same name.\n        # Refs:\n        # https://github.com/pallets/click/issues/3071\n        # https://github.com/pallets/click/pull/3079\n        for name, value in ctx.params.items():\n            if value is UNSET:\n                ctx.params[name] = None\n\n        if args and not ctx.allow_extra_args and not ctx.resilient_parsing:\n            ctx.fail(\n                ngettext(\n                    \"Got unexpected extra argument ({args})\",\n                    \"Got unexpected extra arguments ({args})\",\n                    len(args),\n                ).format(args=\" \".join(map(str, args)))\n            )\n\n        ctx.args = args\n        ctx._opt_prefixes.update(parser._opt_prefixes)\n        return args"
+    },
+    "score": 0.9778769
+  },
+  {
+    "unit": {
+      "name": "add_argument",
+      "qualified_name": "click/parser.py::_OptionParser::add_argument",
+      "file": "/private/tmp/scratchpad/corpus/click/src/click/parser.py",
+      "line": 48,
+      "end_line": 533,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def add_argument(self, obj: CoreArgument, dest: str | None, nargs: int = 1) -> None:",
+      "docstring": "\"\"\"Adds a positional argument named `dest` to the parser.\n\n        The `obj` can be used to identify the option in the order list\n        that is returned from the parser.",
+      "parameters": [
+        "obj",
+        "dest",
+        "nargs"
+      ],
+      "return_type": "None",
+      "extends": null,
+      "parent_class": "_OptionParser",
+      "calls": [
+        "append"
+      ],
+      "called_by": [
+        "Argument",
+        "add_to_parser"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "    def add_argument(self, obj: CoreArgument, dest: str | None, nargs: int = 1) -> None:\n        \"\"\"Adds a positional argument named `dest` to the parser.\n\n        The `obj` can be used to identify the option in the order list\n        that is returned from the parser.\n        \"\"\"\n        self._args.append(_Argument(obj, dest=dest, nargs=nargs))"
+    },
+    "score": 0.9655072
+  },
+  {
+    "unit": {
+      "name": "_is_incomplete_argument",
+      "qualified_name": "click/shell_completion.py::_is_incomplete_argument",
+      "file": "/private/tmp/scratchpad/corpus/click/src/click/shell_completion.py",
+      "line": 1,
+      "end_line": 754,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def _is_incomplete_argument(ctx: Context, param: Parameter) -> bool:",
+      "docstring": "\"\"\"Determine if the given parameter is an argument that can still\n    accept values.\n\n    :param ctx: Invocation context for the command represented by the\n        parsed complete args.\n    :param param: Argument object being checked.",
+      "parameters": [
+        "ctx",
+        "param"
+      ],
+      "return_type": "bool",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "get",
+        "get_parameter_source",
+        "isinstance",
+        "len"
+      ],
+      "called_by": [],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "value"
+      ],
+      "imports": [
+        "gettext"
+      ],
+      "code": "def _is_incomplete_argument(ctx: Context, param: Parameter) -> bool:\n    \"\"\"Determine if the given parameter is an argument that can still\n    accept values.\n\n    :param ctx: Invocation context for the command represented by the\n        parsed complete args.\n    :param param: Argument object being checked.\n    \"\"\"\n    if not isinstance(param, Argument):\n        return False\n\n    value = ctx.params.get(param.name)\n    return (\n        param.nargs == -1\n        or ctx.get_parameter_source(param.name) is not ParameterSource.COMMANDLINE\n        or (\n            param.nargs > 1\n            and isinstance(value, (tuple, list))\n            and len(value) < param.nargs\n        )\n    )"
+    },
+    "score": 0.77072626
+  }
+]
