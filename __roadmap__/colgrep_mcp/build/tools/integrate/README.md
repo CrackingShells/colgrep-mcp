@@ -7,19 +7,19 @@ Depth 3. After the three tool leaves land, assemble the server (path resolution,
 Ship a runnable `colgrep-mcp` binary with documentation a human can install from.
 
 ## Pre-conditions
-- [ ] All `build/tools/*.md` leaves done and merged
+- [x] All `build/tools/*.md` leaves done and merged
 
 ## Success Gates
-- ⬜ [run] `cd server && uv run colgrep-mcp --help` exits 0
-- ⬜ [run] stdio round-trip test (`tests/test_stdio.py`) passes using the fake colgrep
-- ⬜ [static] README.md documents installation for Claude Code, Codex and Agent Plugins clients
+- ✅ [run] `cd server && uv run colgrep-mcp --help` exits 0
+- ✅ [run] stdio round-trip test (`tests/test_stdio.py`) passes using the fake colgrep
+- ✅ [static] README.md documents installation for Claude Code, Codex and Agent Plugins clients
 
 ## Status
 ```mermaid
 graph TD
     server_assembly[Server Assembly]:::done
     docs_readme[User Documentation]:::done
-    verify[Verify]:::inprogress
+    verify[Verify]:::done
     error_taxonomy[Error and Hint Taxonomy]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -33,7 +33,7 @@ graph TD
 |:-----|:-----|:-------|
 | `server_assembly.md` | 📄 Leaf Task | ✅ Done |
 | `docs_readme.md` | 📄 Leaf Task | ✅ Done |
-| `verify/` | 📁 Directory | 🔄 In Progress |
+| `verify/` | 📁 Directory | ✅ Done |
 | `error_taxonomy.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log

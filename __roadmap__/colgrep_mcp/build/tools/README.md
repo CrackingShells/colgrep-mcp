@@ -7,11 +7,11 @@ Depth 2. Three parallel leaves register handlers on the shared `MCPServer` throu
 Implement the complete MCP surface defined in R01: search/find_files/expand, index_*/list_indexes/doctor, resources+prompts+completions.
 
 ## Pre-conditions
-- [ ] `build/colgrep_adapter` done and merged into the milestone branch
+- [x] `build/colgrep_adapter` done and merged into the milestone branch
 
 ## Success Gates
-- ⬜ [run] `cd server && uv run pytest -q` passes with all three modules registered
-- ⬜ [run] In-memory `Client(build())` lists 8 tools, 3 static resources, 1 resource template, 3 prompts
+- ✅ [run] `cd server && uv run pytest -q` passes with all three modules registered
+- ✅ [run] In-memory `Client(build())` lists 8 tools, 3 static resources, 1 resource template, 3 prompts
 
 ## Status
 ```mermaid
@@ -19,7 +19,7 @@ graph TD
     search_tools[Search Tools]:::done
     index_tools[Index Tools]:::done
     resources_prompts[Resources, Prompts, Completions]:::done
-    integrate[Integrate]:::inprogress
+    integrate[Integrate]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -33,7 +33,7 @@ graph TD
 | `search_tools.md` | 📄 Leaf Task | ✅ Done |
 | `index_tools.md` | 📄 Leaf Task | ✅ Done |
 | `resources_prompts.md` | 📄 Leaf Task | ✅ Done |
-| `integrate/` | 📁 Directory | 🔄 In Progress |
+| `integrate/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

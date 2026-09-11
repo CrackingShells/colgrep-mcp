@@ -13,17 +13,17 @@ Root campaign of this repository. Turns the `colgrep` CLI (semantic + hybrid cod
 Ship `colgrep-mcp` v0.1.0: a stdio MCP server (Python SDK v2) exposing colgrep search/index operations as agent-first tools, resources and prompts, installable with `claude --plugin-dir` and as an Agent Plugins 1.0 directory.
 
 ## Pre-conditions
-- [ ] `colgrep --version` ≥ 1.6.2 on PATH
-- [ ] `uv` available; `uv run --with 'mcp>=2.2' python -c 'import mcp'` succeeds
-- [ ] R01 architecture report exists
+- [x] `colgrep --version` ≥ 1.6.2 on PATH
+- [x] `uv` available; `uv run --with 'mcp>=2.2' python -c 'import mcp'` succeeds
+- [x] R01 architecture report exists
 
 ## Success Gates
-- ⬜ [run] `cd server && uv run pytest -q` passes
-- ⬜ [run] In-memory `Client(mcp)` lists every tool/resource/prompt named in R01 §Contracts
-- ⬜ [run] `claude plugin validate .` passes
-- ⬜ [behavioral] A stdio client calling `search` against a real repo returns ranked hits with file/line/score within 60 s of a warm index
-- ⬜ [static] `plugin.json` (Agent Plugins 1.0), `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.mcp.json`, `mcp.json` all present and version-aligned with `server/pyproject.toml`
-- ⬜ [static] `CHANGELOG.md` has a `0.1.0` entry
+- ✅ [run] `cd server && uv run pytest -q` passes
+- ✅ [run] In-memory `Client(mcp)` lists every tool/resource/prompt named in R01 §Contracts
+- ✅ [run] `claude plugin validate .` passes
+- ✅ [behavioral] A stdio client calling `search` against a real repo returns ranked hits with file/line/score within 60 s of a warm index
+- ✅ [static] `plugin.json` (Agent Plugins 1.0), `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.mcp.json`, `mcp.json` all present and version-aligned with `server/pyproject.toml`
+- ✅ [static] `CHANGELOG.md` has a `0.1.0` entry
 
 ## Status
 ```mermaid
@@ -31,7 +31,7 @@ graph TD
     research_mcp_features[MCP Feature Matrix Study]:::done
     research_colgrep_behaviour[colgrep CLI Behaviour Probe]:::done
     scaffold_package[Package Scaffold]:::done
-    build[Build]:::inprogress
+    build[Build]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -45,7 +45,7 @@ graph TD
 | `research_mcp_features.md` | 📄 Leaf Task | ✅ Done |
 | `research_colgrep_behaviour.md` | 📄 Leaf Task | ✅ Done |
 | `scaffold_package.md` | 📄 Leaf Task | ✅ Done |
-| `build/` | 📁 Directory | 🔄 In Progress |
+| `build/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

@@ -4,10 +4,10 @@
 **Pre-conditions**:
 - [ ] `e2e_validation` merged with no open `intervene` decision in its findings report
 **Success Gates**:
-- ⬜ [static] `CHANGELOG.md` has a `## [0.1.0] - 2026-09-12` section listing every `feat`/`fix` commit subject since the first commit, grouped Added/Fixed
-- ⬜ [run] `cd server && uv run pytest -q` passes on the milestone branch head
-- ⬜ [static] `__reports__/colgrep_mcp/03-knowledge_transfer_v0.md` exists (wins, pain points, next-cycle changes)
-- ⬜ [static] `git tag -l v0.1.0` prints the tag on the merge commit into `main`
+- ✅ [static] `CHANGELOG.md` has a `## [0.1.0] - 2026-09-12` section listing every `feat`/`fix` commit subject since the first commit, grouped Added/Fixed
+- ✅ [run] `cd server && uv run pytest -q` passes on the milestone branch head
+- ✅ [static] `__reports__/colgrep_mcp/03-knowledge_transfer_v0.md` exists (wins, pain points, next-cycle changes)
+- ✅ [static] `git tag -l v0.1.0` prints the tag on the merge commit into `main`
 **References**: [R04 CONTRIBUTING §Versioning](../../../../../../CONTRIBUTING.md); `writing-reports` skill reference `software-knowledge-transfer.md`
 
 ## Step 1: Changelog and knowledge-transfer report
