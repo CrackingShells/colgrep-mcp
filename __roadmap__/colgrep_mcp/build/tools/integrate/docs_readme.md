@@ -11,8 +11,8 @@
 ## Step 1: Write README and the drift test
 **Goal**: Documentation that cannot silently rot.
 **Implementation Logic**:
-Write `README.md` (repo root) in plain, short paragraphs; install commands in `bash` fenced blocks, one command per block; the Tools table generated once by hand from `list_tools()` and then protected by `server/tests/test_readme.py` which parses the README table rows (regex on `| \`name\` |`) and asserts set equality with the live tool names. Keep the server-side `server/README.md` as a two-line pointer. Do not duplicate the agent guide — link `skills/colgrep-search/SKILL.md` and mention `colgrep://guide`.
+Write `README.md` (repo root) in plain, short paragraphs; install commands in `bash` fenced blocks, one command per block; the Tools table generated once by hand from `list_tools()` and then protected by `server/tests/test_readme.py` which parses the README table rows (regex on `| \`name\` |`) and asserts set equality with the live tool names. Keep the server-side `server/README.md` as a two-line pointer. Apply R05 D5/D11 to `server/colgrep_mcp/guide.md` and `skills/colgrep-search/SKILL.md`: `limit=None` is exhaustive only when `pattern` is set; for pure semantic queries colgrep caps at its runtime default of 15, so pass a larger `limit` explicitly. Also add R05 D1's `location_verified` to the guide's 'Reading results' section, and R05 D3's project-root behaviour to the index section. Do not duplicate the agent guide — link `skills/colgrep-search/SKILL.md` and mention `colgrep://guide`.
 **References**: Claude Code plugin install docs `https://code.claude.com/docs/en/discover-plugins`
-**Deliverables**: `README.md`, `server/tests/test_readme.py` (`test_tools_table_matches_server`)
+**Deliverables**: `README.md`, `server/colgrep_mcp/guide.md` (D1/D3/D5 corrections), `skills/colgrep-search/SKILL.md` (D5 correction), `server/tests/test_readme.py` (`test_tools_table_matches_server`)
 **Consistency Checks**: `cd server && uv run pytest -q tests/test_readme.py` (expected: PASS)
 **Commit**: `docs(docs): write installation and usage README with a tool-table drift test`
