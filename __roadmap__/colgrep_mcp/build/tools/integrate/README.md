@@ -20,7 +20,7 @@ graph TD
     server_assembly[Server Assembly]:::done
     docs_readme[User Documentation]:::done
     verify[Verify]:::inprogress
-    error_taxonomy[Error and Hint Taxonomy]:::inprogress
+    error_taxonomy[Error and Hint Taxonomy]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -34,7 +34,7 @@ graph TD
 | `server_assembly.md` | 📄 Leaf Task | ✅ Done |
 | `docs_readme.md` | 📄 Leaf Task | ✅ Done |
 | `verify/` | 📁 Directory | 🔄 In Progress |
-| `error_taxonomy.md` | 📄 Leaf Task | 🔄 In Progress |
+| `error_taxonomy.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -44,3 +44,6 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `server_assembly.md` | lead (step 1) + `task/server_assembly` (step 2) | 1+1 | lifespan adapter; stdio test; MCPDeprecationWarning filtered in CLI |
+| `docs_readme.md` | lead + `task/server_assembly` | 1+1 | README written early; drift test holds the tools table to list_tools() |
+| `error_taxonomy.md` | `task/error_taxonomy` | 1 | 12 codes; SDK wraps ToolError text as 'Error executing tool …: [CODE] …' |

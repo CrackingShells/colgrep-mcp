@@ -4,10 +4,10 @@
 **Pre-conditions**:
 - [ ] `build/tools/search_tools` and `index_tools` merged (all `ToolError` sites and `notes` producers exist)
 **Success Gates**:
-- ⬜ [static] `server/colgrep_mcp/errors.py` defines `class Code(StrEnum)` with exactly: `NO_HITS`, `LIMIT_DEFAULT_APPLIED`, `TEXT_TRUNCATED`, `LOCATION_UNVERIFIED`, `INDEX_COLD`, `PATH_NOT_FOUND`, `PROJECT_ROOT_MISMATCH`, `CONFIRMATION_REQUIRED`, `COLGREP_MISSING`, `COLGREP_FAILED`, `COLGREP_TIMEOUT`, `BAD_HIT_ID`, and a `HINTS: dict[Code, str]` mapping each to a one-sentence next step
-- ⬜ [run] `cd server && uv run pytest -q tests/test_errors.py` passes: every `ToolError` raised by the tools has a message starting with `[<CODE>] ` and ending with `Next: <hint>`; every note in `SearchResult.notes` starts with `[<CODE>] `
-- ⬜ [run] `read_resource("colgrep://errors")` returns Markdown listing every code with its hint; `test_errors.py` asserts the set equals `Code`
-- ⬜ [static] `guide.md` has a "Codes" section linking to `colgrep://errors`
+- ✅ [static] `server/colgrep_mcp/errors.py` defines `class Code(StrEnum)` with exactly: `NO_HITS`, `LIMIT_DEFAULT_APPLIED`, `TEXT_TRUNCATED`, `LOCATION_UNVERIFIED`, `INDEX_COLD`, `PATH_NOT_FOUND`, `PROJECT_ROOT_MISMATCH`, `CONFIRMATION_REQUIRED`, `COLGREP_MISSING`, `COLGREP_FAILED`, `COLGREP_TIMEOUT`, `BAD_HIT_ID`, and a `HINTS: dict[Code, str]` mapping each to a one-sentence next step
+- ✅ [run] `cd server && uv run pytest -q tests/test_errors.py` passes: every `ToolError` raised by the tools has a message starting with `[<CODE>] ` and ending with `Next: <hint>`; every note in `SearchResult.notes` starts with `[<CODE>] `
+- ✅ [run] `read_resource("colgrep://errors")` returns Markdown listing every code with its hint; `test_errors.py` asserts the set equals `Code`
+- ✅ [static] `guide.md` has a "Codes" section linking to `colgrep://errors`
 **References**: [R01 §Error model](../../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R05 D5, D6](../../../../../__reports__/colgrep_mcp/02-architecture_v1.md); PI request (2026-09-12, mid-run): "standardized tool call error code that can point the agents toward different usage patterns"
 
 ## Step 1: Define codes and route every error and note through them
