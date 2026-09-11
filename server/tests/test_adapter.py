@@ -6,6 +6,7 @@ file with `search`/`status`/`stats`/`settings`/`init`/`clear`.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -198,6 +199,28 @@ async def test_colgrep_timeout_leaves_no_zombie(fake_colgrep_bin, monkeypatch):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=0.5)
     with pytest.raises(ColgrepTimeout):
         await adapter.version()
+
+    assert adapter._last_proc is not None
+    assert adapter._last_proc.returncode is not None
+
+
+async def test_cancel_leaves_no_zombie(fake_colgrep_bin, monkeypatch):
+    """F1: a client-cancelled tool call (not a timeout) must still reap the child.
+
+    `wait_for`'s *timeout* path was already handled (see
+    `test_colgrep_timeout_leaves_no_zombie` above); this exercises the other
+    abnormal exit, `asyncio.CancelledError`, which `except TimeoutError`
+    never catches.
+    """
+    monkeypatch.setenv("FAKE_COLGREP_SLEEP", "5")
+    adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=30)
+
+    task = asyncio.ensure_future(adapter.version())
+    await asyncio.sleep(0.2)
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
 
     assert adapter._last_proc is not None
     assert adapter._last_proc.returncode is not None

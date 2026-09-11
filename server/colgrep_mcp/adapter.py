@@ -208,6 +208,18 @@ class ColgrepAdapter:
             raise ColgrepTimeout(
                 f"colgrep timed out after {self.timeout_s}s: {' '.join(full_argv)}"
             ) from None
+        except BaseException:
+            # Any other abnormal exit from `wait_for` — most importantly the
+            # calling task itself being cancelled (`asyncio.CancelledError`,
+            # a `BaseException` that `except TimeoutError` never catches) —
+            # must still reap the child instead of abandoning it. `wait_for`
+            # already cancels-and-awaits the gathered future before this
+            # line runs (see `asyncio.tasks.wait_for`), so the stderr-drain
+            # coroutine is already finished; only the subprocess itself still
+            # needs killing and reaping here.
+            proc.kill()
+            await proc.wait()
+            raise
 
         stdout = stdout_bytes.decode(errors="replace")
         stderr = "\n".join(stderr_tail)
