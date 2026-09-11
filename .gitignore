@@ -4,8 +4,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
-dist/
-build/
+/server/dist/
+/server/build/
 .DS_Store
 .claude/settings.local.json
 .claude/worktrees/

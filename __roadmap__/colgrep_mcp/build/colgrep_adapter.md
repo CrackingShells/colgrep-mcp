@@ -1,0 +1,39 @@
+# colgrep Adapter
+
+**Goal**: Implement `ColgrepAdapter` and the pure text parsers so that every colgrep interaction is one tested, non-shell, timeout-bounded subprocess call with typed results and typed failures.
+**Pre-conditions**:
+- [ ] `scaffold_package` merged: `server/colgrep_mcp/adapter.py` stubs and `tests/fake_colgrep.py` exist
+- [ ] R03 merged: `__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md` and `evidence/colgrep/*` exist
+**Success Gates**:
+- ⬜ [run] `cd server && uv run pytest -q tests/test_textparse.py tests/test_adapter.py` passes
+- ⬜ [static] `textparse.py` is tested against every `status`/`--stats`/`settings` sample in `__reports__/colgrep_mcp/evidence/colgrep/`
+- ⬜ [run] `build_search_argv` covers every `SearchRequest` field (a parametrised test asserts each flag appears exactly when set)
+- ⬜ [run] A search through the fake binary returns `list[RawHit]` whose first element has keys `unit` and `score`; a forced non-zero exit raises `ColgrepFailed` with `returncode` and `stderr_tail`; `FAKE_COLGREP_SLEEP=5` with `timeout_s=0.5` raises `ColgrepTimeout` and leaves no zombie process
+**References**: [R01 §Adapter contract](../../../__reports__/colgrep_mcp/00-architecture_v0.md) — method signatures and exception classes; [R03 §Probe Results](../../../__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md) — observed exit codes, stderr shapes, text formats
+
+## Step 1: Text parsers with fixture tests
+**Goal**: Turn the three text-only subcommands into typed data before any subprocess code exists, so parsing bugs are isolated from process bugs.
+**Implementation Logic**:
+Write pure functions in `textparse.py`: `parse_status(text: str, project: str) -> IndexStatus` (handles the "No index found for …" shape → `indexed=False`, and the "Project:/Model:/Index:" shape → `indexed=True`; always stores `raw=text`), `parse_stats(text: str) -> list[IndexInfo]` (blocks starting with `Project:` followed by indented `Model:`, `Functions indexed:`, `Search count:` lines; tolerate trailing blank lines and unknown extra lines), `parse_settings(text: str) -> dict[str, str]` (lines of the form `  key:  value (note)` → `{key: value}`, keeping the parenthetical note inside the value string), `parse_progress(line: str) -> tuple[int, int] | None` (extract `n/total` or `NN%` from an indexing stderr line, per the shapes R03 recorded; return None when the line carries no progress). Copy the evidence samples into `tests/fixtures/colgrep/` (do not import from `__reports__` at test time). TDD: write `tests/test_textparse.py` first, watch it fail, then implement.
+**References**: [R03 §Text-format samples](../../../__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md) — verbatim outputs to fixture
+**Deliverables**: `server/colgrep_mcp/textparse.py` (`parse_status`, `parse_stats`, `parse_settings`, `parse_progress`), `server/tests/test_textparse.py`, `server/tests/fixtures/colgrep/{status_indexed.txt,status_missing.txt,stats.txt,settings.txt,init_stderr.txt}`
+**Consistency Checks**: `cd server && uv run pytest -q tests/test_textparse.py` (expected: PASS)
+**Commit**: `feat(adapter): parse colgrep status, stats and settings text into typed models`
+
+## Step 2: Subprocess runner and search argv builder
+**Goal**: One private `_run(argv, *, cwd=None, stream_stderr=False) -> (stdout, stderr, returncode)` that every public method uses, plus the pure argv builder.
+**Implementation Logic**:
+`_run` uses `asyncio.create_subprocess_exec(self.binary, *argv, stdout=PIPE, stderr=PIPE, stdin=DEVNULL, env={**os.environ, "NO_COLOR": "1"})`; always prepends `--color never` where the subcommand accepts it (search, status, clear, init, settings, set-model do; `--stats` and `--version` are top-level flags — check R03 for whether `--color` is accepted alongside them and branch accordingly). stderr is read line by line; each decoded line is appended to a bounded deque (last 50) and, if `self.on_stderr` is set, awaited through it. The whole call is wrapped in `asyncio.wait_for(..., self.timeout_s)`; on timeout, `proc.kill()` then `await proc.wait()` before raising `ColgrepTimeout`. `FileNotFoundError`/`PermissionError` from spawn → `ColgrepNotFound(binary)`. Non-zero exit → `ColgrepFailed(returncode, "\n".join(tail), argv)`. `build_search_argv(req)` returns `["search", "--json", "-y", ...]` mapping: `pattern→-e`, `fixed_string→-F`, `whole_word→-w`, `case_sensitive→-s`, each `include→--include X`, `exclude→--exclude X`, `exclude_dir→--exclude-dir X`, `limit→-k N` (omitted when None), `code_only→--code-only`, `semantic_only→--semantic-only`, `alpha→--alpha F`, `skip_index_update→--no-update`, then the query (omitted when None and pattern is set) then each path as `str`. Use `--` before positional args only if R03 shows colgrep accepts it; otherwise ensure queries starting with `-` are rejected with `ColgrepError` at build time. Add `version()` (parse `colgrep X.Y.Z`).
+**References**: [R01 §Adapter contract](../../../__reports__/colgrep_mcp/00-architecture_v0.md) — error mapping table; [R03 §Observations](../../../__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md) — exit codes for no-match, bad path, missing binary
+**Deliverables**: `server/colgrep_mcp/adapter.py` (`ColgrepAdapter._run`, `build_search_argv`, `version`), `server/tests/test_adapter.py` (argv parametrised test; `version()` via fake binary; `ColgrepNotFound` with a bogus binary path; `ColgrepFailed` via `FAKE_COLGREP_EXIT=2`; `ColgrepTimeout` via `FAKE_COLGREP_SLEEP`)
+**Consistency Checks**: `cd server && uv run pytest -q tests/test_adapter.py -k "argv or version or notfound or failed or timeout"` (expected: PASS)
+**Commit**: `feat(adapter): add bounded async subprocess runner and search argv builder`
+
+## Step 3: Public methods search/status/stats/settings/init/clear
+**Goal**: Complete the adapter API so the tool leaves can be written against real behaviour.
+**Implementation Logic**:
+`search(req)`: `_run(build_search_argv(req))`, parse stdout with `json.loads`; empty stdout or non-list → if returncode 0 return `[]` (R03 says what colgrep prints on zero hits — follow it), else `ColgrepParseError`. `status(path)`: `_run(["status", str(path)])` → `parse_status`. `stats()`: `_run(["--stats"])` → `parse_stats`. `settings()`: `_run(["settings"])` → `parse_settings`. `init(path, force_cpu)`: `_run(["init", "-y", *(["--force-cpu"] if force_cpu else []), str(path)], stream_stderr=True)`, time it, return `IndexBuildResult(project, units_indexed=<parsed from stdout/stderr if R03 shows a count, else None>, elapsed_ms, log_tail)`. `clear(path)`: `_run(["clear", str(path)])`; if R03 shows an interactive prompt, pass the flag that suppresses it or feed `y\n` on stdin — document which. Every method accepts only absolute `Path`s (assert). Tests use the fake binary; add one `@pytest.mark.real_colgrep` test skipped unless `COLGREP_MCP_REAL=1` that runs `version()` and `stats()` against the real binary.
+**References**: [R03 §Hit JSON Schema](../../../__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md) — nullable fields to tolerate
+**Deliverables**: `server/colgrep_mcp/adapter.py` (`search`, `status`, `stats`, `settings`, `init`, `clear`), `server/tests/test_adapter.py` (extended), `server/tests/conftest.py` (`real_colgrep` marker registration)
+**Consistency Checks**: `cd server && uv run pytest -q tests/test_adapter.py tests/test_textparse.py` (expected: PASS)
+**Commit**: `feat(adapter): implement search, status, stats, settings, init and clear`
