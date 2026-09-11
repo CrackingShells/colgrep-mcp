@@ -33,6 +33,20 @@ class TestParseStatus:
         assert result.model == "lightonai/LateOn-Code-edge"
         assert result.index_path == "/Users/hacker/Library/Application Support/colgrep/indices/tmp-a825743a"
         assert result.raw == text
+        assert result.requested_path == "/private/tmp"
+
+    def test_indexed_shape_requested_path_differs_from_reported_project(self):
+        # R05 D3: colgrep folds any path under an already-registered ancestor
+        # project into that ancestor. The text always reports the *ancestor*
+        # root ("Project: /private/tmp"), never the deeper path we asked
+        # about — requested_path is the only place that survives.
+        text = _read("status_indexed.txt")
+        requested = "/private/tmp/some/deeper/subdir/never/asked/about/private/tmp/itself"
+        result = parse_status(text, requested)
+
+        assert result.project == "/private/tmp"
+        assert result.requested_path == requested
+        assert result.project != result.requested_path
 
     def test_missing_shape(self):
         text = _read("status_missing.txt")
@@ -44,6 +58,7 @@ class TestParseStatus:
         assert result.model == "lightonai/LateOn-Code-edge"
         assert result.index_path is None
         assert result.raw == text
+        assert result.requested_path == requested
 
 
 def test_parse_stats_full_dump():

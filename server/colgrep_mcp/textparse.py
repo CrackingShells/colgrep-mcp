@@ -31,10 +31,13 @@ _STATUS_INDEX_RE = re.compile(r"^Index:\s*(?P<index_path>.+)$", re.MULTILINE)
 def parse_status(text: str, project: str) -> IndexStatus:
     """Parse `colgrep status <path>` output.
 
-    `project` is the path the caller invoked `status` with; it is used as a
-    fallback for `IndexStatus.project` if the text cannot be parsed (it
-    should never come to that for either known shape, but it keeps this
-    function total). `raw` always carries the untouched text.
+    `project` is the path the caller invoked `status` with; it always becomes
+    `IndexStatus.requested_path` verbatim (and is the fallback for `.project`
+    if the text cannot be parsed, though that should never happen for either
+    known shape). `.project` itself is the root colgrep *reports* in the
+    text, which can differ from `project` (R05 D3: colgrep folds a path into
+    the nearest already-registered ancestor project). `raw` always carries
+    the untouched text.
     """
     missing = _STATUS_MISSING_RE.search(text)
     if missing:
@@ -46,6 +49,7 @@ def parse_status(text: str, project: str) -> IndexStatus:
             units_indexed=None,
             search_count=None,
             raw=text,
+            requested_path=project,
         )
 
     project_m = _STATUS_PROJECT_RE.search(text)
@@ -59,6 +63,7 @@ def parse_status(text: str, project: str) -> IndexStatus:
         units_indexed=None,
         search_count=None,
         raw=text,
+        requested_path=project,
     )
 
 

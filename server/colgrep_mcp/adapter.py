@@ -7,7 +7,9 @@ themselves; they call this adapter and translate its exceptions into ToolError.
 from __future__ import annotations
 
 import asyncio
+import json
 import os
+import time
 from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -15,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import IndexBuildResult, IndexInfo, IndexStatus
+from .textparse import parse_index_summary, parse_settings, parse_stats, parse_status
 
 StderrCallback = Callable[[str], Awaitable[None]]
 
@@ -220,19 +223,69 @@ class ColgrepAdapter:
         return stdout.strip()
 
     async def search(self, req: SearchRequest) -> list[RawHit]:
-        raise NotImplementedError
+        for p in req.paths:
+            assert p.is_absolute(), f"search() requires absolute paths, got {p!r}"
+
+        argv = self.build_search_argv(req)
+        stdout, _stderr, _rc = await self._run(argv)
+
+        stripped = stdout.strip()
+        if not stripped:
+            # R03 D6: zero hits is `[]`, not empty stdout, but tolerate an
+            # empty stream the same way rather than treat it as a parse bug.
+            return []
+
+        try:
+            data = json.loads(stripped)
+        except json.JSONDecodeError as exc:
+            raise ColgrepParseError(f"colgrep search stdout was not valid JSON: {exc}", stdout) from exc
+
+        if not isinstance(data, list):
+            raise ColgrepParseError("colgrep search stdout was valid JSON but not a list", stdout)
+
+        return data
 
     async def status(self, path: Path) -> IndexStatus:
-        raise NotImplementedError
+        assert path.is_absolute(), f"status() requires an absolute path, got {path!r}"
+        stdout, _stderr, _rc = await self._run(["status", str(path)])
+        return parse_status(stdout, str(path))
 
     async def stats(self) -> list[IndexInfo]:
-        raise NotImplementedError
+        stdout, _stderr, _rc = await self._run(["--stats"])
+        return parse_stats(stdout)
 
     async def settings(self) -> dict[str, str]:
-        raise NotImplementedError
+        stdout, _stderr, _rc = await self._run(["settings"])
+        return parse_settings(stdout)
 
     async def init(self, path: Path, *, force_cpu: bool = False) -> IndexBuildResult:
-        raise NotImplementedError
+        assert path.is_absolute(), f"init() requires an absolute path, got {path!r}"
+
+        argv = ["init", "-y", *(["--force-cpu"] if force_cpu else []), str(path)]
+        start = time.monotonic()
+        _stdout, stderr, _rc = await self._run(argv, stream_stderr=True)
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+
+        # R05 D2: no per-file progress on stderr, just a banner and exactly
+        # one summary line (either shape) — take the first one found.
+        summary = next(
+            (s for s in (parse_index_summary(line) for line in stderr.splitlines()) if s is not None),
+            None,
+        )
+        log_tail = stderr.splitlines()[-20:]
+
+        return IndexBuildResult(
+            project=summary.root if summary is not None else str(path),
+            units_indexed=None,
+            elapsed_ms=elapsed_ms,
+            log_tail=log_tail,
+            added=summary.added if summary is not None else None,
+            changed=summary.changed if summary is not None else None,
+            deleted=summary.deleted if summary is not None else None,
+            unchanged=summary.unchanged if summary is not None else None,
+            up_to_date=summary.up_to_date if summary is not None else False,
+        )
 
     async def clear(self, path: Path) -> None:
-        raise NotImplementedError
+        assert path.is_absolute(), f"clear() requires an absolute path, got {path!r}"
+        await self._run(["clear", str(path)])
