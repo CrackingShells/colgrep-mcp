@@ -5,10 +5,10 @@
 - [ ] `build/colgrep_adapter` merged (`ColgrepAdapter.search` works against the fake binary)
 - [ ] `server/colgrep_mcp/tools_search.py` stub with `register(mcp)` exists
 **Success Gates**:
-- ⬜ [run] `cd server && uv run pytest -q tests/test_tools_search.py` passes
-- ⬜ [run] Through `Client(build())`, `search` returns `structured_content` validating as `SearchResult`, and its text content is ≤ `COLGREP_MCP_TEXT_BUDGET` chars even with a 2 000-hit fixture
-- ⬜ [run] `expand` on a `hit_id` from a `search` result returns the exact source lines `[line, end_line]` of the file; an id for a missing file yields a per-unit `error`, not a tool error
-- ⬜ [static] All three tools carry `ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)` and a `title`
+- ✅ [run] `cd server && uv run pytest -q tests/test_tools_search.py` passes
+- ✅ [run] Through `Client(build())`, `search` returns `structured_content` validating as `SearchResult`, and its text content is ≤ `COLGREP_MCP_TEXT_BUDGET` chars even with a 2 000-hit fixture
+- ✅ [run] `expand` on a `hit_id` from a `search` result returns the exact source lines `[line, end_line]` of the file; an id for a missing file yields a per-unit `error`, not a tool error
+- ✅ [static] All three tools carry `ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)` and a `title`
 **References**: [R01 §Tools](../../../../__reports__/colgrep_mcp/00-architecture_v0.md) — arguments, annotations; [R01 §Token-budget invariant](../../../../__reports__/colgrep_mcp/00-architecture_v0.md) — text shape and cap; [R01 §hit_id invariant](../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R05 D1, D5, D7](../../../../__reports__/colgrep_mcp/02-architecture_v1.md) — hits must be located via `locate_unit` (colgrep's line numbers are wrong), `limit=None` without `pattern` needs a note, `index_updated` comes from stderr; [R02 Tools table](../../../../__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md) — structured output adopt-now, tool naming guidance
 
 ## Step 1: Shared helpers — path resolution, hit conversion, text rendering
