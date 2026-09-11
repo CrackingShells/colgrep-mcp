@@ -120,6 +120,52 @@ async def test_search_zero_hits_is_not_an_error(settings_env, monkeypatch, tmp_p
     assert "no units matched" in r.content[0].text
 
 
+# --- input validation bounds (F12) ------------------------------------------
+
+
+async def test_search_rejects_non_positive_limit(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("search", {"query": "x", "limit": 0})
+
+    assert r.is_error is True
+    assert "limit" in r.content[0].text
+
+
+async def test_search_rejects_alpha_out_of_range(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("search", {"query": "x", "alpha": 1.5})
+
+    assert r.is_error is True
+    assert "alpha" in r.content[0].text
+
+
+async def test_search_rejects_negative_snippet_lines(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("search", {"query": "x", "snippet_lines": -1})
+
+    assert r.is_error is True
+    assert "snippet_lines" in r.content[0].text
+
+
+async def test_find_files_rejects_non_positive_limit(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("find_files", {"query": "x", "limit": -5})
+
+    assert r.is_error is True
+    assert "limit" in r.content[0].text
+
+
+async def test_expand_rejects_non_positive_max_lines(settings_env, tmp_path):
+    target = tmp_path / "code.py"
+    target.write_text("x = 1\n")
+
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("expand", {"hit_ids": [f"{target}:1-1"], "max_lines": 0})
+
+    assert r.is_error is True
+    assert "max_lines" in r.content[0].text
+
+
 # --- concurrency (R01 §Concurrency invariant) --------------------------------
 
 

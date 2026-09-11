@@ -414,15 +414,20 @@ def register(mcp: MCPServer) -> None:
             list[str] | None, Field(description="Exclude directories by name or glob, e.g. 'node_modules'.")
         ] = None,
         limit: Annotated[
-            int | None, Field(description="Max hits; pass null for exhaustive (exhaustive only works with `pattern` set).")
+            int | None,
+            Field(
+                ge=1,
+                description="Max hits; pass null for exhaustive (exhaustive only works with `pattern` set).",
+            ),
         ] = 15,
         code_only: Annotated[bool, Field(description="Only search code files, skipping docs/config.")] = False,
         semantic_only: Annotated[bool, Field(description="Disable keyword matching; pure semantic ranking.")] = False,
         alpha: Annotated[
-            float | None, Field(description="Hybrid balance from 0.0 (keyword) to 1.0 (semantic); default 0.6.")
+            float | None,
+            Field(ge=0.0, le=1.0, description="Hybrid balance from 0.0 (keyword) to 1.0 (semantic); default 0.6."),
         ] = None,
         snippet_lines: Annotated[
-            int, Field(description="Lines of code shown per hit in the text listing (default 6).")
+            int, Field(ge=0, description="Lines of code shown per hit in the text listing (default 6).")
         ] = 6,
         include_code: Annotated[
             bool, Field(description="Include each hit's full source in structured_content.")
@@ -494,7 +499,11 @@ def register(mcp: MCPServer) -> None:
             list[str] | None, Field(description="Exclude directories by name or glob, e.g. 'node_modules'.")
         ] = None,
         limit: Annotated[
-            int | None, Field(description="Max files; pass null for exhaustive (exhaustive only works with `pattern` set).")
+            int | None,
+            Field(
+                ge=1,
+                description="Max files; pass null for exhaustive (exhaustive only works with `pattern` set).",
+            ),
         ] = 15,
     ) -> CallToolResult:
         """Which files are about a topic — ranked, deduplicated file list instead of individual hits.
@@ -569,7 +578,9 @@ def register(mcp: MCPServer) -> None:
         hit_ids: Annotated[
             list[str], Field(description="hit_id values from a search/find_files result, e.g. '/repo/a.py:10-42'.")
         ],
-        max_lines: Annotated[int, Field(description="Cap on lines of source read per hit (default 200).")] = 200,
+        max_lines: Annotated[
+            int, Field(ge=1, description="Cap on lines of source read per hit (default 200).")
+        ] = 200,
     ) -> CallToolResult:
         """Read the full source of hits already returned by `search`/`find_files`.
 
