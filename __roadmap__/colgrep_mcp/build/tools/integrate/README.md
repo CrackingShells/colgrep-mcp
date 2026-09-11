@@ -17,10 +17,10 @@ Ship a runnable `colgrep-mcp` binary with documentation a human can install from
 ## Status
 ```mermaid
 graph TD
-    server_assembly[Server Assembly]:::planned
-    docs_readme[User Documentation]:::planned
+    server_assembly[Server Assembly]:::inprogress
+    docs_readme[User Documentation]:::inprogress
     verify[Verify]:::planned
-    error_taxonomy[Error and Hint Taxonomy]:::amendment
+    error_taxonomy[Error and Hint Taxonomy]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -31,10 +31,10 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `server_assembly.md` | 📄 Leaf Task | ⬜ Planned |
-| `docs_readme.md` | 📄 Leaf Task | ⬜ Planned |
+| `server_assembly.md` | 📄 Leaf Task | 🔄 In Progress |
+| `docs_readme.md` | 📄 Leaf Task | 🔄 In Progress |
 | `verify/` | 📁 Directory | ⬜ Planned |
-| `error_taxonomy.md` | 📄 Leaf Task | 🔵 Amendment |
+| `error_taxonomy.md` | 📄 Leaf Task | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
