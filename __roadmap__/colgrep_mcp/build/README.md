@@ -20,7 +20,7 @@ Deliver the foundations that every MCP handler needs: a fixture-tested adapter, 
 graph TD
     colgrep_adapter[colgrep Adapter]:::planned
     plugin_packaging[Plugin Packaging]:::inprogress
-    agent_skill[Agent Usage Skill]:::inprogress
+    agent_skill[Agent Usage Skill]:::done
     tools[Tools]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -34,7 +34,7 @@ graph TD
 |:-----|:-----|:-------|
 | `colgrep_adapter.md` | 📄 Leaf Task | ⬜ Planned |
 | `plugin_packaging.md` | 📄 Leaf Task | 🔄 In Progress |
-| `agent_skill.md` | 📄 Leaf Task | 🔄 In Progress |
+| `agent_skill.md` | 📄 Leaf Task | ✅ Done |
 | `tools/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
