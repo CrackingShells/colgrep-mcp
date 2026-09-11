@@ -38,7 +38,10 @@ def test_hit_from_raw_locates_true_lines_when_file_readable(tmp_path):
     target.write_text("x = 1\n\ndef parse_config(path: str) -> dict:\n    return {}\n")
     raw = _raw_hit(file=str(target), line=1, end_line=1)  # reported values are wrong (R05 D1)
 
-    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache={})
+    # `hit_from_raw` is pure/I/O-free (F11): the async caller (`_fill_file_cache`)
+    # is responsible for populating `file_cache` before this runs.
+    file_cache = {str(target): target.read_text()}
+    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
 
     assert (hit.line, hit.end_line, hit.location_verified) == (3, 4, True)
     assert hit.hit_id == f"{target}:3-4"
@@ -53,21 +56,17 @@ def test_hit_from_raw_falls_back_when_file_unreadable():
     assert hit.hit_id == "/nonexistent/src/config.py:7-9"
 
 
-def test_hit_from_raw_reads_each_file_at_most_once_via_cache(tmp_path):
-    target = tmp_path / "config.py"
-    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n")
-    raw = _raw_hit(file=str(target), line=99, end_line=99)
+def test_hit_from_raw_never_touches_disk_itself(tmp_path):
+    """F11: `hit_from_raw` must trust `file_cache` as given, never opening
+    the file itself — proven here by pointing `file` at a path that does not
+    exist on disk while pre-populating the cache with real text for it."""
+    missing_path = tmp_path / "never-created.py"
+    raw = _raw_hit(file=str(missing_path), line=1, end_line=1)
 
-    file_cache: dict[str, str] = {}
-    hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
-    assert str(target) in file_cache
-
-    # Mutate the cache in place: a second call must trust the cache, not re-read
-    # the (now-deleted) file from disk.
-    target.unlink()
-    file_cache[str(target)] = "def parse_config(path: str) -> dict:\n    return {}\n"
+    file_cache = {str(missing_path): "def parse_config(path: str) -> dict:\n    return {}\n"}
     hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
-    assert (hit.line, hit.location_verified) == (1, True)
+
+    assert (hit.line, hit.end_line, hit.location_verified) == (1, 2, True)
 
 
 def test_hit_from_raw_snippet_truncated_and_code_gated():
@@ -181,6 +180,22 @@ def test_render_search_text_backtracks_a_hit_so_the_note_stays_within_budget():
     assert "[2 more hits in structured_content; call expand(hit_ids=[...]) for code]" in text2
 
 
+def test_render_search_text_never_exceeds_budget_when_header_alone_fits():
+    """F5: a budget that comfortably fits the header alone, but not
+    header+continuation-note, must still never be exceeded — even though
+    zero hits are ever emitted (so the pre-existing `emitted == 0` escape
+    hatch used to append the note unconditionally)."""
+    hits = [_hit(1), _hit(2), _hit(3)]
+    result = _result(hits)
+    header = _search_header(result)
+    budget = len(header) + 5
+
+    text, capped = render_search_text(result, budget=budget)
+
+    assert capped is True
+    assert len(text) <= budget
+
+
 def test_render_search_text_zero_hits_renders_notes():
     result = _result([], notes=["no units matched; try dropping pattern/include or rephrasing"])
 
@@ -234,6 +249,19 @@ def test_render_files_text_uncapped():
     assert '2 files for "config parsing"' in text
     assert "/proj/f1.py  score=1.00  1 hits — unit_1" in text
     assert "/proj/f2.py  score=1.00  2 hits — unit_2" in text
+
+
+def test_render_files_text_never_exceeds_budget_when_header_alone_fits():
+    """F5, mirrored for `render_files_text` (same loop shape)."""
+    files = [_file_hit(1), _file_hit(2), _file_hit(3)]
+    result = _file_result(files)
+    header = _files_header(result)
+    budget = len(header) + 5
+
+    text, capped = render_files_text(result, budget=budget)
+
+    assert capped is True
+    assert len(text) <= budget
 
 
 def test_render_files_text_backtracks_a_file_so_the_note_stays_within_budget():

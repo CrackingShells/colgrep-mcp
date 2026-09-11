@@ -6,6 +6,7 @@ file with `search`/`status`/`stats`/`settings`/`init`/`clear`.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -203,6 +204,28 @@ async def test_colgrep_timeout_leaves_no_zombie(fake_colgrep_bin, monkeypatch):
     assert adapter._last_proc.returncode is not None
 
 
+async def test_cancel_leaves_no_zombie(fake_colgrep_bin, monkeypatch):
+    """F1: a client-cancelled tool call (not a timeout) must still reap the child.
+
+    `wait_for`'s *timeout* path was already handled (see
+    `test_colgrep_timeout_leaves_no_zombie` above); this exercises the other
+    abnormal exit, `asyncio.CancelledError`, which `except TimeoutError`
+    never catches.
+    """
+    monkeypatch.setenv("FAKE_COLGREP_SLEEP", "5")
+    adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=30)
+
+    task = asyncio.ensure_future(adapter.version())
+    await asyncio.sleep(0.2)
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert adapter._last_proc is not None
+    assert adapter._last_proc.returncode is not None
+
+
 async def test_with_stderr_shallow_copy(fake_colgrep_bin):
     seen: list[str] = []
 
@@ -254,7 +277,7 @@ async def test_search_raises_parse_error_on_bad_json(fake_colgrep_bin, monkeypat
 
 async def test_search_rejects_relative_paths(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.search(SearchRequest(query="x", paths=[Path("relative")]))
 
 
@@ -304,7 +327,7 @@ async def test_status_not_indexed(fake_colgrep_bin, tmp_path, monkeypatch):
 
 async def test_status_requires_absolute_path(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.status(Path("relative/path"))
 
 
@@ -372,7 +395,7 @@ async def test_init_streams_stderr_to_on_stderr(fake_colgrep_bin, tmp_path):
 
 async def test_init_requires_absolute_path(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.init(Path("relative/path"))
 
 
@@ -388,7 +411,7 @@ async def test_clear_via_fake_binary(fake_colgrep_bin, tmp_path):
 
 async def test_clear_requires_absolute_path(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.clear(Path("relative/path"))
 
 

@@ -4,14 +4,19 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import threading
+from pathlib import Path
 
 import pytest
 from mcp import Client
 
 from colgrep_mcp.errors import HINTS, Code
+from colgrep_mcp.locks import project_lock
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
+from colgrep_mcp.tools_search import _fill_file_cache
 
 pytestmark = pytest.mark.anyio
 
@@ -115,6 +120,127 @@ async def test_search_zero_hits_is_not_an_error(settings_env, monkeypatch, tmp_p
     assert "no units matched" in r.content[0].text
 
 
+# --- input validation bounds (F12) ------------------------------------------
+
+
+async def test_search_rejects_non_positive_limit(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("search", {"query": "x", "limit": 0})
+
+    assert r.is_error is True
+    assert "limit" in r.content[0].text
+
+
+async def test_search_rejects_alpha_out_of_range(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("search", {"query": "x", "alpha": 1.5})
+
+    assert r.is_error is True
+    assert "alpha" in r.content[0].text
+
+
+async def test_search_rejects_negative_snippet_lines(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("search", {"query": "x", "snippet_lines": -1})
+
+    assert r.is_error is True
+    assert "snippet_lines" in r.content[0].text
+
+
+async def test_find_files_rejects_non_positive_limit(settings_env):
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("find_files", {"query": "x", "limit": -5})
+
+    assert r.is_error is True
+    assert "limit" in r.content[0].text
+
+
+async def test_expand_rejects_non_positive_max_lines(settings_env, tmp_path):
+    target = tmp_path / "code.py"
+    target.write_text("x = 1\n")
+
+    async with Client(build(), raise_exceptions=False) as c:
+        r = await c.call_tool("expand", {"hit_ids": [f"{target}:1-1"], "max_lines": 0})
+
+    assert r.is_error is True
+    assert "max_lines" in r.content[0].text
+
+
+async def test_search_resolves_relative_unit_file_against_first_search_path(settings_env, tmp_path, monkeypatch):
+    """F13: colgrep is documented to always emit an absolute `unit.file`, but
+    if it ever emitted a relative one, `hit_id` must still be built from an
+    absolute path — resolved against the first search path — rather than a
+    relative `hit_id` that `expand` would then resolve against the server
+    process's own cwd instead of the searched project."""
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "mod.py").write_text("def real_func():\n    return 42\n")
+
+    fixture = [
+        {
+            "unit": {
+                "name": "real_func",
+                "qualified_name": "mod.py::real_func",
+                "file": "mod.py",  # relative — not what colgrep is documented to emit, but defend anyway
+                "line": 1,
+                "end_line": 1,
+                "language": "python",
+                "unit_type": "function",
+                "signature": "def real_func()",
+                "code": "def real_func():\n    return 42",
+            },
+            "score": 1.0,
+        }
+    ]
+    fixture_path = tmp_path / "hits.json"
+    fixture_path.write_text(json.dumps(fixture))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "real func", "paths": [str(proj)]})
+        hit = r.structured_content["hits"][0]
+        assert Path(hit["file"]).is_absolute()
+
+        expand_r = await c.call_tool("expand", {"hit_ids": [hit["hit_id"]]})
+
+    unit = expand_r.structured_content["units"][0]
+    assert unit["error"] is None
+    assert "real_func" in (unit["code"] or "")
+
+
+# --- concurrency (R01 §Concurrency invariant) --------------------------------
+
+
+async def test_search_locks_every_resolved_path_not_only_the_first(settings_env, tmp_path, monkeypatch):
+    """F6: a multi-path search must serialise against *every* project it
+    touches, not only `resolved[0]` — otherwise a concurrent `index_build`
+    (or another search) on the second path races the in-flight search."""
+    monkeypatch.setenv("FAKE_COLGREP_SLEEP", "0.3")
+    proj_a = tmp_path / "a"
+    proj_a.mkdir()
+    proj_b = tmp_path / "b"
+    proj_b.mkdir()
+
+    async with Client(build(), raise_exceptions=True) as c:
+        search_task = asyncio.ensure_future(
+            c.call_tool("search", {"query": "x", "paths": [str(proj_a), str(proj_b)]})
+        )
+        await asyncio.sleep(0.05)  # let _do_search acquire its lock(s) and start the slow adapter call
+
+        async def _acquire_and_release(path):
+            async with project_lock(path):
+                pass
+
+        # The second path must be locked too — acquiring it directly here,
+        # while the search above is still in flight, must block.
+        with pytest.raises(TimeoutError):
+            await asyncio.wait_for(_acquire_and_release(proj_b.resolve()), timeout=0.1)
+
+        result = await search_task
+
+    assert not result.is_error
+
+
 # --- find_files ---------------------------------------------------------
 
 
@@ -133,6 +259,111 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
     assert by_file["/tmp/fake-corpus/README.md"]["hits"] == 1
     # Score-descending: config.py's best hit outranks README's only hit.
     assert [f["file"] for f in files][0] == "/tmp/fake-corpus/src/config.py"
+
+
+# --- off-loop file I/O (F11) --------------------------------------------
+
+
+def _spy_on_read_text(monkeypatch) -> list[int]:
+    """Record the thread identity `Path.read_text` actually runs on."""
+    thread_ids: list[int] = []
+    real_read_text = Path.read_text
+
+    def spy(self: Path, *args: object, **kwargs: object) -> str:
+        thread_ids.append(threading.get_ident())
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", spy)
+    return thread_ids
+
+
+async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
+    """F11: a hit's file is read via `asyncio.to_thread`, not directly on the
+    event loop thread that is also running the rest of the server."""
+    target = tmp_path / "real_source.py"
+    target.write_text("def real_func():\n    return 42\n")
+
+    fixture = [
+        {
+            "unit": {
+                "name": "real_func",
+                "qualified_name": "real_source.py::real_func",
+                "file": str(target),
+                "line": 1,
+                "end_line": 1,
+                "language": "python",
+                "unit_type": "function",
+                "signature": "def real_func()",
+                "code": "def real_func():\n    return 42",
+            },
+            "score": 1.0,
+        }
+    ]
+    fixture_path = tmp_path / "hits.json"
+    fixture_path.write_text(json.dumps(fixture))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    main_thread_id = threading.get_ident()
+    read_thread_ids = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "real func"})
+
+    assert not r.is_error
+    assert r.structured_content["hits"][0]["location_verified"] is True
+    assert read_thread_ids  # the file was actually read
+    assert all(tid != main_thread_id for tid in read_thread_ids)
+
+
+async def test_fill_file_cache_reads_each_distinct_file_at_most_once(tmp_path, monkeypatch):
+    """F11: the caching behaviour that used to live inside `hit_from_raw`
+    (read each file at most once per call) now belongs to `_fill_file_cache`,
+    the async helper that populates `file_cache` before `hit_from_raw` runs."""
+    target = tmp_path / "config.py"
+    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n")
+
+    read_calls: list[Path] = []
+    real_read_text = Path.read_text
+
+    def spy(self: Path, *args: object, **kwargs: object) -> str:
+        read_calls.append(self)
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", spy)
+
+    raw_hits = [
+        {"unit": {"file": str(target)}, "score": 1.0},
+        {"unit": {"file": str(target)}, "score": 0.5},  # same file, second hit
+    ]
+    file_cache: dict[str, str] = {}
+    await _fill_file_cache(raw_hits, file_cache)
+
+    assert file_cache[str(target)] == "def parse_config(path: str) -> dict:\n    return {}\n"
+    assert len(read_calls) == 1  # only one actual read for two hits on the same file
+
+    # Mutate the cache in place: a second call must trust it, not re-read.
+    file_cache[str(target)] = "mutated"
+    await _fill_file_cache(raw_hits, file_cache)
+    assert len(read_calls) == 1
+    assert file_cache[str(target)] == "mutated"
+
+
+async def test_expand_reads_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
+    """F11, mirrored for `expand`."""
+    target = tmp_path / "code.py"
+    target.write_text("x = 1\ny = 2\ndef f():\n    return 1\nz = 3\n")
+    hit_id = f"{target}:3-4"
+
+    main_thread_id = threading.get_ident()
+    read_thread_ids = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": [hit_id]})
+
+    assert not r.is_error
+    assert r.structured_content["units"][0]["code"] == "def f():\n    return 1"
+    assert read_thread_ids
+    assert all(tid != main_thread_id for tid in read_thread_ids)
 
 
 # --- expand ---------------------------------------------------------------
