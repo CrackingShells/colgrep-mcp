@@ -142,3 +142,13 @@ widen `paths`.
   a large explicit `limit` instead.
 - Do not skip `index_status`/`index_build` on a repository you know is large
   and has never been searched, then be surprised a `search` call times out.
+
+## Codes
+
+Every failure and every degraded success carries a stable `[CODE]` prefix,
+not prose to parse: a raised error reads `[CODE] <detail> Next: <hint>`, and
+a `SearchResult.notes` entry reads `[CODE] <detail-or-hint>`. Match on the
+code, not the sentence around it — the wording may change, the code won't.
+
+The full table of codes and their hints is served at `colgrep://errors`;
+read it once per session rather than re-deriving what each code means.

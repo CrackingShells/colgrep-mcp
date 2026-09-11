@@ -23,21 +23,11 @@ from mcp.server import MCPServer
 from mcp.server.mcpserver import Context, ResourceSecurity
 from mcp.server.mcpserver.exceptions import ResourceError
 
-from .adapter import (
-    ColgrepAdapter,
-    ColgrepError,
-    ColgrepFailed,
-    ColgrepNotFound,
-    ColgrepParseError,
-    ColgrepTimeout,
-)
+from .adapter import ColgrepAdapter, ColgrepError
 from .config import Settings
+from .errors import HINTS, Code, from_adapter_error
 from .models import IndexList
 from .server import get_adapter
-
-_BINARY_MISSING_HINT = (
-    "colgrep not found on PATH. Install: cargo install colgrep — or set COLGREP_MCP_BINARY"
-)
 
 
 def _standalone_adapter() -> ColgrepAdapter:
@@ -47,17 +37,8 @@ def _standalone_adapter() -> ColgrepAdapter:
 
 
 def _map_adapter_error(exc: ColgrepError) -> ResourceError:
-    """Same wording the tool layer uses for `ToolError` (R01 §Error model)."""
-    if isinstance(exc, ColgrepNotFound):
-        return ResourceError(_BINARY_MISSING_HINT)
-    if isinstance(exc, ColgrepFailed):
-        tail = "\n".join(exc.stderr_tail.splitlines()[-20:])
-        return ResourceError(f"colgrep exited {exc.returncode}: {tail}\nargv: {' '.join(exc.argv)}")
-    if isinstance(exc, ColgrepTimeout):
-        return ResourceError(f"{exc} — for a cold repository, run `index_build` first.")
-    if isinstance(exc, ColgrepParseError):
-        return ResourceError(f"colgrep output could not be parsed: {exc}")
-    return ResourceError(str(exc))  # pragma: no cover - defensive, no other ColgrepError subclass
+    """Same coded `[CODE] ... Next: ...` wording the tool layer uses (`errors.from_adapter_error`)."""
+    return ResourceError(str(from_adapter_error(exc)))
 
 
 def _normalize_status_path(path: str) -> Path:
@@ -106,6 +87,27 @@ async def status_resource(path: str, ctx: Context) -> dict[str, Any]:
     return status.model_dump()
 
 
+def errors_resource() -> str:
+    """`colgrep://errors` — every coded failure/degradation and its hint, rendered from `HINTS`.
+
+    An agent that only ever sees the `[CODE]` prefix (a `ToolError` message or
+    a `SearchResult` note) can look the code up here for the full "next
+    usage pattern" sentence without re-reading `guide.md` end to end.
+    """
+    lines = [
+        "# colgrep-mcp error and hint codes",
+        "",
+        "Every `ToolError` this server raises starts with one of these codes and",
+        "ends with `Next: <hint>`; every degraded-success note in `SearchResult.notes`",
+        "starts with one too.",
+        "",
+        "| Code | Hint |",
+        "|:--|:--|",
+    ]
+    lines += [f"| `{code}` | {HINTS[code]} |" for code in Code]
+    return "\n".join(lines) + "\n"
+
+
 def register(mcp: MCPServer) -> None:
     """Attach this module's handlers to the server."""
     mcp.resource("colgrep://guide", mime_type="text/markdown", title="colgrep usage guide")(guide)
@@ -118,3 +120,6 @@ def register(mcp: MCPServer) -> None:
             reject_path_traversal=True, reject_absolute_paths=False, reject_null_bytes=True
         ),
     )(status_resource)
+    mcp.resource("colgrep://errors", mime_type="text/markdown", title="colgrep-mcp error and hint codes")(
+        errors_resource
+    )
