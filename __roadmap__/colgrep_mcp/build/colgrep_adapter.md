@@ -5,10 +5,10 @@
 - [ ] `scaffold_package` merged: `server/colgrep_mcp/adapter.py` stubs and `tests/fake_colgrep.py` exist
 - [ ] R03 merged: `__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md` and `evidence/colgrep/*` exist
 **Success Gates**:
-- ⬜ [run] `cd server && uv run pytest -q tests/test_textparse.py tests/test_adapter.py` passes
-- ⬜ [static] `textparse.py` is tested against every `status`/`--stats`/`settings` sample in `__reports__/colgrep_mcp/evidence/colgrep/`
-- ⬜ [run] `build_search_argv` covers every `SearchRequest` field (a parametrised test asserts each flag appears exactly when set)
-- ⬜ [run] A search through the fake binary returns `list[RawHit]` whose first element has keys `unit` and `score`; a forced non-zero exit raises `ColgrepFailed` with `returncode` and `stderr_tail`; `FAKE_COLGREP_SLEEP=5` with `timeout_s=0.5` raises `ColgrepTimeout` and leaves no zombie process
+- ✅ [run] `cd server && uv run pytest -q tests/test_textparse.py tests/test_adapter.py` passes
+- ✅ [static] `textparse.py` is tested against every `status`/`--stats`/`settings` sample in `__reports__/colgrep_mcp/evidence/colgrep/`
+- ✅ [run] `build_search_argv` covers every `SearchRequest` field (a parametrised test asserts each flag appears exactly when set)
+- ✅ [run] A search through the fake binary returns `list[RawHit]` whose first element has keys `unit` and `score`; a forced non-zero exit raises `ColgrepFailed` with `returncode` and `stderr_tail`; `FAKE_COLGREP_SLEEP=5` with `timeout_s=0.5` raises `ColgrepTimeout` and leaves no zombie process
 **References**: [R01 §Adapter contract](../../../__reports__/colgrep_mcp/00-architecture_v0.md) — method signatures and exception classes; [R05 Deltas D1–D11](../../../__reports__/colgrep_mcp/02-architecture_v1.md) — the measured corrections this leaf must implement (unit location by code match, summary-line progress, project root); [R03 §Probe Results](../../../__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md) — observed exit codes, stderr shapes, text formats
 
 ## Step 1: Text parsers with fixture tests
