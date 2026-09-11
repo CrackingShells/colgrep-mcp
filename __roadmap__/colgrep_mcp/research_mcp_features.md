@@ -5,9 +5,9 @@
 - [ ] context7 MCP server reachable (library id `/websites/py_sdk_modelcontextprotocol_io_v2`)
 - [ ] Web access to modelcontextprotocol.io specification pages
 **Success Gates**:
-- ⬜ [static] Report exists at `__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md` following the `findings` report type (front matter, Headline Result, Results Tables, Observations, Steering Questions, Pointers)
-- ⬜ [static] Matrix rows cover at minimum: tools (annotations, title, icons, structured output/outputSchema, input-required/elicitation-in-result), resources (static, templates, subscriptions, list_changed, mime types, embedded resources in tool results), prompts (arguments, completions, embedded resources), logging (setLevel, notifications), progress, cancellation, pagination, ping, roots, sampling (incl. sampling.tools), elicitation (form + url), tasks (experimental, removed in SDK v2), server instructions, capability negotiation, protocol-version behaviour, transports (stdio, streamable-http, stateless), auth
-- ⬜ [static] Every row has an explicit Decision column value in {adopt-now, adopt-guarded, defer, reject} and a rationale that names the agent-facing benefit or the blocker
+- ✅ [static] Report exists at `__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md` following the `findings` report type (front matter, Headline Result, Results Tables, Observations, Steering Questions, Pointers)
+- ✅ [static] Matrix rows cover at minimum: tools (annotations, title, icons, structured output/outputSchema, input-required/elicitation-in-result), resources (static, templates, subscriptions, list_changed, mime types, embedded resources in tool results), prompts (arguments, completions, embedded resources), logging (setLevel, notifications), progress, cancellation, pagination, ping, roots, sampling (incl. sampling.tools), elicitation (form + url), tasks (experimental, removed in SDK v2), server instructions, capability negotiation, protocol-version behaviour, transports (stdio, streamable-http, stateless), auth
+- ✅ [static] Every row has an explicit Decision column value in {adopt-now, adopt-guarded, defer, reject} and a rationale that names the agent-facing benefit or the blocker
 **References**: [R01 §Contracts](../../__reports__/colgrep_mcp/00-architecture_v0.md) — the feature set the architecture already assumes; confirm or challenge it
 
 ## Step 1: Build and write the feature matrix

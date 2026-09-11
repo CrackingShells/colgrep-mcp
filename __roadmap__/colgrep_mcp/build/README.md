@@ -18,8 +18,8 @@ Deliver the foundations that every MCP handler needs: a fixture-tested adapter, 
 ## Status
 ```mermaid
 graph TD
-    colgrep_adapter[colgrep Adapter]:::planned
-    plugin_packaging[Plugin Packaging]:::inprogress
+    colgrep_adapter[colgrep Adapter]:::inprogress
+    plugin_packaging[Plugin Packaging]:::done
     agent_skill[Agent Usage Skill]:::done
     tools[Tools]:::planned
     classDef done       fill:#166534,color:#bbf7d0
@@ -32,8 +32,8 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `colgrep_adapter.md` | 📄 Leaf Task | ⬜ Planned |
-| `plugin_packaging.md` | 📄 Leaf Task | 🔄 In Progress |
+| `colgrep_adapter.md` | 📄 Leaf Task | 🔄 In Progress |
+| `plugin_packaging.md` | 📄 Leaf Task | ✅ Done |
 | `agent_skill.md` | 📄 Leaf Task | ✅ Done |
 | `tools/` | 📁 Directory | ⬜ Planned |
 

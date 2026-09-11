@@ -4,9 +4,9 @@
 **Pre-conditions**:
 - [ ] `scaffold_package` merged (`server/pyproject.toml` declares the `colgrep-mcp` script)
 **Success Gates**:
-- ⬜ [run] `claude plugin validate .` prints `Validation passed` (warnings allowed, none about missing manifest fields)
-- ⬜ [run] `cd server && uv run pytest -q tests/test_manifests.py` passes: every manifest is valid JSON, versions all equal `colgrep_mcp.__version__`, Agent Plugins manifests carry the exact `$schema` URLs and only the ten permitted top-level fields, `mcp.json` server entry has `type: "stdio"`, `.mcp.json`/`mcp.json` reference the same command and args modulo `${CLAUDE_PLUGIN_ROOT}` ↔ `${PLUGIN_ROOT}`
-- ⬜ [behavioral] `claude --plugin-dir . -p "list your MCP tools"` (or `claude mcp list` inside a session started with `--plugin-dir .`) shows the `colgrep` server connected — record the exact command and output in the commit body; if it cannot be run non-interactively, say so
+- ✅ [run] `claude plugin validate .` prints `Validation passed` (warnings allowed, none about missing manifest fields)
+- ✅ [run] `cd server && uv run pytest -q tests/test_manifests.py` passes: every manifest is valid JSON, versions all equal `colgrep_mcp.__version__`, Agent Plugins manifests carry the exact `$schema` URLs and only the ten permitted top-level fields, `mcp.json` server entry has `type: "stdio"`, `.mcp.json`/`mcp.json` reference the same command and args modulo `${CLAUDE_PLUGIN_ROOT}` ↔ `${PLUGIN_ROOT}`
+- ✅ [behavioral] `claude --plugin-dir . -p "list your MCP tools"` (or `claude mcp list` inside a session started with `--plugin-dir .`) shows the `colgrep` server connected — record the exact command and output in the commit body; if it cannot be run non-interactively, say so
 **References**: [R01 §Packaging layout](../../../__reports__/colgrep_mcp/00-architecture_v0.md) — file list and launch command; Agent Plugins spec `https://agent-plugins.org/specification` (v1.0.0) — permitted fields, `${PLUGIN_ROOT}`/`${PLUGIN_DATA}` expansion rules; Claude Code plugins reference `https://code.claude.com/docs/en/plugins-reference` — `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_PROJECT_DIR}`; the user's own Codex/Claude dual plugin at `/Users/me/.claude/plugins/marketplaces/cell-marketplace/plugins/cell/` — mirror its `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` shapes
 
 ## Step 1: Author the manifests and MCP configs
