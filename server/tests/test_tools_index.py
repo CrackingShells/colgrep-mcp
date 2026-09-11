@@ -281,6 +281,29 @@ async def test_index_clear_elicitation_accept_runs_clear(settings_env, tmp_path,
     assert "clear" in argv
 
 
+async def test_index_clear_elicitation_failure_raises_confirmation_required(settings_env, tmp_path, monkeypatch):
+    """F8: `ctx.elicit()` itself raising (e.g. `NoBackChannelError`) is not
+    the same as the user declining — it must surface the same
+    `CONFIRMATION_REQUIRED` coded refusal as "no elicitation capability",
+    not the silent `cleared=False` "declined" text a real decline gets."""
+    argv_file = tmp_path / "argv.json"
+    monkeypatch.setenv("FAKE_COLGREP_ARGV_FILE", str(argv_file))
+
+    async def failing(context: object, params: ElicitRequestParams) -> ElicitResult:
+        raise RuntimeError("elicitation back channel exploded")
+
+    async with Client(build(), raise_exceptions=True, elicitation_callback=failing, mode="legacy") as client:
+        result = await client.call_tool("index_clear", {"path": str(tmp_path)})
+
+    assert result.is_error
+    text = result.content[0].text
+    assert f"[{Code.CONFIRMATION_REQUIRED}] " in text
+    assert text.endswith(f"Next: {HINTS[Code.CONFIRMATION_REQUIRED]}")
+    argv = json.loads(argv_file.read_text())
+    # only `status` ran; `clear` must not have.
+    assert "clear" not in argv
+
+
 async def test_index_clear_elicitation_decline_does_not_clear(settings_env, tmp_path, monkeypatch):
     argv_file = tmp_path / "argv.json"
     monkeypatch.setenv("FAKE_COLGREP_ARGV_FILE", str(argv_file))

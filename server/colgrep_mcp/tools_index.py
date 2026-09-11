@@ -298,16 +298,23 @@ async def index_clear(
         if not has_elicitation:
             raise tool_error(Code.CONFIRMATION_REQUIRED, f"Refusing to delete the index for {resolved} without confirmation.")
 
-        res = None
         try:
             res = await ctx.elicit(
                 f"Delete the colgrep index for {resolved}? This cannot be undone.",
                 schema=Confirm,
             )
-        except Exception:  # noqa: BLE001 - a failed elicitation is "no elicitation", not a crash
-            res = None
+        except Exception as exc:  # noqa: BLE001 - the elicitation call itself failing
+            # (e.g. `NoBackChannelError`) is a technical failure, not a user
+            # decision — it must not be collapsed into the same silent
+            # `cleared=False` "declined" response a real decline gets.
+            # Surface the same coded refusal as "no elicitation capability".
+            raise tool_error(
+                Code.CONFIRMATION_REQUIRED,
+                f"Refusing to delete the index for {resolved} without confirmation "
+                f"(elicitation failed: {exc}).",
+            ) from exc
 
-        if res is None or res.action != "accept" or not res.data.confirm:
+        if res.action != "accept" or not res.data.confirm:
             result = IndexClearResult(project=str(resolved), cleared=False)
             return CallToolResult(
                 content=[TextContent(type="text", text="Not cleared (declined)")],
