@@ -4,10 +4,10 @@
 **Pre-conditions**:
 - [ ] `build/tools/search_tools`, `index_tools`, `resources_prompts` merged; `cd server && uv run pytest -q` passes on the milestone branch
 **Success Gates**:
-- ⬜ [run] `cd server && uv run pytest -q` passes, including `tests/test_stdio.py` which spawns `uv run colgrep-mcp` with `COLGREP_MCP_BINARY=<fake>` via `mcp.client` stdio transport, initializes, lists 8 tools / 3 resources / 1 template / 3 prompts and calls `search`
-- ⬜ [static] Exactly one `ColgrepAdapter` construction site (in `server.py` lifespan); `tools_search.py`, `tools_index.py`, `resources.py`, `prompts.py` obtain it through `get_adapter(ctx)`; no `# TODO(server_assembly)` markers remain
-- ⬜ [run] `cd server && uv run colgrep-mcp --help` exits 0 and documents `--transport`, `--host`, `--port`
-- ⬜ [run] `cd server && COLGREP_MCP_BINARY=/nonexistent uv run python -c "from colgrep_mcp.server import build; build()"` exits 0 (a missing binary must not prevent startup — `doctor` reports it)
+- ✅ [run] `cd server && uv run pytest -q` passes, including `tests/test_stdio.py` which spawns `uv run colgrep-mcp` with `COLGREP_MCP_BINARY=<fake>` via `mcp.client` stdio transport, initializes, lists 8 tools / 3 resources / 1 template / 3 prompts and calls `search`
+- ✅ [static] Exactly one `ColgrepAdapter` construction site (in `server.py` lifespan); `tools_search.py`, `tools_index.py`, `resources.py`, `prompts.py` obtain it through `get_adapter(ctx)`; no `# TODO(server_assembly)` markers remain
+- ✅ [run] `cd server && uv run colgrep-mcp --help` exits 0 and documents `--transport`, `--host`, `--port`
+- ✅ [run] `cd server && COLGREP_MCP_BINARY=/nonexistent uv run python -c "from colgrep_mcp.server import build; build()"` exits 0 (a missing binary must not prevent startup — `doctor` reports it)
 **References**: [R01 §Server metadata](../../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R01 §Configuration](../../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R01 §Concurrency invariant](../../../../../__reports__/colgrep_mcp/00-architecture_v0.md)
 
 ## Step 1: Lifespan-owned adapter and de-duplicated helpers
