@@ -181,6 +181,22 @@ def test_render_search_text_backtracks_a_hit_so_the_note_stays_within_budget():
     assert "[2 more hits in structured_content; call expand(hit_ids=[...]) for code]" in text2
 
 
+def test_render_search_text_never_exceeds_budget_when_header_alone_fits():
+    """F5: a budget that comfortably fits the header alone, but not
+    header+continuation-note, must still never be exceeded — even though
+    zero hits are ever emitted (so the pre-existing `emitted == 0` escape
+    hatch used to append the note unconditionally)."""
+    hits = [_hit(1), _hit(2), _hit(3)]
+    result = _result(hits)
+    header = _search_header(result)
+    budget = len(header) + 5
+
+    text, capped = render_search_text(result, budget=budget)
+
+    assert capped is True
+    assert len(text) <= budget
+
+
 def test_render_search_text_zero_hits_renders_notes():
     result = _result([], notes=["no units matched; try dropping pattern/include or rephrasing"])
 
@@ -234,6 +250,19 @@ def test_render_files_text_uncapped():
     assert '2 files for "config parsing"' in text
     assert "/proj/f1.py  score=1.00  1 hits — unit_1" in text
     assert "/proj/f2.py  score=1.00  2 hits — unit_2" in text
+
+
+def test_render_files_text_never_exceeds_budget_when_header_alone_fits():
+    """F5, mirrored for `render_files_text` (same loop shape)."""
+    files = [_file_hit(1), _file_hit(2), _file_hit(3)]
+    result = _file_result(files)
+    header = _files_header(result)
+    budget = len(header) + 5
+
+    text, capped = render_files_text(result, budget=budget)
+
+    assert capped is True
+    assert len(text) <= budget
 
 
 def test_render_files_text_backtracks_a_file_so_the_note_stays_within_budget():
