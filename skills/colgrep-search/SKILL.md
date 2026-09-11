@@ -14,11 +14,11 @@ search is good at.
 
 | Question type | Tool | Key arguments |
 |:--|:--|:--|
-| "How/where is X implemented?" | `search` | `query` = behaviour in plain language; omit `limit` if you need all matches, else `limit=10-25` |
+| "How/where is X implemented?" | `search` | `query` = behaviour in plain language; `limit=10-25` while exploring, a large explicit `limit` (e.g. 50) for a broad sweep |
 | "I know the identifier/string" | `search` | `query` (behaviour) + `pattern` (the identifier, regex) — hybrid narrowing |
 | "Which files touch X?" | `find_files` | `query`; optionally `pattern`, `include` |
 | "Show me the full source of this hit" | `expand` | `hit_ids=[...]` from a prior result |
-| "Every call site before I rename/change X" | `search` | `pattern="<symbol>"`, `query`="uses of <symbol>", `limit=None` (exhaustive) |
+| "Every call site before I rename/change X" | `search` | `pattern="<symbol>"`, `query`="uses of <symbol>", `limit=None` (exhaustive — only because `pattern` is set; without `pattern` colgrep caps at its default 15) |
 | "Does this repo already do X?" | `search` | `query` = the feature in plain language, broad `paths`, `limit=15-25` |
 | "Is this repo indexed? Will search be slow?" | `index_status` | `path` |
 | "This repo is large and cold" | `index_build` then `search` | `path` |
@@ -38,8 +38,9 @@ Knowledge-acquisition loop, not a one-shot lookup: run one broad `search`
 listing; if the first pass didn't land on the real implementation, run one
 or two narrower hybrid searches adding `pattern` for an identifier you now
 know; `expand` at most a handful of the hits that actually answer the
-question; answer citing `file:line`. Never shell grep instead of the first
-broad search.
+question; answer citing `file:line` from hits whose `location_verified` is
+true (cite the file only when it is false). Never shell grep instead of the
+first broad search.
 
 Worked example — "how does this repo retry flaky network calls?":
 
@@ -79,7 +80,9 @@ Worked example — "where is the `RateLimiter` class defined and used?":
 
 Before editing a symbol: `search` for its callers/consumers with `pattern`
 set to the exact symbol and `query` describing "uses of <symbol>",
-`limit=None` so nothing is dropped by rank; then `find_files` with the same
+`limit=None` so nothing is dropped by rank (exhaustive only because
+`pattern` is set — a pure semantic query with no `limit` returns colgrep's
+default 15); then `find_files` with the same
 `pattern` scoped toward test directories to find the tests that must also
 change. Report every affected file, not just the top-ranked ones — impact
 analysis needs completeness, not a top-k sample.
