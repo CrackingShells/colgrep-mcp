@@ -19,7 +19,7 @@ Ship a runnable `colgrep-mcp` binary with documentation a human can install from
 graph TD
     server_assembly[Server Assembly]:::done
     docs_readme[User Documentation]:::done
-    verify[Verify]:::planned
+    verify[Verify]:::inprogress
     error_taxonomy[Error and Hint Taxonomy]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -33,7 +33,7 @@ graph TD
 |:-----|:-----|:-------|
 | `server_assembly.md` | 📄 Leaf Task | ✅ Done |
 | `docs_readme.md` | 📄 Leaf Task | ✅ Done |
-| `verify/` | 📁 Directory | ⬜ Planned |
+| `verify/` | 📁 Directory | 🔄 In Progress |
 | `error_taxonomy.md` | 📄 Leaf Task | 🔄 In Progress |
 
 ## Amendment Log
