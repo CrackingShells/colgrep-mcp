@@ -5,10 +5,18 @@ Emulates the subset of colgrep 1.6 surface the adapter drives:
   --version | --stats | settings | status PATH | init [-y] PATH | clear PATH
   [search] [--json] [-k N] [-e PAT] [flags...] QUERY [PATH...]
 Environment knobs:
-  FAKE_COLGREP_EXIT   force this exit code (stderr gets "forced failure")
-  FAKE_COLGREP_HITS   path to a JSON fixture (default: fixtures/hits_small.json)
-  FAKE_COLGREP_SLEEP  seconds to sleep before answering (timeout tests)
-  FAKE_COLGREP_INDEXED  "0" → `status` reports no index
+  FAKE_COLGREP_EXIT       force this exit code (stderr gets "forced failure")
+  FAKE_COLGREP_HITS       path to a JSON fixture (default: fixtures/hits_small.json)
+  FAKE_COLGREP_SLEEP      seconds to sleep before answering (timeout tests)
+  FAKE_COLGREP_INDEXED    "0" -> `status` reports no index
+  FAKE_COLGREP_ARGV_FILE  path to write argv (as a JSON list) to, for adapter tests
+                          that need to assert exactly what was executed
+  FAKE_COLGREP_UPTODATE   "1" -> `init` emits the "Index is up to date" stderr
+                          line (R05 D2) instead of the cold-build summary
+  FAKE_COLGREP_RAW_STDOUT path to a file printed verbatim to stdout (exit 0)
+                          for a search call, bypassing FAKE_COLGREP_HITS
+                          entirely — used to simulate malformed/non-JSON
+                          output for ColgrepParseError tests
 """
 import json
 import os
@@ -21,6 +29,9 @@ MODEL = "lightonai/LateOn-Code-edge"
 
 
 def main(argv):
+    if os.environ.get("FAKE_COLGREP_ARGV_FILE"):
+        Path(os.environ["FAKE_COLGREP_ARGV_FILE"]).write_text(json.dumps(argv))
+
     if os.environ.get("FAKE_COLGREP_SLEEP"):
         time.sleep(float(os.environ["FAKE_COLGREP_SLEEP"]))
     forced = os.environ.get("FAKE_COLGREP_EXIT")
@@ -49,16 +60,27 @@ def main(argv):
             print(f"Project: {path}\nModel:   {MODEL}\nIndex:   /tmp/fake-indices/fake-corpus-deadbeef\n\nRun any search to update the index, or `colgrep clear` to rebuild from scratch.")
         return 0
     if sub == "init":
-        for i in range(1, 4):
-            sys.stderr.write(f"Indexing {i}/3 files\n")
+        path = next((a for a in args[1:] if not a.startswith("-")), ".")
+        if os.environ.get("FAKE_COLGREP_UPTODATE") == "1":
+            sys.stderr.write(f"Index is up to date for {path} (156 files)\n")
+        else:
+            # Realistic cold-init stderr shape (R05 D2 / evidence/colgrep/01_cold_init.stderr.txt):
+            # a two-line model/build banner, then one summary line — no per-file progress.
+            sys.stderr.write(f"\U0001f916 Model: {MODEL} (CPU)\n")
+            sys.stderr.write("\U0001f4c2 Building index...\n")
             sys.stderr.flush()
-        print("Indexed 3 code units")
+            sys.stderr.write(f"Indexed {path} (added: 155, changed: 1, deleted: 199, unchanged: 0)\n")
         return 0
     if sub == "clear":
-        print("Cleared index")
+        path = next((a for a in args[1:] if not a.startswith("-")), ".")
+        print(f"\U0001f5d1️  Cleared index for {path} [{MODEL}]")
         return 0
 
     # search
+    if os.environ.get("FAKE_COLGREP_RAW_STDOUT"):
+        sys.stdout.write(Path(os.environ["FAKE_COLGREP_RAW_STDOUT"]).read_text())
+        return 0
+
     fixture = Path(os.environ.get("FAKE_COLGREP_HITS", HERE / "fixtures" / "hits_small.json"))
     hits = json.loads(fixture.read_text())
     if "-k" in args:

@@ -18,6 +18,12 @@ class SearchHit(BaseModel):
     score: float
     snippet: str | None = Field(default=None, description="First `snippet_lines` lines of the unit.")
     code: str | None = Field(default=None, description="Full unit source; only when include_code=true.")
+    location_verified: bool = Field(
+        default=False,
+        description="True when `line`/`end_line` were re-derived via locate_unit and matched exactly "
+        "(R05 D1: colgrep's own line/end_line are frequently wrong). False means the reported "
+        "values are an unverified fallback.",
+    )
 
 
 class SearchResult(BaseModel):
@@ -70,6 +76,11 @@ class IndexStatus(BaseModel):
     units_indexed: int | None = None
     search_count: int | None = None
     raw: str
+    requested_path: str = Field(
+        default="",
+        description="The path `status()` was called with, verbatim. May differ from `project` "
+        "(R05 D3): colgrep folds a path into the nearest already-registered ancestor project.",
+    )
 
 
 class IndexInfo(BaseModel):
@@ -88,6 +99,11 @@ class IndexBuildResult(BaseModel):
     units_indexed: int | None = None
     elapsed_ms: int
     log_tail: list[str] = Field(default_factory=list)
+    added: int | None = None
+    changed: int | None = None
+    deleted: int | None = None
+    unchanged: int | None = None
+    up_to_date: bool = False
 
 
 class IndexClearResult(BaseModel):
