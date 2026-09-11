@@ -82,7 +82,8 @@ is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched b
 | `colgrep://guide` | The agent guide: how to compose queries, when to use which tool. |
 | `colgrep://settings` | colgrep's current configuration. |
 | `colgrep://indexes` | Indexed projects. |
-| `colgrep://status/{path}` | Index status for a path. |
+| `colgrep://status/{+path}` | Index status for a path. |
+| `colgrep://errors` | Error and hint codes with the next step for each. |
 
 ### Prompts
 
