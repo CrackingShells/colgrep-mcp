@@ -1,0 +1,3 @@
+🤖 Model: lightonai/LateOn-Code-edge (CPU)
+📂 Building index...
+Indexed /private/tmp (subdir: scratchpad/corpus/click) (added: 155, changed: 1, deleted: 199, unchanged: 0)

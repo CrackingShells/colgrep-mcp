@@ -1,0 +1,83 @@
+[
+  {
+    "unit": {
+      "name": "parse_config",
+      "qualified_name": "src/config.py::parse_config",
+      "file": "/tmp/fake-corpus/src/config.py",
+      "line": 10,
+      "end_line": 42,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def parse_config(path: str) -> dict",
+      "docstring": "Parse the TOML configuration file.",
+      "parameters": ["path"],
+      "return_type": "dict",
+      "extends": null,
+      "parent_class": null,
+      "calls": ["open", "toml.load"],
+      "called_by": [],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": true,
+      "variables": ["data"],
+      "imports": ["toml"],
+      "code": "def parse_config(path: str) -> dict:\n    \"\"\"Parse the TOML configuration file.\"\"\"\n    with open(path) as fh:\n        data = toml.load(fh)\n    if 'model' not in data:\n        raise KeyError('model')\n    return data\n"
+    },
+    "score": 1.4321
+  },
+  {
+    "unit": {
+      "name": "Settings",
+      "qualified_name": "src/config.py::Settings",
+      "file": "/tmp/fake-corpus/src/config.py",
+      "line": 45,
+      "end_line": 60,
+      "language": "python",
+      "unit_type": "class",
+      "signature": "class Settings",
+      "docstring": null,
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": ["parse_config"],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "class Settings:\n    model: str\n    k: int = 15\n"
+    },
+    "score": 0.9812
+  },
+  {
+    "unit": {
+      "name": "README",
+      "qualified_name": "README.md::README",
+      "file": "/tmp/fake-corpus/README.md",
+      "line": 1,
+      "end_line": 12,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# Fake corpus",
+      "docstring": "# Fake corpus",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# Fake corpus\n\nConfiguration is parsed from TOML.\n"
+    },
+    "score": 0.5
+  }
+]

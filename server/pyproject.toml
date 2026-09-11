@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "colgrep-mcp"
+version = "0.1.0"
+description = "MCP server exposing colgrep semantic/hybrid code search to coding agents."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Eliott Jacopin", email = "eliott.jacopin@riken.jp" }]
+keywords = ["mcp", "colgrep", "semantic-search", "code-search", "agents"]
+dependencies = [
+    "mcp>=2.2,<3",
+    "pydantic>=2",
+]
+
+[project.scripts]
+colgrep-mcp = "colgrep_mcp.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "anyio>=4",
+    "inline-snapshot>=0.13",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["colgrep_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["real_colgrep: exercises the real colgrep binary (read-only calls only); skipped unless COLGREP_MCP_REAL=1."]

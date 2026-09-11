@@ -1,0 +1,92 @@
+[
+  {
+    "unit": {
+      "name": "parse_args",
+      "qualified_name": "src/click/parser.py::_OptionParser::parse_args",
+      "file": "/private/tmp/scratchpad/corpus/click/src/click/parser.py",
+      "line": 224,
+      "end_line": 500,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def parse_args(",
+      "docstring": "\"\"\"Parses positional arguments and returns ``(values, args, order)``\n        for the parsed options and arguments as well as the leftover\n        arguments if there are any.  The order is a list of objects as they\n        appear on the command line.  If arguments appear multiple times they\n        will be memorized multiple times as well.",
+      "parameters": [
+        "args"
+      ],
+      "return_type": "tuple[dict[str, t.Any], list[str], list[CoreParameter]]",
+      "extends": null,
+      "parent_class": "_OptionParser",
+      "calls": [],
+      "called_by": [
+        "Command",
+        "Group",
+        "OptParseCommand",
+        "make_context",
+        "parse_args",
+        "resolve_command",
+        "test_command_parse_args_collects_option_prefixes",
+        "test_custom_parser",
+        "test_group_parse_args_collects_base_option_prefixes"
+      ],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": true,
+      "variables": [
+        "state"
+      ],
+      "imports": [],
+      "code": "    def parse_args(\n        self, args: list[str]\n    ) -> tuple[dict[str, t.Any], list[str], list[CoreParameter]]:\n        \"\"\"Parses positional arguments and returns ``(values, args, order)``\n        for the parsed options and arguments as well as the leftover\n        arguments if there are any.  The order is a list of objects as they\n        appear on the command line.  If arguments appear multiple times they\n        will be memorized multiple times as well.\n        \"\"\"\n        state = _ParsingState(args)\n        try:\n            self._process_args_for_options(state)\n            self._process_args_for_args(state)\n        except UsageError:\n            if self.ctx is None or not self.ctx.resilient_parsing:\n                raise\n        return state.opts, state.largs, state.order"
+    },
+    "score": 1.6834097
+  },
+  {
+    "unit": {
+      "name": "parse_args",
+      "qualified_name": "src/click/core.py::Group::parse_args",
+      "file": "/private/tmp/scratchpad/corpus/click/src/click/core.py",
+      "line": 964,
+      "end_line": 2137,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def parse_args(self, ctx: Context, args: list[str]) -> list[str]:",
+      "docstring": null,
+      "parameters": [
+        "ctx",
+        "args"
+      ],
+      "return_type": "list[str]",
+      "extends": null,
+      "parent_class": "Group",
+      "calls": [
+        "NoArgsIsHelpError",
+        "parse_args",
+        "super"
+      ],
+      "called_by": [
+        "Command",
+        "Group",
+        "OptParseCommand",
+        "make_context",
+        "parse_args",
+        "resolve_command",
+        "test_command_parse_args_collects_option_prefixes",
+        "test_custom_parser",
+        "test_group_parse_args_collects_base_option_prefixes"
+      ],
+      "complexity": 5,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "ctx._protected_args",
+        "ctx._protected_args, ctx.args",
+        "ctx.args",
+        "rest"
+      ],
+      "imports": [],
+      "code": "    def parse_args(self, ctx: Context, args: list[str]) -> list[str]:\n        if not args and self.no_args_is_help and not ctx.resilient_parsing:\n            raise NoArgsIsHelpError(ctx)\n\n        rest = super().parse_args(ctx, args)\n\n        if self.chain:\n            ctx._protected_args = rest\n            ctx.args = []\n        elif rest:\n            ctx._protected_args, ctx.args = rest[:1], rest[1:]\n\n        return ctx.args"
+    },
+    "score": 1.5725216
+  }
+]

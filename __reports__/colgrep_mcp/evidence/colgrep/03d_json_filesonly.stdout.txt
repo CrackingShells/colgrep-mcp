@@ -1,0 +1,2 @@
+/private/tmp/scratchpad/corpus/click/src/click/parser.py
+/private/tmp/scratchpad/corpus/click/tests/test_arguments.py
