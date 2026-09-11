@@ -227,7 +227,7 @@ class ColgrepAdapter:
             assert p.is_absolute(), f"search() requires absolute paths, got {p!r}"
 
         argv = self.build_search_argv(req)
-        stdout, _stderr, _rc = await self._run(argv)
+        stdout, _stderr, _rc = await self._run(argv, stream_stderr=True)
 
         stripped = stdout.strip()
         if not stripped:
