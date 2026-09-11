@@ -1,0 +1,26 @@
+{
+  "name": "colgrep-mcp",
+  "version": "0.1.0",
+  "description": "Semantic and hybrid code search for coding agents, exposed as MCP tools backed by colgrep.",
+  "author": {
+    "name": "Eliott Jacopin",
+    "email": "eliott.jacopin@riken.jp"
+  },
+  "repository": "https://github.com/eliottjacopin/colgrep-mcp",
+  "keywords": ["mcp", "colgrep", "semantic-search", "code-search", "agents"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "colgrep",
+    "shortDescription": "Semantic and hybrid code search for coding agents, backed by colgrep.",
+    "longDescription": "Exposes colgrep's semantic and hybrid (grep + ranking) code search as MCP tools, resources and prompts, so agents search code by meaning instead of shelling out to grep. Supports 18+ languages and incremental indexing, with agent-facing usage guidance via a bundled skill.",
+    "developerName": "Eliott Jacopin",
+    "category": "Developer Tools",
+    "capabilities": ["Read"],
+    "defaultPrompt": [
+      "Search this repo for the authentication logic.",
+      "Find where errors are handled for database connections.",
+      "Show the index status for this project."
+    ]
+  }
+}

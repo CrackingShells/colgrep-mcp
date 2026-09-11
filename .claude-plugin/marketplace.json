@@ -1,0 +1,15 @@
+{
+  "name": "colgrep-mcp",
+  "description": "One-plugin marketplace for colgrep-mcp: semantic and hybrid code search as MCP tools.",
+  "owner": {
+    "name": "Eliott Jacopin",
+    "email": "eliott.jacopin@riken.jp"
+  },
+  "plugins": [
+    {
+      "name": "colgrep-mcp",
+      "source": "./",
+      "description": "Semantic and hybrid code search for coding agents, exposed as MCP tools backed by colgrep."
+    }
+  ]
+}
