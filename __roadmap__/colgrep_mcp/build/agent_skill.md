@@ -4,9 +4,9 @@
 **Pre-conditions**:
 - [ ] `scaffold_package` merged
 **Success Gates**:
-- ⬜ [static] `skills/colgrep-search/SKILL.md` has YAML frontmatter with `name: colgrep-search` and a `description` that names concrete triggers (questions about where/how code does something, mapping a codebase, finding call sites, before refactoring) and states the anti-pattern (shell grep/rg for meaning-based questions)
-- ⬜ [static] `server/colgrep_mcp/guide.md` exists, ≤ 250 lines, and `SKILL.md` links to it via the resource URI `colgrep://guide` and by relative path
-- ⬜ [run] `cd server && uv run python -c "import importlib.resources as r; print(len(r.files('colgrep_mcp').joinpath('guide.md').read_text()))"` prints a number > 1000
+- ✅ [static] `skills/colgrep-search/SKILL.md` has YAML frontmatter with `name: colgrep-search` and a `description` that names concrete triggers (questions about where/how code does something, mapping a codebase, finding call sites, before refactoring) and states the anti-pattern (shell grep/rg for meaning-based questions)
+- ✅ [static] `server/colgrep_mcp/guide.md` exists, ≤ 250 lines, and `SKILL.md` links to it via the resource URI `colgrep://guide` and by relative path
+- ✅ [run] `cd server && uv run python -c "import importlib.resources as r; print(len(r.files('colgrep_mcp').joinpath('guide.md').read_text()))"` prints a number > 1000
 **References**: [R01 §Tools](../../../__reports__/colgrep_mcp/00-architecture_v0.md) — the exact tool names and arguments to teach; [R01 §Prompts](../../../__reports__/colgrep_mcp/00-architecture_v0.md) — the explore/locate/impact workflows the skill should describe in prose; the user's existing session-start policy hook `/Users/hacker/.claude/hooks/colgrep_session_context.py` — read it to reuse the hard-won guidance about `-k`, `-e`, exhaustive vs exploratory, and translate CLI flags into tool arguments
 
 ## Step 1: Write guide.md and SKILL.md
