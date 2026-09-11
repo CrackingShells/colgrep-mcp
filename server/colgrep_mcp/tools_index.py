@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import shutil
 import time
 from pathlib import Path
@@ -227,6 +228,19 @@ async def index_build(
             result = await task
         except ColgrepError as exc:
             raise from_adapter_error(exc, path=resolved) from exc
+        finally:
+            # `asyncio.wait` (unlike `gather`) never propagates cancellation
+            # to the task it's waiting on: if *this* coroutine is cancelled
+            # while inside the loop above, `task` (and its colgrep
+            # subprocess) would otherwise be silently dropped, still
+            # running — and the `async with project_lock` below would
+            # release the lock regardless, defeating "held for the whole
+            # build" for exactly the case that matters most. Cancel and
+            # await it here, before the lock's `__aexit__` runs.
+            if not task.done():
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
 
     summary_line = _build_summary_line(result)
     try:
