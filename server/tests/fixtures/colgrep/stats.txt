@@ -1,0 +1,771 @@
+Project: /Users/me/projects/p01
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 649
+  Search count: 3
+
+Project: /Users/me/projects/p02
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 81
+  Search count: 6
+
+Project: /Users/me/projects/p03
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2941
+  Search count: 24
+
+Project: /Users/me/projects/p04
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 184
+  Search count: 8
+
+Project: /private/tmp/scratchpad/leaves/docs-sync
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 77
+  Search count: 3
+
+Project: /Users/me/projects/p05
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 211
+  Search count: 3
+
+Project: /Users/me/projects/p06
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 1
+
+Project: /private/tmp/scratchpad
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 39
+  Search count: 1
+
+Project: /Users/me/projects/p07
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 186
+  Search count: 2
+
+Project: /Users/me/projects/p08
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3957
+  Search count: 294
+
+Project: /Users/me/projects/p09
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 39
+  Search count: 94
+
+Project: /Users/me/projects/p10
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 66
+  Search count: 11
+
+Project: /Users/me/projects/p11
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 1
+
+Project: /Users/me/projects/p12
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 426
+  Search count: 2
+
+Project: /Users/me/projects/p13
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 191
+  Search count: 3
+
+Project: /Users/me/projects/p14
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 342
+  Search count: 5
+
+Project: /Users/me/projects/p15
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 893
+  Search count: 55
+
+Project: /Users/me/projects/p16
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 52
+  Search count: 11
+
+Project: /Users/me/projects/p17
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 13
+  Search count: 37
+
+Project: /Users/me/projects/p18
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 61
+  Search count: 5
+
+Project: /Users/me/projects/p19
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 66
+  Search count: 11
+
+Project: /Users/me/projects/p20
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 661
+  Search count: 7
+
+Project: /Users/me/projects/p21
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 111
+  Search count: 7
+
+Project: /Users/me/projects/p22
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 61
+  Search count: 1
+
+Project: /Users/me/projects/p23
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1069
+  Search count: 2
+
+Project: /Users/me/projects/p24
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3702
+  Search count: 5
+
+Project: /Users/me/projects/p25
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 159
+  Search count: 2
+
+Project: /Users/me/projects/p26
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6
+  Search count: 1
+
+Project: /Users/me/projects/p27
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 81
+  Search count: 6
+
+Project: /Users/me/projects/p28
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 7
+  Search count: 95
+
+Project: /Users/me/projects/p29
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 253
+  Search count: 100
+
+Project: /Users/me/projects/p30
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2161
+  Search count: 40
+
+Project: /Users/me/projects/p31
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 9
+  Search count: 4
+
+Project: /Users/me/projects/p32
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1514
+  Search count: 5
+
+Project: /Users/me/projects/p33
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1634
+  Search count: 10
+
+Project: /Users/me/projects/p34
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 206
+  Search count: 6
+
+Project: /Users/me/projects/p35
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2212
+  Search count: 4
+
+Project: /Users/me/projects/p36
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 71
+  Search count: 11
+
+Project: /private/tmp/scratchpad/gtpyhop-pip/packages/gtpyhop-core/src
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 282
+  Search count: 2
+
+Project: /Users/me/projects/p37
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 24
+  Search count: 7
+
+Project: /Users/me/projects/p38
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 383
+  Search count: 6
+
+Project: /Users/me/projects/p39
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 857
+  Search count: 3
+
+Project: /Users/me/projects/p40
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 312
+  Search count: 8
+
+Project: /Users/me/projects/p41
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 125
+  Search count: 1
+
+Project: /Users/me/projects/p42
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1014
+  Search count: 3
+
+Project: /Users/me/projects/p43
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1014
+  Search count: 14
+
+Project: /Users/me/projects/p44
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 29
+  Search count: 16
+
+Project: /Users/me/projects/p45
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 161
+  Search count: 4
+
+Project: /Users/me/projects/p46
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 242
+  Search count: 13
+
+Project: /Users/me/projects/p47
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 13
+
+Project: /Users/me/projects/p48
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 445
+  Search count: 5
+
+Project: /Users/me/projects/p49
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4
+  Search count: 2
+
+Project: /Users/me/projects/p50
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 441
+  Search count: 3
+
+Project: /Users/me/projects/p51
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 442
+  Search count: 12
+
+Project: /Users/me/projects/p52
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2166
+  Search count: 2
+
+Project: /Users/me/.claude/hooks
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 37
+  Search count: 15
+
+Project: /Users/me/projects/p53
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2412
+  Search count: 74
+
+Project: /Users/me/projects/p54
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 157
+  Search count: 38
+
+Project: /Users/me/projects/p55
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 24
+  Search count: 7
+
+Project: /Users/me/projects/p56
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 1
+
+Project: /Users/me/projects/p57
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 69
+  Search count: 3
+
+Project: /Users/me/projects/p58
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 10
+  Search count: 2
+
+Project: /Users/me/projects/p59
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 29
+  Search count: 1
+
+Project: /Users/me/projects/p60
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4
+  Search count: 12
+
+Project: /Users/me/projects/p61
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1481
+  Search count: 3
+
+Project: /private/tmp/scratchpad/render/proj
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 389
+  Search count: 1
+
+Project: /Users/me/projects/p62
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4336
+  Search count: 281
+
+Project: /Users/me/projects/p63
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2498
+  Search count: 1
+
+Project: /Users/me/projects/p64
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 148
+  Search count: 7
+
+Project: /Users/me/.claude/plans
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 26
+  Search count: 5
+
+Project: /Users/me/projects/p65
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4
+  Search count: 1
+
+Project: /Users/me/projects/p66
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 379
+  Search count: 3
+
+Project: /Users/me/projects/p67
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 19
+  Search count: 12
+
+Project: /Users/me/projects/p68
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 35
+  Search count: 1
+
+Project: /Users/me/projects/p69
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 4
+
+Project: /private/tmp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2434
+  Search count: 11
+
+Project: /Users/me/projects/p70
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3855
+  Search count: 40
+
+Project: /private/tmp/scratchpad/regrade_probe
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 140
+  Search count: 1
+
+Project: /Users/me/projects/p71
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 36
+  Search count: 37
+
+Project: /Users/me/projects/p72
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 239
+  Search count: 7
+
+Project: /Users/me/projects/p73
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 2
+
+Project: /private/tmp/scratchpad/regrade_probe/20260804-101514_v0.2.5_claude-haiku-4-5_v0_2_5_smoke
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 140
+  Search count: 1
+
+Project: /Users/me/projects/p74
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 7058
+  Search count: 279
+
+Project: /Users/me/projects/p75
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 750
+  Search count: 11
+
+Project: /Users/me/projects/p76
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 158
+  Search count: 9
+
+Project: /Users/me/projects/p77
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 150
+  Search count: 7
+
+Project: /Users/me/projects/p78
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 40
+  Search count: 7
+
+Project: /Users/me/projects/p79
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 17279
+  Search count: 277
+
+Project: /Users/me/projects/p80
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2
+  Search count: 3
+
+Project: /Users/me/projects/p81
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 8
+  Search count: 18
+
+Project: /Users/me/projects/p82
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 5359
+  Search count: 64
+
+Project: /Users/me/projects/p83
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 366
+  Search count: 52
+
+Project: /Users/me/projects/p84
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2188
+  Search count: 9
+
+Project: /private/tmp/scratchpad/wt-wake-autoflip/skills/umbod/scripts/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1110
+  Search count: 2
+
+Project: /Users/me/projects/p85
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 20
+  Search count: 5
+
+Project: /Users/me/projects/p86
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 306
+  Search count: 32
+
+Project: /Users/me/projects/p87
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 129
+  Search count: 1
+
+Project: /private/tmp/scratchpad/wheelprobe/x/gtpyhop
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 282
+  Search count: 1
+
+Project: /Users/me/.claude/plugins/cache/lbc-llm-agents/banyan/0.4.1
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 120
+  Search count: 1
+
+Project: /Users/me/projects/p88
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 487
+  Search count: 97
+
+Project: /Users/me/projects/p89
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4042
+  Search count: 14
+
+Project: /Users/me/projects/p90
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1219
+  Search count: 1
+
+Project: /Users/me/projects/p91
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 94
+  Search count: 8
+
+Project: /Users/me/projects/p92
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 1
+
+Project: /Users/me/projects/p93
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2164
+  Search count: 4
+
+Project: /Users/me/projects/p94
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1006
+  Search count: 294
+
+Project: /Users/me/projects/p95
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 170
+  Search count: 12
+
+Project: /Users/me/projects/p96
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 61
+  Search count: 13
+
+Project: /Users/me/projects/p97
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 269
+  Search count: 1
+
+Project: /Users/me/projects/p98
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 7060
+  Search count: 293
+
+Project: /Users/me/projects/p99
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1376
+  Search count: 18
+
+Project: /Users/me/projects/p100
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 22
+  Search count: 2
+
+Project: /Users/me/projects/p101
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4034
+  Search count: 293
+
+Project: /Users/me/projects/p102
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 17
+  Search count: 24
+
+Project: /Users/me/projects/p103
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 7
+
+Project: /Users/me/projects/p104
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 589
+  Search count: 8
+
+Project: /Users/me/projects/p105
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 34
+  Search count: 66
+
+Project: /Users/me/projects/p106
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 639
+  Search count: 5
+
+Project: /Users/me/projects/p107
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 17
+
+Project: /Users/me/projects/p108
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 214
+  Search count: 4
+
+Project: /Users/me/projects/p109
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1827
+  Search count: 65
+
+Project: /Users/me/projects/p110
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2
+  Search count: 94
+
+Project: /Users/me/projects/p111
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 1
+
+Project: /private/tmp/scratchpad/verify_b1_wt/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 209
+  Search count: 95
+
+Project: /Users/me/projects/p112
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6
+  Search count: 1
+
+Project: /Users/me/projects/p113
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 1
+
+Project: /Users/me/projects/p114
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 232
+  Search count: 4
+
+Project: /Users/me/projects/p115
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 153
+  Search count: 7
+
+Project: /private/tmp/scratchpad/verify_b1_wt
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6469
+  Search count: 95
+
+Project: /Users/me/projects/p116
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1053
+  Search count: 105
+
+Project: /Users/me/projects/p117
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 110
+  Search count: 97
+
+Project: /Users/me/projects/p118
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1274
+  Search count: 12
+
+Project: /Users/me/projects/p119
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 75
+  Search count: 11
+
+Project: /Users/me/projects/p120
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 115
+  Search count: 5
+
+Project: /Users/me/projects/p121
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 144
+  Search count: 1
+
+Project: /Users/me/projects/p122
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4250
+  Search count: 294
+
+Project: /Users/me/projects/p123
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 73
+  Search count: 2
+
+Project: /Users/me/projects/p124
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 7
+
+Project: /Users/me/projects/p125
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 731
+  Search count: 13
+
+Project: /Users/me/projects/p126
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 211
+  Search count: 10
+
+Project: /Users/me/projects/p127
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 4
+
+Project: /Users/me/projects/p128
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2731
+  Search count: 6
+
+Project: /Users/me/projects/p129
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 49
+  Search count: 1
+
+Project: /Users/me/projects/p130
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6
+  Search count: 1
+
+Project: /Users/me/projects/p131
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 0
+  Search count: 52
+
+Project: /Users/me/projects/p132
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 3
+
+Project: /Users/me/projects/p133
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 153
+  Search count: 7
+
+Project: /Users/me/projects/p134
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 5359
+  Search count: 65
+
+Project: /Users/me/projects/p135
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 158
+  Search count: 1
+
+Project: /Users/me/projects/p136
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 345
+  Search count: 6
+
+Project: /Users/me/projects/p137
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 158
+  Search count: 2
+
+Project: /Users/me/projects/p138
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1372
+  Search count: 2
+
+Project: /Users/me/projects/p139
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 964
+  Search count: 1
+
+Project: /Users/me/projects/p140
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 24
+  Search count: 11
+
+Total: 154 indexes, 138402 functions, 4613 searches

@@ -1,0 +1,6 @@
+Project: /private/tmp
+  Subdirectory: scratchpad/corpus/click
+Model:   lightonai/LateOn-Code-edge
+Index:   /Users/me/Library/Application Support/colgrep/indices/tmp-a825743a
+
+Run any search to update the index, or `colgrep clear` to rebuild from scratch.
