@@ -7,6 +7,7 @@ import json
 import pytest
 from mcp import Client
 
+from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.resources import _normalize_status_path
 from colgrep_mcp.server import build
 
@@ -25,6 +26,7 @@ async def test_list_resources_and_templates(settings_env):
         assert by_uri["colgrep://guide"] == "text/markdown"
         assert by_uri["colgrep://settings"] == "application/json"
         assert by_uri["colgrep://indexes"] == "application/json"
+        assert by_uri["colgrep://errors"] == "text/markdown"
 
         templates = await client.list_resource_templates()
         assert [t.uri_template for t in templates.resource_templates] == ["colgrep://status/{+path}"]
@@ -86,7 +88,10 @@ async def test_binary_missing_raises_resource_error(settings_env, monkeypatch):
     async with Client(build(), raise_exceptions=False) as client:
         with pytest.raises(Exception) as exc_info:
             await client.read_resource("colgrep://settings")
-        assert "colgrep not found on PATH" in str(exc_info.value)
+        text = str(exc_info.value)
+        assert f"[{Code.COLGREP_MISSING}]" in text
+        assert f"Next: {HINTS[Code.COLGREP_MISSING]}" in text
+        assert "colgrep not found on PATH" in text
 
 
 async def test_colgrep_failure_raises_resource_error(settings_env, monkeypatch):
@@ -94,4 +99,18 @@ async def test_colgrep_failure_raises_resource_error(settings_env, monkeypatch):
     async with Client(build(), raise_exceptions=False) as client:
         with pytest.raises(Exception) as exc_info:
             await client.read_resource("colgrep://indexes")
-        assert "colgrep exited 1" in str(exc_info.value)
+        text = str(exc_info.value)
+        assert f"[{Code.COLGREP_FAILED}]" in text
+        assert f"Next: {HINTS[Code.COLGREP_FAILED]}" in text
+        assert "colgrep exited 1" in text
+
+
+async def test_read_errors_resource_lists_every_code(settings_env):
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.read_resource("colgrep://errors")
+
+    assert result.contents[0].mime_type == "text/markdown"
+    text = result.contents[0].text
+    for code in Code:
+        assert f"`{code}`" in text
+        assert HINTS[code] in text
