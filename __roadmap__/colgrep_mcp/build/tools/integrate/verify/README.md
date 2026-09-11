@@ -18,7 +18,7 @@ Prove the server works end-to-end and release it.
 graph TD
     e2e_validation[End-to-End Validation]:::planned
     release_0_1_0[Release 0.1.0]:::planned
-    code_review[Code Review Pass]:::amendment
+    code_review[Code Review Pass]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -31,7 +31,7 @@ graph TD
 |:-----|:-----|:-------|
 | `e2e_validation.md` | 📄 Leaf Task | ⬜ Planned |
 | `release_0_1_0.md` | 📄 Leaf Task | ⬜ Planned |
-| `code_review.md` | 📄 Leaf Task | 🔵 Amendment |
+| `code_review.md` | 📄 Leaf Task | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
