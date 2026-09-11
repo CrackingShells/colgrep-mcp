@@ -5,9 +5,9 @@
 - [ ] R01 architecture report present (`__reports__/colgrep_mcp/00-architecture_v0.md`)
 - [ ] `uv` on PATH
 **Success Gates**:
-- ⬜ [run] `cd server && uv run python -c "import colgrep_mcp, mcp; print(colgrep_mcp.__version__)"` prints `0.1.0`
-- ⬜ [run] `cd server && uv run pytest -q` passes (smoke test that the fake colgrep runs and the server object exists)
-- ⬜ [static] `CHANGELOG.md` has an `Unreleased` section; `LICENSE` is MIT
+- ✅ [run] `cd server && uv run python -c "import colgrep_mcp, mcp; print(colgrep_mcp.__version__)"` prints `0.1.0`
+- ✅ [run] `cd server && uv run pytest -q` passes (smoke test that the fake colgrep runs and the server object exists)
+- ✅ [static] `CHANGELOG.md` has an `Unreleased` section; `LICENSE` is MIT
 **References**: [R01 §Packaging layout](../../__reports__/colgrep_mcp/00-architecture_v0.md) — file tree and dependency list
 
 ## Step 1: Create the package, test harness and release files
