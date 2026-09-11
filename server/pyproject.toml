@@ -32,3 +32,4 @@ packages = ["colgrep_mcp"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["real_colgrep: exercises the real colgrep binary (read-only calls only); skipped unless COLGREP_MCP_REAL=1."]
