@@ -33,7 +33,11 @@ doesn't share vocabulary with the query.
   this first on a large, never-indexed repository rather than letting a
   plain `search` eat the build cost inside its own timeout.
 - `index_clear` — delete a project's index. Destructive; pass `confirm=true`
-  or expect an elicitation prompt.
+  or expect an elicitation prompt. colgrep folds a directory into the
+  nearest already-indexed ancestor *project*, and clearing works on the
+  whole project: the tool refuses when the project root differs from the
+  path you gave and tells you the root to pass explicitly. `index_status`
+  shows both `requested_path` and `project`.
 - `list_indexes` — every indexed project on this machine, with sizes.
 - `doctor` — environment self-check (binary found, version, default root).
   Use when a tool call fails for an unclear reason.
@@ -70,9 +74,14 @@ Example: `query="where retries are scheduled", pattern="backoff"`.
 
 `limit` caps the number of ranked **units** returned, not lines:
 
-- Omit `limit` (`None`) for an exhaustive result set — nothing is dropped
-  by rank. This is the right default when you need every match, e.g.
+- Omit `limit` (`None`) **together with `pattern`** for an exhaustive
+  result set — every unit matching the regex is returned, nothing is
+  dropped by rank. This is the right call when you need every match, e.g.
   enumerating all call sites before a rename.
+- Without `pattern`, omitting `limit` does **not** mean exhaustive: colgrep
+  applies its own runtime default of 15 hits (its `settings` output may
+  claim 25; runtime says 15). For a broad semantic sweep pass an explicit
+  `limit`, e.g. 50, and the result notes it when this applies.
 - Pass `limit=10` to `25` while exploring a broad question, where you only
   want the top hits and will `expand` the ones that matter.
 - A larger `limit` does not cost you accuracy — hits are score-ranked, so a
@@ -93,6 +102,14 @@ Every hit has a `hit_id`: `"<absolute file>:<line>-<end_line>"`. It is
 self-describing — no server-side cache, no session state — and is exactly
 what `expand(hit_ids=[...])` expects. Copy `hit_id`s straight from a result
 into `expand`.
+
+`location_verified` tells you whether those line numbers are trustworthy.
+colgrep 1.6 itself reports wrong `line`/`end_line` for most units, so the
+server re-locates each unit by matching its source text in the file. `true`
+means the lines were confirmed against the file on disk; `false` means the
+file changed since indexing (or the match was ambiguous) and the numbers
+are colgrep's unverified values — cite the file, not the line, and `expand`
+to see what is really there.
 
 `score` is **relative within one query's result set only**. Do not compare
 scores across two different `search` calls, and do not treat a score as a
@@ -121,6 +138,7 @@ widen `paths`.
 - Do not re-run the same `search` call expecting new results; change the
   query, `pattern`, or scoping instead.
 - Do not pass a small `limit` when you need completeness (e.g. every caller
-  before a rename) — omit it.
+  before a rename) — omit it **and** pass `pattern`; without `pattern` set
+  a large explicit `limit` instead.
 - Do not skip `index_status`/`index_build` on a repository you know is large
   and has never been searched, then be surprised a `search` call times out.
