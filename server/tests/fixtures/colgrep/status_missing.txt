@@ -1,0 +1,2 @@
+No index found for /private/var/folders/nw/ddpd99c119j47w3s4gzv7sb00000gn/T/colgrep_clear_test [lightonai/LateOn-Code-edge]
+Run `colgrep <query>` to create one.

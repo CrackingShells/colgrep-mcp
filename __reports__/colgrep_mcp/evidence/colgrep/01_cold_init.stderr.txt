@@ -1,0 +1,3 @@
+🤖 Model: lightonai/LateOn-Code-edge (CPU)
+📂 Building index...
+Indexed /private/tmp (subdir: claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click) (added: 155, changed: 1, deleted: 199, unchanged: 0)

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "colgrep": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/launch.sh",
+      "args": [],
+      "env": {
+        "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/venv",
+        "COLGREP_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
+      }
+    }
+  }
+}

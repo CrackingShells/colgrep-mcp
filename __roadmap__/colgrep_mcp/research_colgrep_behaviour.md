@@ -5,9 +5,9 @@
 - [ ] `colgrep --version` reports ≥ 1.6.2
 - [ ] A small corpus is available to index (use a fresh copy of a ~50–500 file repo under the scratchpad; never index this repository's worktrees)
 **Success Gates**:
-- ⬜ [static] Report exists at `__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md` following the `findings` report type
-- ⬜ [static] Raw captured outputs are saved under `__reports__/colgrep_mcp/evidence/colgrep/` (one file per probe, named `<probe>.stdout.txt` / `.stderr.txt` / `.exit`)
-- ⬜ [static] The report contains a JSON Schema (draft 2020-12) for one search hit, derived from ≥ 3 real outputs, marking which fields are nullable
+- ✅ [static] Report exists at `__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md` following the `findings` report type
+- ✅ [static] Raw captured outputs are saved under `__reports__/colgrep_mcp/evidence/colgrep/` (one file per probe, named `<probe>.stdout.txt` / `.stderr.txt` / `.exit`)
+- ✅ [static] The report contains a JSON Schema (draft 2020-12) for one search hit, derived from ≥ 3 real outputs, marking which fields are nullable
 **References**: [R01 §Contracts](../../__reports__/colgrep_mcp/00-architecture_v0.md) — the adapter contract this probe must validate or correct
 
 ## Step 1: Run the probe matrix and write the findings

@@ -1,0 +1,201 @@
+[
+  {
+    "unit": {
+      "name": "clear",
+      "qualified_name": "src/click/termui.py::clear",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/termui.py",
+      "line": 61,
+      "end_line": 1024,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def clear() -> None:",
+      "docstring": "\"\"\"Clears the terminal screen.  This will have the effect of clearing\n    the whole visible space of the terminal and moving the cursor to the\n    top left.  This does not do anything if not connected to a terminal.\n\n    .. versionadded:: 2.0",
+      "parameters": [],
+      "return_type": "None",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "echo",
+        "isatty"
+      ],
+      "called_by": [
+        "_restore_available_shells",
+        "clear"
+      ],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [
+        "sys"
+      ],
+      "code": "def clear() -> None:\n    \"\"\"Clears the terminal screen.  This will have the effect of clearing\n    the whole visible space of the terminal and moving the cursor to the\n    top left.  This does not do anything if not connected to a terminal.\n\n    .. versionadded:: 2.0\n    \"\"\"\n    if not isatty(sys.stdout):\n        return\n\n    # ANSI escape \\033[2J clears the screen, \\033[1;1H moves the cursor\n    echo(\"\\033[2J\\033[1;1H\", nl=False)"
+    },
+    "score": 0.90765333
+  },
+  {
+    "unit": {
+      "name": "pop_context",
+      "qualified_name": "src/click/globals.py::pop_context",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/globals.py",
+      "line": 12,
+      "end_line": 67,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def pop_context() -> None:",
+      "docstring": "\"\"\"Removes the top level from the stack.",
+      "parameters": [],
+      "return_type": "None",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "pop"
+      ],
+      "called_by": [
+        "Context",
+        "__exit__"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "def pop_context() -> None:\n    \"\"\"Removes the top level from the stack.\"\"\"\n    _local.stack.pop()"
+    },
+    "score": 0.88722116
+  },
+  {
+    "unit": {
+      "name": "password_option",
+      "qualified_name": "src/click/decorators.py::password_option",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/decorators.py",
+      "line": 28,
+      "end_line": 627,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def password_option(*param_decls: str, **kwargs: t.Any) -> t.Callable[[FC], FC]:",
+      "docstring": "\"\"\"Add a ``--password`` option which prompts for a password, hiding\n    input and asking to enter the value again for confirmation.\n\n    :param param_decls: One or more option names. Defaults to the single\n        value ``\"--password\"``.\n    :param kwargs: Extra arguments are passed to :func:`option`.",
+      "parameters": [],
+      "return_type": "t.Callable[[FC], FC]",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "option",
+        "setdefault"
+      ],
+      "called_by": [],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "param_decls"
+      ],
+      "imports": [],
+      "code": "def password_option(*param_decls: str, **kwargs: t.Any) -> t.Callable[[FC], FC]:\n    \"\"\"Add a ``--password`` option which prompts for a password, hiding\n    input and asking to enter the value again for confirmation.\n\n    :param param_decls: One or more option names. Defaults to the single\n        value ``\"--password\"``.\n    :param kwargs: Extra arguments are passed to :func:`option`.\n    \"\"\"\n    if not param_decls:\n        param_decls = (\"--password\",)\n\n    kwargs.setdefault(\"prompt\", True)\n    kwargs.setdefault(\"confirmation_prompt\", True)\n    kwargs.setdefault(\"hide_input\", True)\n    return option(*param_decls, **kwargs)"
+    },
+    "score": 0.8667134
+  },
+  {
+    "unit": {
+      "name": "_safecall",
+      "qualified_name": "src/click/utils.py::_safecall",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/utils.py",
+      "line": 32,
+      "end_line": 688,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def _safecall(func: t.Callable[P, R]) -> t.Callable[P, R | None]:",
+      "docstring": "\"\"\"Wraps a function so that it swallows exceptions.\n\n    :meta private:",
+      "parameters": [
+        "func"
+      ],
+      "return_type": "t.Callable[P, R | None]",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "func",
+        "update_wrapper"
+      ],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": true,
+      "variables": [],
+      "imports": [
+        "functools"
+      ],
+      "code": "def _safecall(func: t.Callable[P, R]) -> t.Callable[P, R | None]:\n    \"\"\"Wraps a function so that it swallows exceptions.\n\n    :meta private:\n    \"\"\"\n\n    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | None:\n        try:\n            return func(*args, **kwargs)\n        except Exception:\n            pass\n        return None\n\n    return update_wrapper(wrapper, func)"
+    },
+    "score": 0.8023838
+  },
+  {
+    "unit": {
+      "name": "get_completion_class",
+      "qualified_name": "src/click/shell_completion.py::get_completion_class",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/shell_completion.py",
+      "line": 19,
+      "end_line": 801,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def get_completion_class(shell: str) -> type[ShellComplete] | None: ...",
+      "docstring": null,
+      "parameters": [
+        "shell"
+      ],
+      "return_type": "type[ShellComplete] | None",
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [
+        "shell_complete"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "@t.overload\ndef get_completion_class(shell: str) -> type[ShellComplete] | None: ..."
+    },
+    "score": 0.7516342
+  },
+  {
+    "unit": {
+      "name": "should_strip_ansi",
+      "qualified_name": "src/click/_compat.py::should_strip_ansi",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/_compat.py",
+      "line": 22,
+      "end_line": 572,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def should_strip_ansi(",
+      "docstring": null,
+      "parameters": [
+        "stream",
+        "color"
+      ],
+      "return_type": "bool",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "hasattr",
+        "isatty"
+      ],
+      "called_by": [
+        "_readline_prompt",
+        "echo",
+        "test_should_strip_ansi"
+      ],
+      "complexity": 5,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "stream"
+      ],
+      "imports": [
+[truncated 237267 bytes]
