@@ -13,6 +13,10 @@ Environment knobs:
                           that need to assert exactly what was executed
   FAKE_COLGREP_UPTODATE   "1" -> `init` emits the "Index is up to date" stderr
                           line (R05 D2) instead of the cold-build summary
+  FAKE_COLGREP_RAW_STDOUT path to a file printed verbatim to stdout (exit 0)
+                          for a search call, bypassing FAKE_COLGREP_HITS
+                          entirely — used to simulate malformed/non-JSON
+                          output for ColgrepParseError tests
 """
 import json
 import os
@@ -73,6 +77,10 @@ def main(argv):
         return 0
 
     # search
+    if os.environ.get("FAKE_COLGREP_RAW_STDOUT"):
+        sys.stdout.write(Path(os.environ["FAKE_COLGREP_RAW_STDOUT"]).read_text())
+        return 0
+
     fixture = Path(os.environ.get("FAKE_COLGREP_HITS", HERE / "fixtures" / "hits_small.json"))
     hits = json.loads(fixture.read_text())
     if "-k" in args:
