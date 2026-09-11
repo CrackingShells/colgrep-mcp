@@ -4,7 +4,15 @@ R05 D1 `hit_id`/`location_verified`)."""
 from __future__ import annotations
 
 from colgrep_mcp.models import FileHit, FileResult, SearchHit, SearchResult
-from colgrep_mcp.tools_search import hit_from_raw, render_files_text, render_search_text
+from colgrep_mcp.tools_search import (
+    _file_block,
+    _files_header,
+    _hit_block,
+    _search_header,
+    hit_from_raw,
+    render_files_text,
+    render_search_text,
+)
 
 # --- hit_from_raw ------------------------------------------------------------
 
@@ -152,6 +160,27 @@ def test_render_search_text_budget_one_over_boundary_drops_hit():
     assert "[1 more hits in structured_content; call expand(hit_ids=[...]) for code]" in text
 
 
+def test_render_search_text_backtracks_a_hit_so_the_note_stays_within_budget():
+    """R01 §Token-budget invariant: the cap is hard, note included — a hit already
+    accepted is dropped again if the continuation note would push past `budget`."""
+    hits = [_hit(1), _hit(2)]
+    result = _result(hits)
+    header = _search_header(result)
+    block1 = _hit_block(hits[0])
+    note_one_more = "[1 more hits in structured_content; call expand(hit_ids=[...]) for code]"
+
+    exact_budget = len(header) + 1 + len(block1) + 1 + len(note_one_more)
+    text, capped = render_search_text(result, budget=exact_budget)
+    assert capped is True
+    assert "unit_1" in text and "unit_2" not in text
+    assert note_one_more in text
+
+    text2, capped2 = render_search_text(result, budget=exact_budget - 1)
+    assert capped2 is True
+    assert "unit_1" not in text2 and "unit_2" not in text2
+    assert "[2 more hits in structured_content; call expand(hit_ids=[...]) for code]" in text2
+
+
 def test_render_search_text_zero_hits_renders_notes():
     result = _result([], notes=["no units matched; try dropping pattern/include or rephrasing"])
 
@@ -207,12 +236,20 @@ def test_render_files_text_uncapped():
     assert "/proj/f2.py  score=1.00  2 hits — unit_2" in text
 
 
-def test_render_files_text_caps_at_budget():
-    result = _file_result([_file_hit(1), _file_hit(2)])
-    one_file_text, _ = render_files_text(_file_result([_file_hit(1)]), budget=10_000)
+def test_render_files_text_backtracks_a_file_so_the_note_stays_within_budget():
+    files = [_file_hit(1), _file_hit(2)]
+    result = _file_result(files)
+    header = _files_header(result)
+    block1 = _file_block(files[0])
+    note_one_more = "[1 more files in structured_content]"
 
-    text, capped = render_files_text(result, budget=len(one_file_text))
-
+    exact_budget = len(header) + 1 + len(block1) + 1 + len(note_one_more)
+    text, capped = render_files_text(result, budget=exact_budget)
     assert capped is True
-    assert "f2.py" not in text
-    assert "[1 more files in structured_content]" in text
+    assert "f1.py" in text and "f2.py" not in text
+    assert note_one_more in text
+
+    text2, capped2 = render_files_text(result, budget=exact_budget - 1)
+    assert capped2 is True
+    assert "f1.py" not in text2 and "f2.py" not in text2
+    assert "[2 more files in structured_content]" in text2
