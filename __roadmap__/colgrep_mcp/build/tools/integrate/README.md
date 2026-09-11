@@ -17,8 +17,8 @@ Ship a runnable `colgrep-mcp` binary with documentation a human can install from
 ## Status
 ```mermaid
 graph TD
-    server_assembly[Server Assembly]:::inprogress
-    docs_readme[User Documentation]:::inprogress
+    server_assembly[Server Assembly]:::done
+    docs_readme[User Documentation]:::done
     verify[Verify]:::planned
     error_taxonomy[Error and Hint Taxonomy]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
@@ -31,8 +31,8 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `server_assembly.md` | 📄 Leaf Task | 🔄 In Progress |
-| `docs_readme.md` | 📄 Leaf Task | 🔄 In Progress |
+| `server_assembly.md` | 📄 Leaf Task | ✅ Done |
+| `docs_readme.md` | 📄 Leaf Task | ✅ Done |
 | `verify/` | 📁 Directory | ⬜ Planned |
 | `error_taxonomy.md` | 📄 Leaf Task | 🔄 In Progress |
 
