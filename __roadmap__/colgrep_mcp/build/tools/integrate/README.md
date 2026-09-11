@@ -20,6 +20,7 @@ graph TD
     server_assembly[Server Assembly]:::planned
     docs_readme[User Documentation]:::planned
     verify[Verify]:::planned
+    error_taxonomy[Error and Hint Taxonomy]:::amendment
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -33,10 +34,12 @@ graph TD
 | `server_assembly.md` | 📄 Leaf Task | ⬜ Planned |
 | `docs_readme.md` | 📄 Leaf Task | ⬜ Planned |
 | `verify/` | 📁 Directory | ⬜ Planned |
+| `error_taxonomy.md` | 📄 Leaf Task | 🔵 Amendment |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
 |:---|:-----|:-------|:------------|:----------|
+| A01 | 2026-09-12 | PI (mid-run question) | `error_taxonomy.md` | Agents should recover from failures by stable machine-readable codes that name the next usage pattern, not by parsing prose |
 
 ## Progress
 | Node | Branch | Commits | Notes |
