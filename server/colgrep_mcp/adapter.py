@@ -236,7 +236,8 @@ class ColgrepAdapter:
 
     async def search(self, req: SearchRequest) -> list[RawHit]:
         for p in req.paths:
-            assert p.is_absolute(), f"search() requires absolute paths, got {p!r}"
+            if not p.is_absolute():
+                raise ColgrepError(f"search() requires absolute paths, got {p!r}")
 
         argv = self.build_search_argv(req)
         stdout, _stderr, _rc = await self._run(argv, stream_stderr=True)
@@ -258,7 +259,8 @@ class ColgrepAdapter:
         return data
 
     async def status(self, path: Path) -> IndexStatus:
-        assert path.is_absolute(), f"status() requires an absolute path, got {path!r}"
+        if not path.is_absolute():
+            raise ColgrepError(f"status() requires an absolute path, got {path!r}")
         stdout, _stderr, _rc = await self._run(["status", str(path)])
         return parse_status(stdout, str(path))
 
@@ -271,7 +273,8 @@ class ColgrepAdapter:
         return parse_settings(stdout)
 
     async def init(self, path: Path, *, force_cpu: bool = False) -> IndexBuildResult:
-        assert path.is_absolute(), f"init() requires an absolute path, got {path!r}"
+        if not path.is_absolute():
+            raise ColgrepError(f"init() requires an absolute path, got {path!r}")
 
         argv = ["init", "-y", *(["--force-cpu"] if force_cpu else []), str(path)]
         start = time.monotonic()
@@ -299,5 +302,6 @@ class ColgrepAdapter:
         )
 
     async def clear(self, path: Path) -> None:
-        assert path.is_absolute(), f"clear() requires an absolute path, got {path!r}"
+        if not path.is_absolute():
+            raise ColgrepError(f"clear() requires an absolute path, got {path!r}")
         await self._run(["clear", str(path)])
