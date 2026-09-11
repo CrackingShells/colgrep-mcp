@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
+from pathlib import Path
 
 import pytest
 from mcp import Client
@@ -14,6 +16,7 @@ from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.locks import project_lock
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
+from colgrep_mcp.tools_search import _fill_file_cache
 
 pytestmark = pytest.mark.anyio
 
@@ -168,6 +171,111 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
     assert by_file["/tmp/fake-corpus/README.md"]["hits"] == 1
     # Score-descending: config.py's best hit outranks README's only hit.
     assert [f["file"] for f in files][0] == "/tmp/fake-corpus/src/config.py"
+
+
+# --- off-loop file I/O (F11) --------------------------------------------
+
+
+def _spy_on_read_text(monkeypatch) -> list[int]:
+    """Record the thread identity `Path.read_text` actually runs on."""
+    thread_ids: list[int] = []
+    real_read_text = Path.read_text
+
+    def spy(self: Path, *args: object, **kwargs: object) -> str:
+        thread_ids.append(threading.get_ident())
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", spy)
+    return thread_ids
+
+
+async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
+    """F11: a hit's file is read via `asyncio.to_thread`, not directly on the
+    event loop thread that is also running the rest of the server."""
+    target = tmp_path / "real_source.py"
+    target.write_text("def real_func():\n    return 42\n")
+
+    fixture = [
+        {
+            "unit": {
+                "name": "real_func",
+                "qualified_name": "real_source.py::real_func",
+                "file": str(target),
+                "line": 1,
+                "end_line": 1,
+                "language": "python",
+                "unit_type": "function",
+                "signature": "def real_func()",
+                "code": "def real_func():\n    return 42",
+            },
+            "score": 1.0,
+        }
+    ]
+    fixture_path = tmp_path / "hits.json"
+    fixture_path.write_text(json.dumps(fixture))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    main_thread_id = threading.get_ident()
+    read_thread_ids = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "real func"})
+
+    assert not r.is_error
+    assert r.structured_content["hits"][0]["location_verified"] is True
+    assert read_thread_ids  # the file was actually read
+    assert all(tid != main_thread_id for tid in read_thread_ids)
+
+
+async def test_fill_file_cache_reads_each_distinct_file_at_most_once(tmp_path, monkeypatch):
+    """F11: the caching behaviour that used to live inside `hit_from_raw`
+    (read each file at most once per call) now belongs to `_fill_file_cache`,
+    the async helper that populates `file_cache` before `hit_from_raw` runs."""
+    target = tmp_path / "config.py"
+    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n")
+
+    read_calls: list[Path] = []
+    real_read_text = Path.read_text
+
+    def spy(self: Path, *args: object, **kwargs: object) -> str:
+        read_calls.append(self)
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", spy)
+
+    raw_hits = [
+        {"unit": {"file": str(target)}, "score": 1.0},
+        {"unit": {"file": str(target)}, "score": 0.5},  # same file, second hit
+    ]
+    file_cache: dict[str, str] = {}
+    await _fill_file_cache(raw_hits, file_cache)
+
+    assert file_cache[str(target)] == "def parse_config(path: str) -> dict:\n    return {}\n"
+    assert len(read_calls) == 1  # only one actual read for two hits on the same file
+
+    # Mutate the cache in place: a second call must trust it, not re-read.
+    file_cache[str(target)] = "mutated"
+    await _fill_file_cache(raw_hits, file_cache)
+    assert len(read_calls) == 1
+    assert file_cache[str(target)] == "mutated"
+
+
+async def test_expand_reads_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
+    """F11, mirrored for `expand`."""
+    target = tmp_path / "code.py"
+    target.write_text("x = 1\ny = 2\ndef f():\n    return 1\nz = 3\n")
+    hit_id = f"{target}:3-4"
+
+    main_thread_id = threading.get_ident()
+    read_thread_ids = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": [hit_id]})
+
+    assert not r.is_error
+    assert r.structured_content["units"][0]["code"] == "def f():\n    return 1"
+    assert read_thread_ids
+    assert all(tid != main_thread_id for tid in read_thread_ids)
 
 
 # --- expand ---------------------------------------------------------------

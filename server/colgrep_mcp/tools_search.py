@@ -9,6 +9,7 @@ registers the three tools themselves on top of those helpers.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import time
 import warnings
@@ -46,10 +47,12 @@ def hit_from_raw(raw: RawHit, snippet_lines: int, include_code: bool, file_cache
 
     Re-derives `line`/`end_line` via `locate_unit` (R05 D1: colgrep's reported
     values are frequently wrong) so `hit_id` is built from trustworthy
-    locations. The unit's file is read at most once per `file_cache` (shared
-    across a whole `search`/`find_files` call); an unreadable file degrades to
-    an empty text, which makes `locate_unit` fall back to the reported
-    line/end_line with `verified=False` rather than raise.
+    locations. Pure and I/O-free: `file_cache` must already hold every hit
+    file's text (or `""` for an unreadable one) — the async caller fills it
+    via `_fill_file_cache` (off the event loop, R05 F11) before this runs, so
+    an unreadable file still degrades to an empty text rather than raise,
+    which makes `locate_unit` fall back to the reported line/end_line with
+    `verified=False`.
 
     Tolerant of missing/None optional fields (R03 §Hit JSON Schema): only
     `unit`/`score` are assumed present, everything else defaults to an empty
@@ -62,12 +65,7 @@ def hit_from_raw(raw: RawHit, snippet_lines: int, include_code: bool, file_cache
     reported_line = int(unit.get("line") or 1)
     reported_end = int(unit.get("end_line") or reported_line)
 
-    if file not in file_cache:
-        try:
-            file_cache[file] = Path(file).read_text(errors="replace")
-        except OSError:
-            file_cache[file] = ""
-    file_text = file_cache[file]
+    file_text = file_cache.get(file, "")
 
     line, end_line, verified = locate_unit(file_text, code, reported_line, reported_end)
     hit_id = f"{file}:{line}-{end_line}"
@@ -90,6 +88,31 @@ def hit_from_raw(raw: RawHit, snippet_lines: int, include_code: bool, file_cache
         code=code if include_code and code else None,
         location_verified=verified,
     )
+
+
+async def _read_file_off_loop(file: str) -> str:
+    """`Path(file).read_text(errors="replace")`, run in a worker thread.
+
+    A hit's file can be arbitrarily large; reading it directly on the event
+    loop would block every other in-flight request for as long as the read
+    takes (F11). An unreadable file degrades to `""` (the same fallback
+    `hit_from_raw` used to produce on `OSError`), not an exception.
+    """
+    try:
+        return await asyncio.to_thread(Path(file).read_text, errors="replace")
+    except OSError:
+        return ""
+
+
+async def _fill_file_cache(raw_hits: list[RawHit], file_cache: dict[str, str]) -> None:
+    """Read every distinct hit file referenced by `raw_hits` into `file_cache`,
+    at most once per file, concurrently and off the event loop (F11)."""
+    files = {(raw.get("unit") or {}).get("file") or "" for raw in raw_hits}
+    missing = [f for f in files if f not in file_cache]
+    if not missing:
+        return
+    texts = await asyncio.gather(*(_read_file_off_loop(f) for f in missing))
+    file_cache.update(zip(missing, texts, strict=True))
 
 
 def _search_header(result: SearchResult) -> str:
@@ -328,6 +351,7 @@ async def _do_search(
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
     file_cache: dict[str, str] = {}
+    await _fill_file_cache(raw_hits, file_cache)
     hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache) for raw in raw_hits]
 
     notes: list[str] = []
@@ -573,7 +597,9 @@ def register(mcp: MCPServer) -> None:
             file, line_s, end_s = match.group(1), match.group(2), match.group(3)
             line, end_line = int(line_s), int(end_s)
             try:
-                text = Path(file).read_text(errors="replace")
+                # Off the event loop (F11): a hit's file can be arbitrarily
+                # large, and this handler otherwise never awaits.
+                text = await asyncio.to_thread(Path(file).read_text, errors="replace")
             except OSError as exc:
                 units.append(
                     ExpandedUnit(

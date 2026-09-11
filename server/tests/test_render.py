@@ -38,7 +38,10 @@ def test_hit_from_raw_locates_true_lines_when_file_readable(tmp_path):
     target.write_text("x = 1\n\ndef parse_config(path: str) -> dict:\n    return {}\n")
     raw = _raw_hit(file=str(target), line=1, end_line=1)  # reported values are wrong (R05 D1)
 
-    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache={})
+    # `hit_from_raw` is pure/I/O-free (F11): the async caller (`_fill_file_cache`)
+    # is responsible for populating `file_cache` before this runs.
+    file_cache = {str(target): target.read_text()}
+    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
 
     assert (hit.line, hit.end_line, hit.location_verified) == (3, 4, True)
     assert hit.hit_id == f"{target}:3-4"
@@ -53,21 +56,17 @@ def test_hit_from_raw_falls_back_when_file_unreadable():
     assert hit.hit_id == "/nonexistent/src/config.py:7-9"
 
 
-def test_hit_from_raw_reads_each_file_at_most_once_via_cache(tmp_path):
-    target = tmp_path / "config.py"
-    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n")
-    raw = _raw_hit(file=str(target), line=99, end_line=99)
+def test_hit_from_raw_never_touches_disk_itself(tmp_path):
+    """F11: `hit_from_raw` must trust `file_cache` as given, never opening
+    the file itself — proven here by pointing `file` at a path that does not
+    exist on disk while pre-populating the cache with real text for it."""
+    missing_path = tmp_path / "never-created.py"
+    raw = _raw_hit(file=str(missing_path), line=1, end_line=1)
 
-    file_cache: dict[str, str] = {}
-    hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
-    assert str(target) in file_cache
-
-    # Mutate the cache in place: a second call must trust the cache, not re-read
-    # the (now-deleted) file from disk.
-    target.unlink()
-    file_cache[str(target)] = "def parse_config(path: str) -> dict:\n    return {}\n"
+    file_cache = {str(missing_path): "def parse_config(path: str) -> dict:\n    return {}\n"}
     hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
-    assert (hit.line, hit.location_verified) == (1, True)
+
+    assert (hit.line, hit.end_line, hit.location_verified) == (1, 2, True)
 
 
 def test_hit_from_raw_snippet_truncated_and_code_gated():
