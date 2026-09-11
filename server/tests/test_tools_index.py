@@ -7,6 +7,7 @@ Step 2 extends this file with `index_build` (heartbeat progress) and
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -15,10 +16,37 @@ from mcp import Client
 from mcp.types import ElicitRequestParams, ElicitResult
 
 from colgrep_mcp import tools_index
+from colgrep_mcp.adapter import ColgrepAdapter
+from colgrep_mcp.config import Settings
 from colgrep_mcp.errors import HINTS, Code
-from colgrep_mcp.server import build
+from colgrep_mcp.server import AppContext, build
 
 pytestmark = pytest.mark.anyio
+
+
+class _StubRequestContext:
+    def __init__(self, lifespan_context: AppContext) -> None:
+        self.lifespan_context = lifespan_context
+
+
+class _StubCtx:
+    """Minimal stand-in for `Context`: just enough for `index_build`'s own
+    use of `ctx.request_context.lifespan_context`, `ctx.report_progress` and
+    `ctx.notify_resource_updated` — no real MCP session involved.
+
+    Lets F2's regression test cancel `index_build` directly (as a plain
+    asyncio task) without depending on whether the SDK's own transport
+    delivers a client cancellation as `asyncio.CancelledError`.
+    """
+
+    def __init__(self, adapter: ColgrepAdapter, settings: Settings) -> None:
+        self.request_context = _StubRequestContext(AppContext(settings=settings, adapter=adapter))
+
+    async def report_progress(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    async def notify_resource_updated(self, *args: object, **kwargs: object) -> None:
+        pass
 
 
 # --- index_status -------------------------------------------------------------
@@ -146,6 +174,41 @@ async def test_index_build_heartbeat_streams_while_slow(settings_env, tmp_path, 
     assert any(total is None for _progress, total, _message in calls[:-1])
 
 
+async def test_index_build_cancellation_reaps_init_task_and_subprocess(settings_env, tmp_path, monkeypatch):
+    """F2: cancelling `index_build` while it's inside the heartbeat loop must
+    not abandon the still-running `init()` task (and its colgrep subprocess).
+
+    `asyncio.wait` (unlike `gather`) never propagates cancellation to the
+    task it's waiting on, so the bare `try/except ColgrepError` around the
+    loop let a cancellation drop straight through, leaving `task` (and the
+    fake binary's process) running after the project lock had already been
+    released by the `async with` exiting.
+    """
+    monkeypatch.setenv("FAKE_COLGREP_SLEEP", "5")
+    monkeypatch.setattr(tools_index, "HEARTBEAT_S", 0.05)
+    # `index_build` runs the actual subprocess through `adapter.with_stderr(...)`,
+    # a *shallow copy* of `adapter` (by design, so the shared adapter's own
+    # `on_stderr` is never mutated) — make it return `self` here so this
+    # test can observe `_last_proc` on the same object it holds a reference to.
+    monkeypatch.setattr(ColgrepAdapter, "with_stderr", lambda self, on_stderr: self)
+
+    settings = Settings.from_env()
+    adapter = ColgrepAdapter(binary=settings.binary, timeout_s=30)
+    ctx = _StubCtx(adapter=adapter, settings=settings)
+
+    build_task = asyncio.ensure_future(tools_index.index_build(str(tmp_path), ctx=ctx))
+    await asyncio.sleep(0.2)
+    build_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await build_task
+
+    # The `init()` task's colgrep subprocess must have been killed and
+    # reaped, not orphaned running in the background.
+    assert adapter._last_proc is not None
+    assert adapter._last_proc.returncode is not None
+
+
 async def test_index_build_up_to_date(settings_env, tmp_path, monkeypatch):
     monkeypatch.setenv("FAKE_COLGREP_UPTODATE", "1")
 
@@ -216,6 +279,29 @@ async def test_index_clear_elicitation_accept_runs_clear(settings_env, tmp_path,
     assert result.structured_content["cleared"] is True
     argv = json.loads(argv_file.read_text())
     assert "clear" in argv
+
+
+async def test_index_clear_elicitation_failure_raises_confirmation_required(settings_env, tmp_path, monkeypatch):
+    """F8: `ctx.elicit()` itself raising (e.g. `NoBackChannelError`) is not
+    the same as the user declining — it must surface the same
+    `CONFIRMATION_REQUIRED` coded refusal as "no elicitation capability",
+    not the silent `cleared=False` "declined" text a real decline gets."""
+    argv_file = tmp_path / "argv.json"
+    monkeypatch.setenv("FAKE_COLGREP_ARGV_FILE", str(argv_file))
+
+    async def failing(context: object, params: ElicitRequestParams) -> ElicitResult:
+        raise RuntimeError("elicitation back channel exploded")
+
+    async with Client(build(), raise_exceptions=True, elicitation_callback=failing, mode="legacy") as client:
+        result = await client.call_tool("index_clear", {"path": str(tmp_path)})
+
+    assert result.is_error
+    text = result.content[0].text
+    assert f"[{Code.CONFIRMATION_REQUIRED}] " in text
+    assert text.endswith(f"Next: {HINTS[Code.CONFIRMATION_REQUIRED]}")
+    argv = json.loads(argv_file.read_text())
+    # only `status` ran; `clear` must not have.
+    assert "clear" not in argv
 
 
 async def test_index_clear_elicitation_decline_does_not_clear(settings_env, tmp_path, monkeypatch):

@@ -208,6 +208,18 @@ class ColgrepAdapter:
             raise ColgrepTimeout(
                 f"colgrep timed out after {self.timeout_s}s: {' '.join(full_argv)}"
             ) from None
+        except BaseException:
+            # Any other abnormal exit from `wait_for` — most importantly the
+            # calling task itself being cancelled (`asyncio.CancelledError`,
+            # a `BaseException` that `except TimeoutError` never catches) —
+            # must still reap the child instead of abandoning it. `wait_for`
+            # already cancels-and-awaits the gathered future before this
+            # line runs (see `asyncio.tasks.wait_for`), so the stderr-drain
+            # coroutine is already finished; only the subprocess itself still
+            # needs killing and reaping here.
+            proc.kill()
+            await proc.wait()
+            raise
 
         stdout = stdout_bytes.decode(errors="replace")
         stderr = "\n".join(stderr_tail)
@@ -224,7 +236,8 @@ class ColgrepAdapter:
 
     async def search(self, req: SearchRequest) -> list[RawHit]:
         for p in req.paths:
-            assert p.is_absolute(), f"search() requires absolute paths, got {p!r}"
+            if not p.is_absolute():
+                raise ColgrepError(f"search() requires absolute paths, got {p!r}")
 
         argv = self.build_search_argv(req)
         stdout, _stderr, _rc = await self._run(argv, stream_stderr=True)
@@ -246,7 +259,8 @@ class ColgrepAdapter:
         return data
 
     async def status(self, path: Path) -> IndexStatus:
-        assert path.is_absolute(), f"status() requires an absolute path, got {path!r}"
+        if not path.is_absolute():
+            raise ColgrepError(f"status() requires an absolute path, got {path!r}")
         stdout, _stderr, _rc = await self._run(["status", str(path)])
         return parse_status(stdout, str(path))
 
@@ -259,7 +273,8 @@ class ColgrepAdapter:
         return parse_settings(stdout)
 
     async def init(self, path: Path, *, force_cpu: bool = False) -> IndexBuildResult:
-        assert path.is_absolute(), f"init() requires an absolute path, got {path!r}"
+        if not path.is_absolute():
+            raise ColgrepError(f"init() requires an absolute path, got {path!r}")
 
         argv = ["init", "-y", *(["--force-cpu"] if force_cpu else []), str(path)]
         start = time.monotonic()
@@ -287,5 +302,6 @@ class ColgrepAdapter:
         )
 
     async def clear(self, path: Path) -> None:
-        assert path.is_absolute(), f"clear() requires an absolute path, got {path!r}"
+        if not path.is_absolute():
+            raise ColgrepError(f"clear() requires an absolute path, got {path!r}")
         await self._run(["clear", str(path)])
