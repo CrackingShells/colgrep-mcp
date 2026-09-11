@@ -28,8 +28,8 @@ Ship `colgrep-mcp` v0.1.0: a stdio MCP server (Python SDK v2) exposing colgrep s
 ## Status
 ```mermaid
 graph TD
-    research_mcp_features[MCP Feature Matrix Study]:::planned
-    research_colgrep_behaviour[colgrep CLI Behaviour Probe]:::planned
+    research_mcp_features[MCP Feature Matrix Study]:::inprogress
+    research_colgrep_behaviour[colgrep CLI Behaviour Probe]:::inprogress
     scaffold_package[Package Scaffold]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -41,8 +41,8 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `research_mcp_features.md` | 📄 Leaf Task | ⬜ Planned |
-| `research_colgrep_behaviour.md` | 📄 Leaf Task | ⬜ Planned |
+| `research_mcp_features.md` | 📄 Leaf Task | 🔄 In Progress |
+| `research_colgrep_behaviour.md` | 📄 Leaf Task | 🔄 In Progress |
 | `scaffold_package.md` | 📄 Leaf Task | ⬜ Planned |
 
 ## Amendment Log
