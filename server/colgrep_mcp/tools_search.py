@@ -17,7 +17,6 @@ from typing import Annotated
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
-from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
@@ -29,6 +28,7 @@ from .adapter import (
     RawHit,
     SearchRequest,
 )
+from .errors import Code, from_adapter_error, note, tool_error
 from .locate import locate_unit
 from .locks import project_lock
 from .logging_utils import safe_log
@@ -233,20 +233,6 @@ async def _client_roots(ctx: Context) -> list[Path] | None:
         return None
 
 
-def _translate_error(exc: Exception) -> ToolError:
-    """Map an adapter failure onto the R01 §Error model wording."""
-    if isinstance(exc, ColgrepNotFound):
-        return ToolError("colgrep not found on PATH. Install: cargo install colgrep — or set COLGREP_MCP_BINARY")
-    if isinstance(exc, ColgrepFailed):
-        tail = "\n".join(exc.stderr_tail.splitlines()[-20:])
-        return ToolError(f"colgrep exited {exc.returncode}: {tail}\nargv: {' '.join(exc.argv)}")
-    if isinstance(exc, ColgrepTimeout):
-        return ToolError(f"{exc} — for a cold or large repository, call index_build first.")
-    if isinstance(exc, ColgrepParseError):
-        return ToolError(f"colgrep produced output that could not be parsed: {exc}")
-    return ToolError(str(exc))
-
-
 async def _do_search(
     ctx: Context,
     *,
@@ -306,7 +292,7 @@ async def _do_search(
         try:
             raw_hits = await adapter.search(req)
         except (ColgrepNotFound, ColgrepFailed, ColgrepTimeout, ColgrepParseError) as exc:
-            raise _translate_error(exc) from exc
+            raise from_adapter_error(exc, path=resolved[0]) from exc
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
     file_cache: dict[str, str] = {}
@@ -314,13 +300,17 @@ async def _do_search(
 
     notes: list[str] = []
     if not hits:
-        notes.append("no units matched; try dropping pattern/include or rephrasing")
+        notes.append(note(Code.NO_HITS, "no units matched"))
     if limit is None and pattern is None:
         # R05 D5: colgrep only searches exhaustively (omits its own default cap)
         # when a `-e` pattern is present; a bare semantic query still gets 15 hits.
         notes.append(
-            "limit omitted without pattern: colgrep applies its own default of 15; pass a larger limit for more"
+            note(Code.LIMIT_DEFAULT_APPLIED, "limit omitted without pattern: colgrep applies its own default of 15")
         )
+    if any(not hit.location_verified for hit in hits):
+        # R05 D1: once per result, never once per hit, so a result with many
+        # unverified hits doesn't drown other notes.
+        notes.append(note(Code.LOCATION_UNVERIFIED, "some hits' line numbers are unverified"))
 
     result = SearchResult(
         query=query,
@@ -417,6 +407,7 @@ def register(mcp: MCPServer) -> None:
         text, capped = render_search_text(result, settings.text_budget)
         if capped:
             result.truncated = True
+            result.notes.append(note(Code.TEXT_TRUNCATED, "text listing was capped by the token budget"))
             await safe_log(
                 ctx, "warning", f"search text truncated to {settings.text_budget} chars; see structured_content for all hits"
             )
@@ -537,7 +528,13 @@ def register(mcp: MCPServer) -> None:
             match = _HIT_ID_RE.match(hit_id)
             if not match:
                 units.append(
-                    ExpandedUnit(hit_id=hit_id, file="", line=0, end_line=0, error=f"malformed hit_id: {hit_id!r}")
+                    ExpandedUnit(
+                        hit_id=hit_id,
+                        file="",
+                        line=0,
+                        end_line=0,
+                        error=str(tool_error(Code.BAD_HIT_ID, f"malformed hit_id: {hit_id!r}")),
+                    )
                 )
                 continue
 

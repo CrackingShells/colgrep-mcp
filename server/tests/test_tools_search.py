@@ -9,6 +9,7 @@ import json
 import pytest
 from mcp import Client
 
+from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
 
@@ -39,14 +40,14 @@ async def test_search_limit_none_omits_k_flag(settings_env, monkeypatch, tmp_pat
 
     argv = json.loads(argv_file.read_text())
     assert "-k" not in argv
-    assert not any(n.startswith("limit omitted") for n in r.structured_content["notes"])
+    assert not any(n.startswith(f"[{Code.LIMIT_DEFAULT_APPLIED}]") for n in r.structured_content["notes"])
 
 
 async def test_search_limit_none_without_pattern_appends_d5_note(settings_env):
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("search", {"query": "x", "limit": None})
 
-    assert any(n.startswith("limit omitted without pattern") for n in r.structured_content["notes"])
+    assert any(n.startswith(f"[{Code.LIMIT_DEFAULT_APPLIED}]") for n in r.structured_content["notes"])
 
 
 async def test_search_pattern_and_include_flags_reach_argv(settings_env, monkeypatch, tmp_path):
@@ -77,7 +78,12 @@ async def test_search_bad_path_is_tool_error_listing_the_path(settings_env):
         r = await c.call_tool("search", {"query": "x", "paths": ["/nonexistent/nope"]})
 
     assert r.is_error is True
-    assert "/nonexistent/nope" in r.content[0].text
+    text = r.content[0].text
+    # SDK-wrapped as "Error executing tool search: <message>", so the coded
+    # prefix is present but not necessarily at index 0.
+    assert f"[{Code.PATH_NOT_FOUND}] " in text
+    assert text.endswith(f"Next: {HINTS[Code.PATH_NOT_FOUND]}")
+    assert "/nonexistent/nope" in text
 
 
 async def test_search_colgrep_exit_2_surfaces_as_tool_error_text(settings_env, monkeypatch):
@@ -87,8 +93,11 @@ async def test_search_colgrep_exit_2_surfaces_as_tool_error_text(settings_env, m
         r = await c.call_tool("search", {"query": "x"})
 
     assert r.is_error is True
-    assert "colgrep exited 2" in r.content[0].text
-    assert "forced failure" in r.content[0].text
+    text = r.content[0].text
+    assert f"[{Code.COLGREP_FAILED}] " in text
+    assert text.endswith(f"Next: {HINTS[Code.COLGREP_FAILED]}")
+    assert "colgrep exited 2" in text
+    assert "forced failure" in text
 
 
 async def test_search_zero_hits_is_not_an_error(settings_env, monkeypatch, tmp_path):
@@ -101,6 +110,7 @@ async def test_search_zero_hits_is_not_an_error(settings_env, monkeypatch, tmp_p
 
     assert r.is_error is False
     assert r.structured_content["hits"] == []
+    assert r.structured_content["notes"][0].startswith(f"[{Code.NO_HITS}]")
     assert "no units matched" in r.structured_content["notes"][0]
     assert "no units matched" in r.content[0].text
 
@@ -174,6 +184,8 @@ async def test_expand_malformed_hit_id_yields_per_unit_error(settings_env):
 
     assert r.is_error is False
     unit = r.structured_content["units"][0]
+    assert unit["error"].startswith(f"[{Code.BAD_HIT_ID}] ")
+    assert unit["error"].endswith(f"Next: {HINTS[Code.BAD_HIT_ID]}")
     assert "malformed" in unit["error"]
 
 
@@ -285,3 +297,4 @@ async def test_search_text_budget_holds_for_a_2000_hit_fixture(settings_env, mon
     assert r.structured_content["truncated"] is True
     assert len(r.content[0].text) <= 3000
     assert "more hits in structured_content" in r.content[0].text
+    assert any(n.startswith(f"[{Code.TEXT_TRUNCATED}]") for n in r.structured_content["notes"])

@@ -14,10 +14,10 @@ from pydantic import BaseModel, Field
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
-from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability, TextContent, ToolAnnotations
 
-from .adapter import ColgrepError, ColgrepFailed, ColgrepNotFound, ColgrepTimeout
+from .adapter import ColgrepError, ColgrepNotFound
+from .errors import Code, from_adapter_error, tool_error
 from .locks import project_lock
 from .logging_utils import safe_log
 from .models import Doctor, IndexBuildResult, IndexClearResult, IndexInfo, IndexList, IndexStatus
@@ -40,18 +40,6 @@ def _resolve_one(path: str | None, ctx: Context) -> Path:
     """Resolve a single optional path argument to one absolute, existing path."""
     settings = get_settings(ctx)
     return resolve_paths([path] if path else None, settings, None)[0]
-
-
-def _translate_error(exc: ColgrepError) -> ToolError:
-    """Map an adapter exception onto the `ToolError` text an agent should see (R01 §Error model)."""
-    if isinstance(exc, ColgrepNotFound):
-        return ToolError("colgrep not found on PATH. Install: cargo install colgrep — or set COLGREP_MCP_BINARY")
-    if isinstance(exc, ColgrepFailed):
-        tail = "\n".join(exc.stderr_tail.splitlines()[-20:])
-        return ToolError(f"colgrep exited {exc.returncode} running {' '.join(exc.argv)}:\n{tail}")
-    if isinstance(exc, ColgrepTimeout):
-        return ToolError(f"{exc} — for a cold or large repository, call index_build first.")
-    return ToolError(str(exc))
 
 
 # --- rendering ---------------------------------------------------------------
@@ -122,7 +110,7 @@ async def index_status(
     try:
         status = await adapter.status(resolved)
     except ColgrepError as exc:
-        raise _translate_error(exc) from exc
+        raise from_adapter_error(exc, path=resolved) from exc
 
     if status.indexed:
         try:
@@ -150,7 +138,7 @@ async def list_indexes(*, ctx: Context) -> CallToolResult:
     try:
         infos: list[IndexInfo] = await adapter.stats()
     except ColgrepError as exc:
-        raise _translate_error(exc) from exc
+        raise from_adapter_error(exc) from exc
 
     result = IndexList(indexes=infos)
     return CallToolResult(
@@ -238,7 +226,7 @@ async def index_build(
 
             result = await task
         except ColgrepError as exc:
-            raise _translate_error(exc) from exc
+            raise from_adapter_error(exc, path=resolved) from exc
 
     summary_line = _build_summary_line(result)
     try:
@@ -276,12 +264,12 @@ async def index_clear(
     try:
         st = await adapter.status(resolved)
     except ColgrepError as exc:
-        raise _translate_error(exc) from exc
+        raise from_adapter_error(exc, path=resolved) from exc
 
     if st.indexed and Path(st.project).resolve() != resolved.resolve():
-        raise ToolError(
-            f"colgrep would clear the index for {st.project}, which also covers other directories. "
-            f"Call index_clear with path={st.project!r} (and confirm=true) if that is really intended."
+        raise tool_error(
+            Code.PROJECT_ROOT_MISMATCH,
+            f"colgrep would clear the index for {st.project}, which also covers other directories than {resolved}.",
         )
 
     if not confirm:
@@ -294,10 +282,7 @@ async def index_clear(
             has_elicitation = False
 
         if not has_elicitation:
-            raise ToolError(
-                f"Refusing to delete without confirmation. Call again with confirm=true to delete the index "
-                f"for {resolved}."
-            )
+            raise tool_error(Code.CONFIRMATION_REQUIRED, f"Refusing to delete the index for {resolved} without confirmation.")
 
         res = None
         try:
@@ -319,7 +304,7 @@ async def index_clear(
         try:
             await adapter.clear(resolved)
         except ColgrepError as exc:
-            raise _translate_error(exc) from exc
+            raise from_adapter_error(exc, path=resolved) from exc
 
     result = IndexClearResult(project=str(resolved), cleared=True)
     try:
