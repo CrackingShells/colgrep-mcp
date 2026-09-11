@@ -42,7 +42,33 @@ from .server import get_adapter, get_settings
 _HIT_ID_RE = re.compile(r"^(.+):(\d+)-(\d+)$")
 
 
-def hit_from_raw(raw: RawHit, snippet_lines: int, include_code: bool, file_cache: dict[str, str]) -> SearchHit:
+def _resolve_hit_file(file: str, base_path: Path | None) -> str:
+    """Make a hit's `unit.file` absolute before it's used anywhere else (R01
+    §hit_id invariant).
+
+    colgrep is expected to always emit an absolute path (R05), but nothing
+    stops a future/odd colgrep build from emitting a relative one. A relative
+    `file` left as-is would build a `hit_id` that `expand` later resolves
+    against the *server process's* cwd rather than the project actually
+    searched — silently reading (or failing to read) the wrong file. Joining
+    against `base_path` (the first path this search itself ran against) is
+    the only meaningful "relative to what" available here; an already-
+    absolute `file`, or a missing `base_path`, passes through unchanged (no
+    forced `.resolve()` — that would canonicalise symlinks, out of scope
+    here per F7).
+    """
+    if not file or base_path is None or Path(file).is_absolute():
+        return file
+    return str(base_path / file)
+
+
+def hit_from_raw(
+    raw: RawHit,
+    snippet_lines: int,
+    include_code: bool,
+    file_cache: dict[str, str],
+    base_path: Path | None = None,
+) -> SearchHit:
     """Build a `SearchHit` from one raw colgrep JSON hit (`{"unit": {...}, "score": ...}`).
 
     Re-derives `line`/`end_line` via `locate_unit` (R05 D1: colgrep's reported
@@ -52,7 +78,8 @@ def hit_from_raw(raw: RawHit, snippet_lines: int, include_code: bool, file_cache
     via `_fill_file_cache` (off the event loop, R05 F11) before this runs, so
     an unreadable file still degrades to an empty text rather than raise,
     which makes `locate_unit` fall back to the reported line/end_line with
-    `verified=False`.
+    `verified=False`. `base_path` (the first path the search ran against)
+    resolves a relative `unit.file` to absolute (F13) before `hit_id` is built.
 
     Tolerant of missing/None optional fields (R03 §Hit JSON Schema): only
     `unit`/`score` are assumed present, everything else defaults to an empty
@@ -60,7 +87,7 @@ def hit_from_raw(raw: RawHit, snippet_lines: int, include_code: bool, file_cache
     """
     unit = raw.get("unit") or {}
     score = float(raw.get("score") or 0.0)
-    file = unit.get("file") or ""
+    file = _resolve_hit_file(unit.get("file") or "", base_path)
     code = unit.get("code") or ""
     reported_line = int(unit.get("line") or 1)
     reported_end = int(unit.get("end_line") or reported_line)
@@ -104,10 +131,18 @@ async def _read_file_off_loop(file: str) -> str:
         return ""
 
 
-async def _fill_file_cache(raw_hits: list[RawHit], file_cache: dict[str, str]) -> None:
+async def _fill_file_cache(
+    raw_hits: list[RawHit], file_cache: dict[str, str], base_path: Path | None = None
+) -> None:
     """Read every distinct hit file referenced by `raw_hits` into `file_cache`,
-    at most once per file, concurrently and off the event loop (F11)."""
-    files = {(raw.get("unit") or {}).get("file") or "" for raw in raw_hits}
+    at most once per file, concurrently and off the event loop (F11).
+
+    Keyed the same way `hit_from_raw` looks values up: `base_path` resolves a
+    relative `unit.file` to absolute first (F13), so a relative and an
+    equivalent already-absolute reference to the same file share one cache
+    entry and one read.
+    """
+    files = {_resolve_hit_file((raw.get("unit") or {}).get("file") or "", base_path) for raw in raw_hits}
     missing = [f for f in files if f not in file_cache]
     if not missing:
         return
@@ -350,9 +385,13 @@ async def _do_search(
             raise from_adapter_error(exc, path=resolved[0]) from exc
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
+    # F13: `resolved[0]` is the "first search path" a relative `unit.file`
+    # (not expected from colgrep, but not guaranteed absent either) resolves
+    # against.
+    base_path = resolved[0]
     file_cache: dict[str, str] = {}
-    await _fill_file_cache(raw_hits, file_cache)
-    hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache) for raw in raw_hits]
+    await _fill_file_cache(raw_hits, file_cache, base_path=base_path)
+    hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path) for raw in raw_hits]
 
     notes: list[str] = []
     if not hits:
