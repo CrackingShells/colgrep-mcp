@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 import time
 import warnings
+from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Annotated
 
@@ -310,7 +311,16 @@ async def _do_search(
     )
 
     start = time.monotonic()
-    async with project_lock(resolved[0]):
+    # Lock every distinct project a multi-path search touches (R01
+    # §Concurrency invariant: "held [for] search/find_files too"), not only
+    # `resolved[0]` — otherwise a concurrent `index_build`/search on the
+    # second-and-later paths races this call. Sorted so two overlapping
+    # multi-path calls always acquire their shared locks in the same order,
+    # avoiding a lock-ordering deadlock.
+    distinct_paths = sorted(set(resolved), key=str)
+    async with AsyncExitStack() as stack:
+        for p in distinct_paths:
+            await stack.enter_async_context(project_lock(p))
         try:
             raw_hits = await adapter.search(req)
         except (ColgrepNotFound, ColgrepFailed, ColgrepTimeout, ColgrepParseError) as exc:
