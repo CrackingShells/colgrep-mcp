@@ -5,10 +5,10 @@
 - [ ] `build/colgrep_adapter` merged (`status`, `stats`, `settings`, `init`, `clear`, `version` work against the fake binary)
 - [ ] `server/colgrep_mcp/tools_index.py` stub exists
 **Success Gates**:
-- ⬜ [run] `cd server && uv run pytest -q tests/test_tools_index.py` passes
-- ⬜ [run] `index_build` through `Client(build())` with a `progress_callback` receives ≥ 1 progress notification (the final summary notification at minimum; the heartbeat fires when the fake binary is slowed with `FAKE_COLGREP_SLEEP=6`)
-- ⬜ [run] `index_clear` on a path whose colgrep project root differs from the path raises a `ToolError` naming the root; without `confirm` on a client that declares no elicitation capability raises a `ToolError` naming `confirm=true`; with a client whose `elicitation_callback` accepts, the fake `clear` runs; with a callback that declines, nothing runs and the result says `cleared=false`
-- ⬜ [static] Annotations: `index_status`/`list_indexes`/`doctor` read-only; `index_build` `read_only_hint=False, destructive_hint=False, idempotent_hint=True`; `index_clear` `destructive_hint=True`
+- ✅ [run] `cd server && uv run pytest -q tests/test_tools_index.py` passes
+- ✅ [run] `index_build` through `Client(build())` with a `progress_callback` receives ≥ 1 progress notification (the final summary notification at minimum; the heartbeat fires when the fake binary is slowed with `FAKE_COLGREP_SLEEP=6`)
+- ✅ [run] `index_clear` on a path whose colgrep project root differs from the path raises a `ToolError` naming the root; without `confirm` on a client that declares no elicitation capability raises a `ToolError` naming `confirm=true`; with a client whose `elicitation_callback` accepts, the fake `clear` runs; with a callback that declines, nothing runs and the result says `cleared=false`
+- ✅ [static] Annotations: `index_status`/`list_indexes`/`doctor` read-only; `index_build` `read_only_hint=False, destructive_hint=False, idempotent_hint=True`; `index_clear` `destructive_hint=True`
 **References**: [R01 §Tools](../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R01 §Key Flows — Destructive operation](../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R02 Client-initiated table](../../../../__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md) — elicitation adopt-guarded, roots defer, progress adopt-now; [R05 D2, D3, M2](../../../../__reports__/colgrep_mcp/02-architecture_v1.md) — heartbeat progress (no per-file lines exist), project-root refusal in `index_clear`, `safe_log`
 
 ## Step 1: Read-only tools — index_status, list_indexes, doctor
