@@ -277,7 +277,7 @@ async def test_search_raises_parse_error_on_bad_json(fake_colgrep_bin, monkeypat
 
 async def test_search_rejects_relative_paths(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.search(SearchRequest(query="x", paths=[Path("relative")]))
 
 
@@ -327,7 +327,7 @@ async def test_status_not_indexed(fake_colgrep_bin, tmp_path, monkeypatch):
 
 async def test_status_requires_absolute_path(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.status(Path("relative/path"))
 
 
@@ -395,7 +395,7 @@ async def test_init_streams_stderr_to_on_stderr(fake_colgrep_bin, tmp_path):
 
 async def test_init_requires_absolute_path(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.init(Path("relative/path"))
 
 
@@ -411,7 +411,7 @@ async def test_clear_via_fake_binary(fake_colgrep_bin, tmp_path):
 
 async def test_clear_requires_absolute_path(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ColgrepError):
         await adapter.clear(Path("relative/path"))
 
 
