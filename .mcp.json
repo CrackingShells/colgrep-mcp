@@ -1,18 +1,11 @@
 {
   "mcpServers": {
     "colgrep": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--quiet",
-        "--directory",
-        "${CLAUDE_PLUGIN_ROOT}/server",
-        "colgrep-mcp"
-      ],
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/launch.sh",
+      "args": [],
       "env": {
         "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/venv",
-        "COLGREP_MCP_ROOT": "${CLAUDE_PROJECT_DIR}",
-        "PATH": "/opt/homebrew/bin:/usr/local/bin:/Users/me/.local/bin:/Users/me/.cargo/bin"
+        "COLGREP_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
       }
     }
   }
