@@ -122,6 +122,15 @@ cd server && uv run pytest -q
 
 Tests run against a fake `colgrep` (`server/tests/fake_colgrep.py`); set `COLGREP_MCP_REAL=1` to include the few that need the real binary. Architecture, measured behaviour and decisions live in `__reports__/colgrep_mcp/`; the execution plan in `__roadmap__/colgrep_mcp/`; commit conventions in `CONTRIBUTING.md`.
 
+`server/tests/e2e/run_e2e.py` is a separate, non-pytest script (no `test_` prefix, so `pytest` never collects it) that drives the assembled server over stdio against a **real** `colgrep` binary and a real repository, for measured end-to-end validation rather than fixture-driven unit tests:
+
+```bash
+cd server && uv run python tests/e2e/run_e2e.py --corpus /path/to/a/real/repo
+cd server && uv run python tests/e2e/run_e2e.py --corpus /path/to/a/real/repo --dry-run  # print the call plan, exit 0
+```
+
+It refuses to run against this repository/its worktrees or anything under `/private/tmp` (colgrep folds such paths into whichever project already anchors that prefix — see `__reports__/colgrep_mcp/02-architecture_v1.md` D3). Findings from the latest run live in `__reports__/colgrep_mcp/02-findings_e2e_validation_v0.md`.
+
 ## Packaging
 
 The repository root is simultaneously:

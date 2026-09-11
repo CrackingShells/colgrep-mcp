@@ -16,7 +16,7 @@ Prove the server works end-to-end and release it.
 ## Status
 ```mermaid
 graph TD
-    e2e_validation[End-to-End Validation]:::inprogress
+    e2e_validation[End-to-End Validation]:::done
     release_0_1_0[Release 0.1.0]:::planned
     code_review[Code Review Pass]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
@@ -29,7 +29,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `e2e_validation.md` | 📄 Leaf Task | 🔄 In Progress |
+| `e2e_validation.md` | 📄 Leaf Task | ✅ Done |
 | `release_0_1_0.md` | 📄 Leaf Task | ⬜ Planned |
 | `code_review.md` | 📄 Leaf Task | 🔄 In Progress |
 
