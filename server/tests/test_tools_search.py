@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 
 import pytest
 from mcp import Client
 
 from colgrep_mcp.errors import HINTS, Code
+from colgrep_mcp.locks import project_lock
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
 
@@ -113,6 +115,39 @@ async def test_search_zero_hits_is_not_an_error(settings_env, monkeypatch, tmp_p
     assert r.structured_content["notes"][0].startswith(f"[{Code.NO_HITS}]")
     assert "no units matched" in r.structured_content["notes"][0]
     assert "no units matched" in r.content[0].text
+
+
+# --- concurrency (R01 §Concurrency invariant) --------------------------------
+
+
+async def test_search_locks_every_resolved_path_not_only_the_first(settings_env, tmp_path, monkeypatch):
+    """F6: a multi-path search must serialise against *every* project it
+    touches, not only `resolved[0]` — otherwise a concurrent `index_build`
+    (or another search) on the second path races the in-flight search."""
+    monkeypatch.setenv("FAKE_COLGREP_SLEEP", "0.3")
+    proj_a = tmp_path / "a"
+    proj_a.mkdir()
+    proj_b = tmp_path / "b"
+    proj_b.mkdir()
+
+    async with Client(build(), raise_exceptions=True) as c:
+        search_task = asyncio.ensure_future(
+            c.call_tool("search", {"query": "x", "paths": [str(proj_a), str(proj_b)]})
+        )
+        await asyncio.sleep(0.05)  # let _do_search acquire its lock(s) and start the slow adapter call
+
+        async def _acquire_and_release(path):
+            async with project_lock(path):
+                pass
+
+        # The second path must be locked too — acquiring it directly here,
+        # while the search above is still in flight, must block.
+        with pytest.raises(TimeoutError):
+            await asyncio.wait_for(_acquire_and_release(proj_b.resolve()), timeout=0.1)
+
+        result = await search_task
+
+    assert not result.is_error
 
 
 # --- find_files ---------------------------------------------------------
