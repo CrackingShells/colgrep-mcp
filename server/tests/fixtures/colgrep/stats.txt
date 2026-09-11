@@ -1,0 +1,771 @@
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/examples/p53_mdm2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 649
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Rikyu-Agent/.claude/worktrees/frosty-ardinghelli-d56610
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 81
+  Search count: 6
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2941
+  Search count: 24
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/report_memory/server
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 184
+  Search count: 8
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-src-External-RIKEN-RCCS-Rikyu-Agent--claude-worktrees-mystifying-thompson-a875f8/fca52c2a-6048-4911-8a1c-b5a5bf1fd40d/scratchpad/leaves/docs-sync
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 77
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/External/william-dawson/hpc-agent-core-wt/wt-config
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 211
+  Search count: 3
+
+Project: /Users/hacker/Documents/explore/llm_gen_robot_protocol/__reports__/platform-capability-survey
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 1
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-career-Applications-Grants-JSPS-Kakenhi-2026/21ab0d7b-248c-4e7b-bdea-5a9006d2d3f5/scratchpad
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 39
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Rikyu-Agent/.claude/worktrees/mystifying-thompson-a875f8
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 186
+  Search count: 2
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/mcp-python-ingestion/p44-coverage/.claude/skills/htn-creator-workspace/infrastructure
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3957
+  Search count: 294
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-eval-bundle
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 39
+  Search count: 94
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a3aa664179ad858a4/examples/p53_mdm2/data
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 66
+  Search count: 11
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-arangodb-async/__threads__/tools-refactor/cycles/cycle-002
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/jovial-benz-b8cde2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 426
+  Search count: 2
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/video-v1-audio-recovery-87a9e5
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 191
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/External/rikenlbc/lbc-llm-agents/.claude/worktrees/agent-aaf5696e5307b4acd
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 342
+  Search count: 5
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-workspace/infrastructure/htn_creator_eval
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 893
+  Search count: 55
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a8e1594690e530c82/__roadmap__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 52
+  Search count: 11
+
+Project: /Users/hacker/Documents/career/Applications/Grants/JSPS_Kakenhi_2026/application_documents/03-structure
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 13
+  Search count: 37
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 61
+  Search count: 5
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-ae92cf2f1bbd9f2e4/examples/p53_mdm2/data
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 66
+  Search count: 11
+
+Project: /Users/hacker/Documents/src/CrackingShells/Hatch/hatch
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 661
+  Search count: 7
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 111
+  Search count: 7
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/curie-hackathon-pilot-ffd384
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 61
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-arangodb-async
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1069
+  Search count: 2
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3702
+  Search count: 5
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/tts-hackathon-narration-timing-d59c85
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 159
+  Search count: 2
+
+Project: /Users/hacker/.config/writing-prose
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Rikyu-Agent
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 81
+  Search count: 6
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-workspace/infrastructure/evals
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 7
+  Search count: 95
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 253
+  Search count: 100
+
+Project: /Users/hacker/Documents/explore/async_work_style/.claude/worktrees/sleepy-visvesvaraya-64176d/skills/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2161
+  Search count: 40
+
+Project: /Users/hacker/Documents/papers/personal/markdown
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 9
+  Search count: 4
+
+Project: /Users/hacker/Documents/explore/augmented-light
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1514
+  Search count: 5
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/jovial-goodall-9e9030
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1634
+  Search count: 10
+
+Project: /Users/hacker/.cache/uv/archive-v0/rA9rwnZzozUuKHg6VfUqp/hpc_agent_core
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 206
+  Search count: 6
+
+Project: /Users/hacker/Documents/src/External/PCfVW/GTPyhop
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2212
+  Search count: 4
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a8e1594690e530c82/__threads__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 71
+  Search count: 11
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-mcp-python-ingestion-htn-creator-eval-scalability-103f04/7e1de896-582d-45bf-a30d-1aed5f0efa21/scratchpad/gtpyhop-pip/packages/gtpyhop-core/src
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 282
+  Search count: 2
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/docs_guide/server/octopus_mcp/rag
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 24
+  Search count: 7
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/xenodochial-jones-958e3a
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 383
+  Search count: 6
+
+Project: /Users/hacker/.cache/uv/archive-v0/gR0zOhiLMRF0uWIZCoVGD/remotemanager
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 857
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/External/william-dawson/hpc-agent-core
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 312
+  Search count: 8
+
+Project: /Users/hacker/Documents/career/Projects/CRPs_async/__threads__/crp/cycles/cycle-027
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 125
+  Search count: 1
+
+Project: /Users/hacker/Documents/career/Applications/Positions/ECL_2026/.claude/worktrees/silly-benz-511f9f
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1014
+  Search count: 3
+
+Project: /Users/hacker/Documents/career/Applications/Positions/ECL_2026
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1014
+  Search count: 14
+
+Project: /Users/hacker/Documents/src/CrackingShells/cracking-shells-playbook/skills/writing-prose
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 29
+  Search count: 16
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/a1-p3/server/cell_mcp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 161
+  Search count: 4
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/worktrees/eval-sandbox-integrity/.claude/skills/htn-creator/scripts
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 242
+  Search count: 13
+
+Project: /Users/hacker/Documents/career/Applications/Grants/__submitted__/jsps_ecr_fy_2025
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 13
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/a1-harness
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 445
+  Search count: 5
+
+Project: /Users/hacker/Documents/papers/personal
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4
+  Search count: 2
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/live-gate-retry-0904/server
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 441
+  Search count: 3
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/a1-p1
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 442
+  Search count: 12
+
+Project: /Users/hacker/Documents/src/External/PCfVW/GTPyhop/packages
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2166
+  Search count: 2
+
+Project: /Users/hacker/.claude/hooks
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 37
+  Search count: 15
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/worktrees/agent-aa46e5b6e83bd6a26/.claude/skills/htn-creator-workspace
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2412
+  Search count: 74
+
+Project: /Users/hacker/Documents/career/Applications/Grants/JSPS_Kakenhi_2026
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 157
+  Search count: 38
+
+Project: /Users/hacker/Documents/career/Applications/Positions/ECL_2026/__reports__/ecl_figures
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 24
+  Search count: 7
+
+Project: /Users/hacker/.claude/projects/-Users-hacker-Documents-tmp-claude-worktrees-ECL-2026-ecl-doc1-sections-1-2-0cbb46/6b7355c7-6519-4d7e-9e8f-513a655cc1a7/tool-results
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Rikyu-Agent/.claude/worktrees/frosty-ardinghelli-d56610/server
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 69
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/CrackingShells/cracking-shells-playbook/skills/writing-reports
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 10
+  Search count: 2
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/examples/foundation_demo_v8/data
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 29
+  Search count: 1
+
+Project: /Users/hacker/Documents/career/Applications/Positions/ECL_2026/__reports__/init
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4
+  Search count: 12
+
+Project: /Users/hacker/Documents/career/Projects/CRPs_async
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1481
+  Search count: 3
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-ECL-2026-ecl-doc1-sections-1-2-0cbb46/6b7355c7-6519-4d7e-9e8f-513a655cc1a7/scratchpad/render/proj
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 389
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4336
+  Search count: 281
+
+Project: /Users/hacker/Documents/explore/async_work_style/.claude/worktrees/agent-a7aea0a69edc77687/skills/umbod/scripts/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2498
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/docs_guide/server/octopus_mcp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 148
+  Search count: 7
+
+Project: /Users/hacker/.claude/plans
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 26
+  Search count: 5
+
+Project: /Users/hacker/Documents/explore/skills/scheduling-work
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/Cell-Agent-ShinobuLab/task-routing-and-surface
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 379
+  Search count: 3
+
+Project: /Users/hacker/Documents/career/Applications/Grants/JSPS_Kakenhi_2026/information_documents/extracted_markdown
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 19
+  Search count: 12
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/__threads__/p53-mdm2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 35
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/beat-4-v2-audio-regen-b71958/curriculum/curie_hackathon_pilot/chapters
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 4
+
+Project: /private/tmp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2434
+  Search count: 11
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-workspace/infrastructure
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3855
+  Search count: 40
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-mcp-python-ingestion-keen-perlman-f669f8/6124c231-7785-45b2-a33c-3278b31ee570/scratchpad/regrade_probe
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 140
+  Search count: 1
+
+Project: /Users/hacker/Documents/career/Applications/Grants/JSPS_Kakenhi_2026/__canons__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 36
+  Search count: 37
+
+Project: /Users/hacker/Documents/src/External/william-dawson/hpc-agent-core-wt/wt-hint
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 239
+  Search count: 7
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/tts-hackathon-narration-timing-d59c85/__reports__/tts_pipeline
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 2
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-mcp-python-ingestion-keen-perlman-f669f8/6124c231-7785-45b2-a33c-3278b31ee570/scratchpad/regrade_probe/20260804-101514_v0.2.5_claude-haiku-4-5_v0_2_5_smoke
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 140
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/mcp-python-ingestion/peaceful-faraday-ec6553
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 7058
+  Search count: 279
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a3e8078c860bea230/examples/p53_mdm2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 750
+  Search count: 11
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/character_config/server
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 158
+  Search count: 9
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/docs_index/server/octopus_mcp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 150
+  Search count: 7
+
+Project: /Users/hacker/Documents/career/Applications/Positions/ECL_2026/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 40
+  Search count: 7
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-workspace/results
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 17279
+  Search count: 277
+
+Project: /Users/hacker/Documents/career/Projects/ai_agent_academy/curriculum/curie_hackathon_pilot/video_2/audio
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/CrackingShells/cracking-shells-playbook/skills/managing-roadmaps/references
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 8
+  Search count: 18
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/worktrees/agent-aab9fc6a65e15c54b
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 5359
+  Search count: 64
+
+Project: /Users/hacker/Documents/src/External/rikenlbc/lbc-llm-agents/.claude/worktrees/priceless-kare-87d686
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 366
+  Search count: 52
+
+Project: /Users/hacker/Documents/explore/async_work_style/.claude/worktrees/agent-a663ac545e3fadec5/skills/umbod/scripts/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2188
+  Search count: 9
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-explore-async-work-style/a87fb639-7295-4703-9b71-3ed26798a844/scratchpad/wt-wake-autoflip/skills/umbod/scripts/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1110
+  Search count: 2
+
+Project: /Users/hacker/Documents/explore/augmented-light/__reports__/redesign
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 20
+  Search count: 5
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/tts-chunk-generation-query-03a81a
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 306
+  Search count: 32
+
+Project: /Users/hacker/Documents/explore/async_work_style/__roadmap__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 129
+  Search count: 1
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-mcp-python-ingestion-htn-creator-eval-scalability-103f04/0da261c6-ceaa-41da-87a4-d8fb6f2f5bec/scratchpad/wheelprobe/x/gtpyhop
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 282
+  Search count: 1
+
+Project: /Users/hacker/.claude/plugins/cache/lbc-llm-agents/banyan/0.4.1
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 120
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/worktrees/agent-ac30407df3412da9a/mcp_python_ingestion
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 487
+  Search count: 97
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-workspace
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4042
+  Search count: 14
+
+Project: /Users/hacker/Documents/src/CrackingShells/Hatchling
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1219
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/william-dawson/hpc-agent-core-wt/wt-testfix/tests
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 94
+  Search count: 8
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/extras
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1
+  Search count: 1
+
+Project: /Users/hacker/Documents/explore/async_work_style/.claude/worktrees/agent-a8f68fc6d025d25b6/skills/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2164
+  Search count: 4
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/mcp-python-ingestion/affectionate-maxwell-d25672/.claude/skills/htn-creator-workspace/infrastructure/htn_creator_eval
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1006
+  Search count: 294
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/skills
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 170
+  Search count: 12
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a8e1594690e530c82/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 61
+  Search count: 13
+
+Project: /Users/hacker/.cache/uv/archive-v0/7iiP848lBVW_979Z__qSc/mcp/server/mcpserver
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 269
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 7060
+  Search count: 293
+
+Project: /Users/hacker/Documents/explore/async_work_style/skills/umbod/scripts/umbod/src
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1376
+  Search count: 18
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/__roadmap__/p53-mdm2-v2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 22
+  Search count: 2
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/mcp-python-ingestion/peaceful-faraday-ec6553/.claude/skills/htn-creator-workspace
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4034
+  Search count: 293
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/JSPS_Kakenhi_2026/sweet-leavitt-2d121c/__reports__/id-target
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 17
+  Search count: 24
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/__reports__/p53-mdm2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 7
+
+Project: /Users/hacker/Documents/explore/llm_gen_robot_protocol
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 589
+  Search count: 8
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/worktrees/agent-aa46e5b6e83bd6a26/.claude/skills/htn-creator-eval-bundle
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 34
+  Search count: 66
+
+Project: /Users/hacker/Documents/src/AOUSD/forOUSD/lib/python3.11/site-packages/maboss
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 639
+  Search count: 5
+
+Project: /Users/hacker/Documents/src/CrackingShells/cracking-shells-playbook/skills/writing-prose/references
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 17
+
+Project: /Users/hacker/Documents/src/External/william-dawson/hpc-agent-core-wt/wt-provenance
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 214
+  Search count: 4
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/htn-creator-workspace/infrastructure/tests
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1827
+  Search count: 65
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/skills/authoring-eval-plans
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2
+  Search count: 94
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/__roadmap__/container-runtime-verification
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 1
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-mcp-python-ingestion-htn-creator-eval-scalability-103f04/0da261c6-ceaa-41da-87a4-d8fb6f2f5bec/scratchpad/verify_b1_wt/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 209
+  Search count: 95
+
+Project: /Users/hacker/Documents/explore/async_work_style/skills/umbod/references
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/curie-hackathon-pilot-ffd384/__canons__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/william-dawson/hpc-agent-core-wt/wt-docs
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 232
+  Search count: 4
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/validation/server/octopus_mcp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 153
+  Search count: 7
+
+Project: /private/tmp/claude-501/-Users-hacker-Documents-tmp-claude-worktrees-mcp-python-ingestion-htn-creator-eval-scalability-103f04/0da261c6-ceaa-41da-87a4-d8fb6f2f5bec/scratchpad/verify_b1_wt
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6469
+  Search count: 95
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1053
+  Search count: 105
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/__reports__/gtpyhop_2_0_migration
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 110
+  Search count: 97
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a8e1594690e530c82/examples
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1274
+  Search count: 12
+
+Project: /Users/hacker/Documents/career/Events/Curie_Hackathon_20260917
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 75
+  Search count: 11
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/beat-4-v2-audio-regen-b71958/.claude/skills/cutting-narration-chunks/scripts
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 115
+  Search count: 5
+
+Project: /Users/hacker/Documents/src/CrackingShells/cracking-shells-playbook/skills/managing-roadmaps/scripts/dirtree-rdm/src
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 144
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/mcp-python-ingestion/p44-figures/.claude/skills/htn-creator-workspace/infrastructure
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 4250
+  Search count: 294
+
+Project: /Users/hacker/Documents/explore/llm_gen_robot_protocol/__capability__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 73
+  Search count: 2
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/report_memory/server/octopus_mcp/data
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 7
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a5d3725a04a405f7d/examples/p53_mdm2
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 731
+  Search count: 13
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/hpc-agent-core/loving-euler-2d53aa
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 211
+  Search count: 10
+
+Project: /Users/hacker/Documents/explore/augmented-light/__threads__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 18
+  Search count: 4
+
+Project: /Users/hacker/Documents/explore/async_work_style/skills/umbod/scripts/umbod
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 2731
+  Search count: 6
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/curie-hackathon-pilot-ffd384/curriculum
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 49
+  Search count: 1
+
+Project: /Users/hacker/Documents/tmp/claude-worktrees/ai_agent_academy/curie-hackathon-pilot-ffd384/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 6
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/rikenlbc/lbc-llm-agents/__reports__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 0
+  Search count: 52
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/__design__
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 3
+  Search count: 3
+
+Project: /Users/hacker/Documents/src/External/RIKEN-RCCS/Octopus-Agent-wt/report_memory/server/octopus_mcp
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 153
+  Search count: 7
+
+Project: /Users/hacker/Documents/src/External/PCfVW/mcp-python-ingestion/.claude/worktrees/agent-aa46e5b6e83bd6a26
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 5359
+  Search count: 65
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/shinobulab-cell-agent
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 158
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/External/rikenlbc/lbc-llm-agents/.claude/worktrees/agent-a0fa52d67625c487a
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 345
+  Search count: 6
+
+Project: /Users/hacker/Documents/src/External/shinobuai/Cell-Agent-ShinobuLab
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 158
+  Search count: 2
+
+Project: /Users/hacker/Documents/explore/ttsstt
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 1372
+  Search count: 2
+
+Project: /Users/hacker/Documents/explore/async_work_style/skills/umbod/scripts/umbod/tests
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 964
+  Search count: 1
+
+Project: /Users/hacker/Documents/src/LittleCoinCoin/usd-bio/.claude/worktrees/agent-a3aa664179ad858a4/examples/p53_mdm2/builders
+  Model: lightonai/LateOn-Code-edge
+  Functions indexed: 24
+  Search count: 11
+
+Total: 154 indexes, 138402 functions, 4613 searches

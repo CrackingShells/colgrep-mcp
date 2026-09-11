@@ -8,6 +8,14 @@ import pytest
 HERE = Path(__file__).resolve().parent
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "real_colgrep: exercises the real colgrep binary (read-only calls only); "
+        "skipped unless COLGREP_MCP_REAL=1.",
+    )
+
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
