@@ -7,9 +7,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcp.server.mcpserver.exceptions import ToolError
-
 from .config import Settings
+from .errors import Code, tool_error
 
 
 def default_root(settings: Settings, roots: list[Path] | None) -> tuple[Path, str]:
@@ -30,7 +29,7 @@ def resolve_paths(paths: list[str] | None, settings: Settings, roots: list[Path]
     root, source = default_root(settings, roots)
     if not paths:
         if not root.exists():
-            raise ToolError(f"Default root {root} (from {source}) does not exist. Pass `paths` explicitly.")
+            raise tool_error(Code.PATH_NOT_FOUND, f"Default root {root} (from {source}) does not exist.")
         return [root]
     resolved: list[Path] = []
     missing: list[str] = []
@@ -44,7 +43,8 @@ def resolve_paths(paths: list[str] | None, settings: Settings, roots: list[Path]
         else:
             missing.append(raw)
     if missing:
-        raise ToolError(
-            f"Path(s) not found: {', '.join(missing)} (relative paths are resolved against {root}, from {source})."
+        raise tool_error(
+            Code.PATH_NOT_FOUND,
+            f"Path(s) not found: {', '.join(missing)} (relative paths are resolved against {root}, from {source}).",
         )
     return resolved

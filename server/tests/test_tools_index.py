@@ -15,6 +15,7 @@ from mcp import Client
 from mcp.types import ElicitRequestParams, ElicitResult
 
 from colgrep_mcp import tools_index
+from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.server import build
 
 pytestmark = pytest.mark.anyio
@@ -166,7 +167,12 @@ async def test_index_clear_project_mismatch_refused(settings_env, tmp_path, monk
         result = await client.call_tool("index_clear", {"path": str(tmp_path), "confirm": True})
 
     assert result.is_error
-    assert "/tmp/some-ancestor-project" in result.content[0].text
+    text = result.content[0].text
+    # SDK-wrapped as "Error executing tool index_clear: <message>", so the
+    # coded prefix is present but not necessarily at index 0.
+    assert f"[{Code.PROJECT_ROOT_MISMATCH}] " in text
+    assert text.endswith(f"Next: {HINTS[Code.PROJECT_ROOT_MISMATCH]}")
+    assert "/tmp/some-ancestor-project" in text
 
 
 async def test_index_clear_without_confirm_and_no_elicitation_refused(settings_env, tmp_path):
@@ -174,7 +180,10 @@ async def test_index_clear_without_confirm_and_no_elicitation_refused(settings_e
         result = await client.call_tool("index_clear", {"path": str(tmp_path)})
 
     assert result.is_error
-    assert "confirm=true" in result.content[0].text
+    text = result.content[0].text
+    assert f"[{Code.CONFIRMATION_REQUIRED}] " in text
+    assert text.endswith(f"Next: {HINTS[Code.CONFIRMATION_REQUIRED]}")
+    assert "confirm=true" in text
 
 
 async def test_index_clear_confirm_flag_runs_clear(settings_env, tmp_path, monkeypatch):
