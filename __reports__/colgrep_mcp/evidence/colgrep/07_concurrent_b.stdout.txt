@@ -1,0 +1,104 @@
+[
+  {
+    "unit": {
+      "name": "is_bool_flag",
+      "qualified_name": "src/click/core.py::Option::is_bool_flag",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/core.py",
+      "line": 1,
+      "end_line": 3806,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def is_bool_flag(self) -> bool:",
+      "docstring": "\"\"\"``True`` when this option is a flag with a boolean type.\n\n        Derived from :attr:`is_flag` and :attr:`type`; computed on access so it cannot\n        drift if a subclass replaces :attr:`type` after construction.",
+      "parameters": [],
+      "return_type": "bool",
+      "extends": null,
+      "parent_class": "Option",
+      "calls": [
+        "isinstance"
+      ],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [
+        "types"
+      ],
+      "code": "    @property\n    def is_bool_flag(self) -> bool:\n        \"\"\"``True`` when this option is a flag with a boolean type.\n\n        Derived from :attr:`is_flag` and :attr:`type`; computed on access so it cannot\n        drift if a subclass replaces :attr:`type` after construction.\n        \"\"\"\n        return self.is_flag and isinstance(self.type, types.BoolParamType)"
+    },
+    "score": 0.6845238
+  },
+  {
+    "unit": {
+      "name": "raw_code_1410",
+      "qualified_name": "src/click/types.py::raw_code_1410",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/types.py",
+      "line": 808,
+      "end_line": 1412,
+      "language": "python",
+      "unit_type": "rawcode",
+      "signature": "#: A boolean parameter.  This is the default for boolean flags.  This can",
+      "docstring": null,
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [
+        "abc",
+        "click",
+        "collections",
+        "datetime",
+        "enum",
+        "gettext",
+        "operator",
+        "os",
+        "stat",
+        "sys",
+        "typing",
+        "typing_extensions",
+        "uuid"
+      ],
+      "code": "#: A boolean parameter.  This is the default for boolean flags.  This can\n#: also be selected by using ``bool`` as a type."
+    },
+    "score": 0.63337946
+  },
+  {
+    "unit": {
+      "name": "FLAG_NEEDS_VALUE",
+      "qualified_name": "src/click/_utils.py::FLAG_NEEDS_VALUE",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/_utils.py",
+      "line": 7,
+      "end_line": 45,
+      "language": "python",
+      "unit_type": "constant",
+      "signature": "FLAG_NEEDS_VALUE: t.Literal[Sentinel.FLAG_NEEDS_VALUE] = Sentinel.FLAG_NEEDS_VALUE",
+      "docstring": null,
+      "parameters": [],
+      "return_type": "t.Literal[Sentinel.FLAG_NEEDS_VALUE]",
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [
+        "enum",
+        "typing"
+      ],
+      "code": "FLAG_NEEDS_VALUE: t.Literal[Sentinel.FLAG_NEEDS_VALUE] = Sentinel.FLAG_NEEDS_VALUE"
+    },
+    "score": 0.58007103
+  }
+]

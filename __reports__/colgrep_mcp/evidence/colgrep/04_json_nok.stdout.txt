@@ -1,0 +1,570 @@
+[
+  {
+    "unit": {
+      "name": "function",
+      "qualified_name": "src/click/core.py::Group::function",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/core.py",
+      "line": 55,
+      "end_line": 3699,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def function(value: t.Any, /, *args: t.Any, **kwargs: t.Any) -> t.Any:",
+      "docstring": null,
+      "parameters": [
+        "value"
+      ],
+      "return_type": "t.Any",
+      "extends": null,
+      "parent_class": "Group",
+      "calls": [
+        "f",
+        "old_callback"
+      ],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [
+        "inner"
+      ],
+      "imports": [
+        "functools"
+      ],
+      "code": "            def function(value: t.Any, /, *args: t.Any, **kwargs: t.Any) -> t.Any:\n                inner = old_callback(value, *args, **kwargs)\n                return f(inner, *args, **kwargs)"
+    },
+    "score": 1.3719062
+  },
+  {
+    "unit": {
+      "name": "_safecall",
+      "qualified_name": "src/click/utils.py::_safecall",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/utils.py",
+      "line": 27,
+      "end_line": 688,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def _safecall(func: t.Callable[P, R]) -> t.Callable[P, R | None]:",
+      "docstring": "\"\"\"Wraps a function so that it swallows exceptions.\n\n    :meta private:",
+      "parameters": [
+        "func"
+      ],
+      "return_type": "t.Callable[P, R | None]",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "func",
+        "update_wrapper"
+      ],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": true,
+      "variables": [],
+      "imports": [
+        "functools"
+      ],
+      "code": "def _safecall(func: t.Callable[P, R]) -> t.Callable[P, R | None]:\n    \"\"\"Wraps a function so that it swallows exceptions.\n\n    :meta private:\n    \"\"\"\n\n    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | None:\n        try:\n            return func(*args, **kwargs)\n        except Exception:\n            pass\n        return None\n\n    return update_wrapper(wrapper, func)"
+    },
+    "score": 1.0482359
+  },
+  {
+    "unit": {
+      "name": "unstyle",
+      "qualified_name": "src/click/termui.py::unstyle",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/termui.py",
+      "line": 30,
+      "end_line": 990,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def unstyle(text: str) -> str:",
+      "docstring": "\"\"\"Removes ANSI styling information from a string.  Usually it's not\n    necessary to use this function as Click's echo function will\n    automatically remove styling if necessary.\n\n    .. versionadded:: 2.0\n\n    :param text: the text to remove style information from.",
+      "parameters": [
+        "text"
+      ],
+      "return_type": "str",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "strip_ansi"
+      ],
+      "called_by": [
+        "test_styling",
+        "test_unstyle_other_ansi"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "def unstyle(text: str) -> str:\n    \"\"\"Removes ANSI styling information from a string.  Usually it's not\n    necessary to use this function as Click's echo function will\n    automatically remove styling if necessary.\n\n    .. versionadded:: 2.0\n\n    :param text: the text to remove style information from.\n    \"\"\"\n    return strip_ansi(text)"
+    },
+    "score": 1.009093
+  },
+  {
+    "unit": {
+      "name": "raw_code_133",
+      "qualified_name": "src/click/decorators.py::raw_code_133",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/decorators.py",
+      "line": 20,
+      "end_line": 627,
+      "language": "python",
+      "unit_type": "rawcode",
+      "signature": "CmdType = t.TypeVar(\"CmdType\", bound=Command)",
+      "docstring": null,
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [
+        "functools",
+        "gettext",
+        "import importlib",
+        "inspect",
+        "typing",
+        "typing_extensions"
+      ],
+      "code": "CmdType = t.TypeVar(\"CmdType\", bound=Command)\n\n\n# variant: no call, directly as decorator for a function."
+    },
+    "score": 0.8311444
+  },
+  {
+    "unit": {
+      "name": "getchar",
+      "qualified_name": "src/click/_termui_impl.py::getchar",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/_termui_impl.py",
+      "line": 1,
+      "end_line": 962,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def getchar(echo: bool) -> str:",
+      "docstring": null,
+      "parameters": [
+        "echo"
+      ],
+      "return_type": "str",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "cast",
+        "func"
+      ],
+      "called_by": [
+        "continue_it",
+        "getchar_echo",
+        "menu",
+        "pause",
+        "test_getchar",
+        "test_getchar_special_key_windows",
+        "test_getchar_windows",
+        "test_getchar_windows_exceptions"
+      ],
+      "complexity": 5,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "func",
+        "rv"
+      ],
+      "imports": [
+        "msvcrt"
+      ],
+      "code": "    def getchar(echo: bool) -> str:\n        # The function `getch` will return a bytes object corresponding to\n        # the pressed character. Since Windows 10 build 1803, it will also\n        # return \\x00 when called a second time after pressing a regular key.\n        #\n        # `getwch` does not share this probably-bugged behavior. Moreover, it\n        # returns a Unicode object by default, which is what we want.\n        #\n        # Either of these functions will return \\x00 or \\xe0 to indicate\n        # a special key, and you need to call the same function again to get\n        # the \"rest\" of the code. The fun part is that \\u00e0 is\n        # \"latin small letter a with grave\", so if you type that on a French\n        # keyboard, you _also_ get a \\xe0.\n        # E.g., consider the Up arrow. This returns \\xe0 and then \\x48. The\n        # resulting Unicode string reads as \"a with grave\" + \"capital H\".\n        # This is indistinguishable from when the user actually types\n        # \"a with grave\" and then \"capital H\".\n        #\n        # When \\xe0 is returned, we assume it's part of a special-key sequence\n        # and call `getwch` again, but that means that when the user types\n        # the \\u00e0 character, `getchar` doesn't return until a second\n        # character is typed.\n        # The alternative is returning immediately, but that would mess up\n        # cross-platform handling of arrow keys and others that start with\n        # \\xe0. Another option is using `getch`, but then we can't reliably\n        # read non-ASCII characters, because return values of `getch` are\n        # limited to the current 8-bit codepage.\n        #\n        # Anyway, Click doesn't claim to do this Right(tm), and using `getwch`\n        # is doing the right thing in more situations than with `getch`.\n\n        if echo:\n            func = t.cast(t.Callable[[], str], msvcrt.getwche)\n        else:\n            func = t.cast(t.Callable[[], str], msvcrt.getwch)\n\n        rv = func()\n\n        if rv in (\"\\x00\", \"\\xe0\"):\n            # \\x00 and \\xe0 are control characters that indicate special key,\n            # see above.\n            rv += func()\n\n        _translate_ch_to_exc(rv)\n        return rv"
+    },
+    "score": 0.72617006
+  },
+  {
+    "unit": {
+      "name": "source",
+      "qualified_name": "src/click/shell_completion.py::ShellComplete::source",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/shell_completion.py",
+      "line": 19,
+      "end_line": 754,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def source(self) -> str:",
+      "docstring": "\"\"\"Produce the shell script that defines the completion\n        function. By default this ``%``-style formats\n        :attr:`source_template` with the dict returned by\n        :meth:`source_vars`.",
+      "parameters": [],
+      "return_type": "str",
+      "extends": null,
+      "parent_class": "ShellComplete",
+      "calls": [
+        "source_vars"
+      ],
+      "called_by": [
+        "BashComplete",
+        "shell_complete",
+        "source"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "    def source(self) -> str:\n        \"\"\"Produce the shell script that defines the completion\n        function. By default this ``%``-style formats\n        :attr:`source_template` with the dict returned by\n        :meth:`source_vars`.\n        \"\"\"\n        return self.source_template % self.source_vars()"
+    },
+    "score": 0.69411105
+  },
+  {
+    "unit": {
+      "name": "get_current_context",
+      "qualified_name": "src/click/globals.py::get_current_context",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/globals.py",
+      "line": 1,
+      "end_line": 67,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def get_current_context(silent: bool = False) -> Context | None:",
+      "docstring": "\"\"\"Returns the current click context.  This can be used as a way to\n    access the current context object from anywhere.  This is a more implicit\n    alternative to the :func:`pass_context` decorator.  This function is\n    primarily useful for helpers such as :func:`echo` which might be\n    interested in changing its behavior based on the current context.\n\n    To push the current context, :meth:`Context.scope` can be used.\n\n    .. versionadded:: 5.0\n\n    :param silent: if set to `True` the return value is `None` if no context\n                   is available.  The default behavior is to raise a\n                   :exc:`RuntimeError`.",
+      "parameters": [
+        "silent"
+      ],
+      "return_type": "Context | None",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "RuntimeError",
+        "cast"
+      ],
+      "called_by": [
+        "ParameterInternalCheck",
+        "change_other_params",
+        "cli",
+        "debug",
+        "decorator",
+        "foo",
+        "get_language",
+        "inspect_other_params",
+        "make_pass_decorator",
+        "new_func",
+        "pass_context",
+        "pass_meta_key",
+        "pass_obj",
+        "process_value",
+        "resolve_color_default",
+        "set_language",
+        "test_close_before_exit",
+        "test_close_before_pop",
+        "test_context_meta",
+        "test_global_context_object",
+        "test_hiding_of_unset_sentinel_in_callbacks",
+        "test_parameter_source_during_eager_callback"
+      ],
+      "complexity": 3,
+      "has_loops": false,
+      "has_branches": true,
+      "has_error_handling": true,
+      "variables": [],
+      "imports": [],
+      "code": "def get_current_context(silent: bool = False) -> Context | None:\n    \"\"\"Returns the current click context.  This can be used as a way to\n    access the current context object from anywhere.  This is a more implicit\n    alternative to the :func:`pass_context` decorator.  This function is\n    primarily useful for helpers such as :func:`echo` which might be\n    interested in changing its behavior based on the current context.\n\n    To push the current context, :meth:`Context.scope` can be used.\n\n    .. versionadded:: 5.0\n\n    :param silent: if set to `True` the return value is `None` if no context\n                   is available.  The default behavior is to raise a\n                   :exc:`RuntimeError`.\n    \"\"\"\n    try:\n        return t.cast(\"Context\", _local.stack[-1])\n    except (AttributeError, IndexError) as e:\n        if not silent:\n            raise RuntimeError(\"There is no active click context.\") from e\n\n    return None"
+    },
+    "score": 0.6682389
+  },
+  {
+    "unit": {
+      "name": "wrap_text",
+      "qualified_name": "src/click/formatting.py::wrap_text",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/formatting.py",
+      "line": 31,
+      "end_line": 320,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def wrap_text(",
+      "docstring": "\"\"\"A helper function that intelligently wraps text.  By default, it\n    assumes that it operates on a single paragraph of text but if the\n    `preserve_paragraphs` parameter is provided it will intelligently\n    handle paragraphs (defined by two empty lines).\n\n    If paragraphs are handled, a paragraph can be prefixed with an empty\n    line containing the ``\\\\b`` character (``\\\\x08``) to indicate that\n    no rewrapping should happen in that block.\n\n    :param text: the text that should be rewrapped.\n    :param width: the maximum width for the text.\n    :param initial_indent: the initial indent that should be placed on the\n                           first line as a string.\n    :param subsequent_indent: the indent string that should be placed on\n                              each consecutive line.\n    :param preserve_paragraphs: if this flag is set then the wrapping will\n                                intelligently handle paragraphs.\n\n    .. versionchanged:: 8.4.0\n        Width is measured in visible characters. ANSI escape sequences in\n        ``text``, ``initial_indent``, or ``subsequent_indent`` no longer\n        count toward the width budget, so styled input wraps based on what\n        the user sees instead of raw byte length.",
+      "parameters": [
+        "text",
+        "width",
+        "initial_indent",
+        "subsequent_indent",
+        "preserve_paragraphs"
+      ],
+      "return_type": "str",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "TextWrapper",
+        "append",
+        "expandtabs",
+        "extra_indent",
+        "fill",
+        "indent_only",
+        "join",
+        "lstrip",
+        "splitlines",
+        "strip",
+        "term_len"
+      ],
+      "called_by": [
+        "HelpFormatter",
+        "test_wrap_text_visible_width",
+        "write_dl",
+        "write_text",
+        "write_usage"
+      ],
+      "complexity": 17,
+      "has_loops": true,
+      "has_branches": true,
+      "has_error_handling": false,
+      "variables": [
+        "buf",
+        "indent",
+        "line",
+        "orig_len",
+        "p",
+        "rv",
+        "text",
+        "wrapper"
+      ],
+      "imports": [],
+      "code": "def wrap_text(\n    text: str,\n    width: int = 78,\n    initial_indent: str = \"\",\n    subsequent_indent: str = \"\",\n    preserve_paragraphs: bool = False,\n) -> str:\n    \"\"\"A helper function that intelligently wraps text.  By default, it\n    assumes that it operates on a single paragraph of text but if the\n    `preserve_paragraphs` parameter is provided it will intelligently\n    handle paragraphs (defined by two empty lines).\n\n    If paragraphs are handled, a paragraph can be prefixed with an empty\n    line containing the ``\\\\b`` character (``\\\\x08``) to indicate that\n    no rewrapping should happen in that block.\n\n    :param text: the text that should be rewrapped.\n    :param width: the maximum width for the text.\n    :param initial_indent: the initial indent that should be placed on the\n                           first line as a string.\n    :param subsequent_indent: the indent string that should be placed on\n                              each consecutive line.\n    :param preserve_paragraphs: if this flag is set then the wrapping will\n                                intelligently handle paragraphs.\n\n    .. versionchanged:: 8.4.0\n        Width is measured in visible characters. ANSI escape sequences in\n        ``text``, ``initial_indent``, or ``subsequent_indent`` no longer\n        count toward the width budget, so styled input wraps based on what\n        the user sees instead of raw byte length.\n    \"\"\"\n    from ._textwrap import TextWrapper\n\n    text = text.expandtabs()\n    wrapper = TextWrapper(\n        width,\n        initial_indent=initial_indent,\n        subsequent_indent=subsequent_indent,\n        replace_whitespace=False,\n    )\n    if not preserve_paragraphs:\n        return wrapper.fill(text)\n\n    p: list[tuple[int, bool, str]] = []\n    buf: list[str] = []\n    indent = None\n\n    def _flush_par() -> None:\n        if not buf:\n            return\n        if buf[0].strip() == \"\\b\":\n            p.append((indent or 0, True, \"\\n\".join(buf[1:])))\n        else:\n            p.append((indent or 0, False, \" \".join(buf)))\n        del buf[:]\n\n    for line in text.splitlines():\n        if not line:\n            _flush_par()\n            indent = None\n        else:\n            if indent is None:\n                orig_len = term_len(line)\n                line = line.lstrip()\n                indent = orig_len - term_len(line)\n            buf.append(line)\n    _flush_par()\n\n    rv = []\n    for indent, raw, text in p:\n        with wrapper.extra_indent(\" \" * indent):\n            if raw:\n                rv.append(wrapper.indent_only(text))\n            else:\n                rv.append(wrapper.fill(text))\n\n    return \"\\n\\n\".join(rv)"
+    },
+    "score": 0.6453514
+  },
+  {
+    "unit": {
+      "name": "open_stream",
+      "qualified_name": "src/click/_compat.py::open_stream",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/_compat.py",
+      "line": 1,
+      "end_line": 528,
+      "language": "python",
+      "unit_type": "function",
+      "signature": "def open_stream(",
+      "docstring": null,
+      "parameters": [
+        "filename",
+        "mode",
+        "encoding",
+        "errors",
+        "atomic"
+      ],
+      "return_type": "tuple[t.IO[t.Any], bool]",
+      "extends": null,
+      "parent_class": null,
+      "calls": [
+        "ValueError",
+        "access",
+        "any",
+        "cast",
+        "chmod",
+        "dirname",
+        "fsdecode",
+        "fspath",
+        "get_binary_stdin",
+        "get_binary_stdout",
+        "get_text_stdin",
+        "get_text_stdout",
+        "getattr",
+        "isdir",
+        "join",
+        "open",
+        "randrange",
+        "realpath",
+        "stat"
+      ],
+      "called_by": [
+        "File",
+        "_LazyFile",
+        "__init__",
+        "convert",
+        "open",
+        "open_file"
+      ],
+      "complexity": 28,
+      "has_loops": true,
+      "has_branches": true,
+      "has_error_handling": true,
+      "variables": [
+        "af",
+        "binary",
+        "f",
+        "fd",
+        "filename",
+        "flags",
+        "perm",
+        "tmp_filename"
+      ],
+      "imports": [
+        "errno",
+        "os",
+        "random",
+        "re"
+      ],
+      "code": "def open_stream(\n    filename: str | os.PathLike[str],\n    mode: str = \"r\",\n    encoding: str | None = None,\n    errors: str | None = \"strict\",\n    atomic: bool = False,\n) -> tuple[t.IO[t.Any], bool]:\n    binary = \"b\" in mode\n    filename = os.fspath(filename)\n\n    # Standard streams first. These are simple because they ignore the\n    # atomic flag. Use fsdecode to handle Path(\"-\").\n    if os.fsdecode(filename) == \"-\":\n        if any(m in mode for m in [\"w\", \"a\", \"x\"]):\n            if binary:\n                return get_binary_stdout(), False\n            return get_text_stdout(encoding=encoding, errors=errors), False\n        if binary:\n            return get_binary_stdin(), False\n        return get_text_stdin(encoding=encoding, errors=errors), False\n\n    # Non-atomic writes directly go out through the regular open functions.\n    if not atomic:\n        return _wrap_io_open(filename, mode, encoding, errors), True\n\n    # Some usability stuff for atomic writes\n    if \"a\" in mode:\n        raise ValueError(\n            \"Appending to an existing file is not supported, because that\"\n            \" would involve an expensive `copy`-operation to a temporary\"\n            \" file. Open the file in normal `w`-mode and copy explicitly\"\n            \" if that's what you're after.\"\n        )\n    if \"x\" in mode:\n        raise ValueError(\"Use the `overwrite`-parameter instead.\")\n    if \"w\" not in mode:\n        raise ValueError(\"Atomic writes only make sense with `w`-mode.\")\n\n    # Atomic writes are more complicated.  They work by opening a file\n    # as a proxy in the same folder and then using the fdopen\n    # functionality to wrap it in a Python file.  Then we wrap it in an\n    # atomic file that moves the file over on close.\n    import errno\n    import random\n\n    try:\n        perm: int | None = os.stat(filename).st_mode\n    except OSError:\n        perm = None\n\n    flags = os.O_RDWR | os.O_CREAT | os.O_EXCL\n\n    if binary:\n        flags |= getattr(os, \"O_BINARY\", 0)\n\n    while True:\n        tmp_filename = os.path.join(\n            os.path.dirname(filename),\n            f\".__atomic-write{random.randrange(1 << 32):08x}\",\n        )\n        try:\n            fd = os.open(tmp_filename, flags, 0o666 if perm is None else perm)\n            break\n        except OSError as e:\n            if e.errno == errno.EEXIST or (\n                os.name == \"nt\"\n                and e.errno == errno.EACCES\n                and os.path.isdir(e.filename)\n                and os.access(e.filename, os.W_OK)\n            ):\n                continue\n            raise\n\n    if perm is not None:\n        os.chmod(tmp_filename, perm)  # in case perm includes bits in umask\n\n    f = _wrap_io_open(fd, mode, encoding, errors)\n    af = _AtomicFile(f, tmp_filename, os.path.realpath(filename))\n    return t.cast(t.IO[t.Any], af), True"
+    },
+    "score": 0.54142135
+  },
+  {
+    "unit": {
+      "name": "entry-points",
+      "qualified_name": "docs/entry-points.md::entry-points",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/docs/entry-points.md",
+      "line": 1,
+      "end_line": 88,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# Packaging Entry Points",
+      "docstring": "# Packaging Entry Points",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# Packaging Entry Points\n\n```{eval-rst}\n.. currentmodule:: click\n```\n\nIt's recommended to write command line utilities as installable packages with\nentry points instead of telling users to run ``python hello.py``.\n\nA distribution package is a ``.whl`` file you install with pip or another Python\ninstaller. You use a ``pyproject.toml`` file to describe the project and how it\nis built into a package. You might upload this package to PyPI, or distribute it\nto your users in another way.\n\nPython installers create executable scripts that will run a specified Python\nfunction. These are known as \"entry points\". The installer knows how to create\nan executable regardless of the operating system, so it will work on Linux,\nWindows, MacOS, etc.\n\n## Project Files\n\nTo install your app with an entry point, all you need is the script and a\n``pyproject.toml`` file. Here's an example project directory:\n\n```text\nhello-project/\n    src/\n        hello/\n            __init__.py\n            hello.py\n    pyproject.toml\n```\n\nContents of ``hello.py``:\n\n```{eval-rst}\n.. click:example::\n    import click\n\n    @click.command()\n    def cli():\n        \"\"\"Prints a greeting.\"\"\"\n        click.echo(\"Hello, World!\")\n```\n\nContents of ``pyproject.toml``:\n\n```toml\n[project]\nname = \"hello\"\nversion = \"1.0.0\"\ndescription = \"Hello CLI\"\nrequires-python = \">=3.11\"\ndependencies = [\n    \"click>=8.1\",\n]\n\n[project.scripts]\nhello = \"hello.hello:cli\"\n\n[build-system]\nrequires = [\"flit_core<4\"]\nbuild-backend = \"flit_core.buildapi\"\n```\n\nThe magic is in the ``project.scripts`` section. Each line identifies one executable\nscript. The first part before the equals sign (``=``) is the name of the script that\nshould be generated, the second part is the import path followed by a colon\n(``:``) with the function to call (the Click command).\n\n## Installation\n\nWhen your package is installed, the installer will create an executable script\nbased on the configuration. During development, you can install in editable\nmode using the ``-e`` option. Remember to use a virtual environment!\n\n```console\n$ python -m venv .venv\n$ . .venv/bin/activate\n$ pip install -e .\n```\n\nAfterwards, your command should be available:\n\n```console\n$ hello\nHello, World!\n```"
+    },
+    "score": 0.49517187
+  },
+  {
+    "unit": {
+      "name": "quickstart",
+      "qualified_name": "docs/quickstart.md::quickstart",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/docs/quickstart.md",
+      "line": 1,
+      "end_line": 195,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# Quickstart",
+      "docstring": "# Quickstart",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# Quickstart\n\n```{currentmodule} click\n```\n\n## Install\n\nInstall from PyPI:\n\n```console\npip install click\n```\n\nInstalling into a virtual environment is highly recommended. We suggest {ref}`virtualenv-heading`.\n\n## Examples\n\nSome standalone examples of Click applications are packaged with Click. They are available in the\n[examples folder](https://github.com/pallets/click/tree/main/examples) of the repo.\n\n- [inout](https://github.com/pallets/click/tree/main/examples/inout) : A very simple example of an application that can\n  read from files and write to files and also accept input from stdin or write to stdout.\n- [validation](https://github.com/pallets/click/tree/main/examples/validation) : A simple example of an application that\n  performs custom validation of parameters in different ways.\n- [naval](https://github.com/pallets/click/tree/main/examples/naval) : Port of the [docopt](http://docopt.org/) naval\n  example.\n- [colors](https://github.com/pallets/click/tree/main/examples/colors) : A simple example that colorizes text.\n- [aliases](https://github.com/pallets/click/tree/main/examples/aliases) : An advanced example that implements\n  {ref}`aliases`.\n- [imagepipe](https://github.com/pallets/click/tree/main/examples/imagepipe) : A complex example that implements some\n  {ref}`command-pipelines` . It chains together image processing instructions. Requires pillow.\n- [repo](https://github.com/pallets/click/tree/main/examples/repo) : An advanced example that implements a\n  Git-/Mercurial-like command line interface.\n- [complex](https://github.com/pallets/click/tree/main/examples/complex) : A very advanced example that implements\n  loading subcommands dynamically from a plugin folder.\n- [termui](https://github.com/pallets/click/tree/main/examples/termui) : A simple example that showcases terminal UI\n  helpers provided by click.\n\n## Basic Concepts - Creating a Command\n\nClick is based on declaring commands through decorators. Internally, there is a non-decorator interface for advanced use\ncases, but it's discouraged for high-level usage.\n\nA function becomes a Click command line tool by decorating it through {func}`command`. At its simplest, just\ndecorating a function with this decorator will make it into a callable script:\n\n\n```{eval-rst}\n.. click:example::\n    import click\n\n    @click.command()\n    def hello():\n        click.echo('Hello World!')\n\nWhat's happening is that the decorator converts the function into a :class:`Command` which then can be invoked:\n\n.. click:example::\n    if __name__ == '__main__':\n        hello()\n\nAnd what it looks like:\n\n.. click:run::\n    invoke(hello, args=[], prog_name='python hello.py')\n\nAnd the corresponding help page:\n\n.. click:run::\n    invoke(hello, args=['--help'], prog_name='python hello.py')\n```\n\n## Echoing\n\nWhy does this example use {func}`echo` instead of the regular {func}`print` function? The answer to this question is\nthat Click attempts to support different environments consistently and to be very robust even when the environment is\nmisconfigured. Click wants to be functional at least on a basic level even if everything is completely broken.\n\nWhat this means is that the {func}`echo` function applies some error correction in case the terminal is misconfigured\ninstead of dying with a {exc}`UnicodeError`.\n\nThe echo function also supports color and other styles in output. It will automatically remove styles if the output\nstream is a file. See {ref}`ansi-colors`.\n\nIf you don't need this, you can also use the `print()` construct / function.\n\n## Nesting Commands\n\nCommands can be attached to other commands of type {class}`Group`. This allows arbitrary nesting of scripts. As an\nexample here is a script that implements two commands for managing databases:\n\n```{eval-rst}\n.. click:example::\n    @click.group()\n    def cli():\n        pass\n\n    @click.command()\n    def initdb():\n        click.echo('Initialized the database')\n\n    @click.command()\n    def dropdb():\n        click.echo('Dropped the database')\n\n    cli.add_command(initdb)\n    cli.add_command(dropdb)\n```\n\nAs you can see, the {func}`group` decorator works like the {func}`command` decorator, but creates a {class}`Group`\nobject instead which can be given multiple subcommands that can be attached with {meth}`Group.add_command`.\n\nFor simple scripts, it's also possible to automatically attach and create a command by using the {meth}`Group.command`\ndecorator instead. The above script can instead be written like this:\n\n```{eval-rst}\n.. click:example::\n    @click.group()\n    def cli():\n        pass\n\n    @cli.command()\n    def initdb():\n        click.echo('Initialized the database')\n\n    @cli.command()\n    def dropdb():\n        click.echo('Dropped the database')\n\nYou would then invoke the :class:`Group` in your entry points or other invocations:\n\n.. click:example::\n    if __name__ == '__main__':\n        cli()\n```\n\n## Registering Commands Later\n\nInstead of using the `@group.command()` decorator, commands can be decorated with the plain `@command()` decorator\nand registered with a group later with `group.add_command()`. This could be used to split commands into multiple Python\nmodules.\n\n```{code-block} python\n@click.command()\ndef greet():\n    click.echo(\"Hello, World!\")\n```\n\n```{code-block} python\n@click.group()\ndef group():\n    pass\n\ngroup.add_command(greet)\n```\n\n## Adding Parameters\n\nTo add parameters, use the {func}`option` and {func}`argument` decorators:\n\n```{eval-rst}\n.. click:example::\n    @click.command()\n    @click.option('--count', default=1, help='number of greetings')\n    @click.argument('name')\n    def hello(count, name):\n        for x in range(count):\n            click.echo(f\"Hello {name}!\")\n\nWhat it looks like:\n\n.. click:run::\n    invoke(hello, args=['--help'], prog_name='python hello.py')\n```\n\n## Switching to Entry Points\n\nIn the code you wrote so far there is a block at the end of the file which looks like this:\n`if __name__ == '__main__':`. This is traditionally how a standalone Python file looks like. With Click you can continue\ndoing that, but a better way is to package your app with an entry point.\n\nThere are two main (and many more) reasons for this:\n\nThe first one is that installers automatically generate executable wrappers for Windows so your command line utilities\nwork on Windows too.\n\nThe second reason is that entry point scripts work with virtualenv on Unix without the virtualenv having to be\nactivated. This is a very useful concept which allows you to bundle your scripts with all requirements into a\nvirtualenv.\n\nClick is perfectly equipped to work with that and in fact the rest of the documentation will assume that you are writing\napplications as distributed packages.\n\nLook at the {doc}`entry-points` chapter before reading the rest as the examples assume that you will be using entry\npoints."
+    },
+    "score": 0.4657531
+  },
+  {
+    "unit": {
+      "name": "utils",
+      "qualified_name": "docs/utils.md::utils",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/docs/utils.md",
+      "line": 1,
+      "end_line": 389,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# Utilities",
+      "docstring": "# Utilities",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# Utilities\n\n```{currentmodule} click\n```\n\nBesides the functionality that Click provides to interface with argument parsing and handling, it also provides a bunch\nof addon functionality that is useful for writing command line utilities.\n\n## Printing to Stdout\n\nThe most obvious helper is the {func}`echo` function, which in many ways works like the Python `print` statement or\nfunction. The main difference is that it works the same in many different terminal environments.\n\nExample:\n\n```python\nimport click\n\nclick.echo('Hello World!')\n```\n\nIt can output both text and binary data. It will emit a trailing newline by default, which needs to be suppressed by\npassing `nl=False`:\n\n```python\nclick.echo(b'\\xe2\\x98\\x83', nl=False)\n```\n\nLast but not least {func}`echo` uses click's intelligent internal output streams to stdout and stderr which support\nunicode output on the Windows console. This means for as long as you are using `click.echo` you can output unicode\ncharacters (there are some limitations on the default font with regards to which characters can be displayed).\n\n```{versionadded} 6.0\n```\n\nClick emulates output streams on Windows to support unicode to the Windows console through separate APIs. For more\ninformation see {doc}`wincmd`.\n\n```{versionadded} 3.0\n```\n\nYou can also easily print to standard error by passing `err=True`:\n\n```python\nclick.echo('Hello World!', err=True)\n```\n\n(ansi-colors)=\n\n## ANSI Colors\n\n```{versionadded} 2.0\n```\n\nThe {func}`echo` function supports ANSI colors and styles. It will\nautomatically strip ANSI color codes if the stream is not connected to a\nterminal.\n\n```{admonition} Older Windows Support\n:class: note\n\nRecent versions of Windows 11 support ANSI styling by default, in both\nWindows Terminal and cmd.exe. If you need to support color output on older\nversions of Windows, install\n[colorama](https://pypi.org/project/colorama/) and call `colorama.init()`.\n```\n\nFor styling a string, the {func}`style` function can be used:\n\n```python\nimport click\n\nclick.echo(click.style('Hello World!', fg='green'))\nclick.echo(click.style('Some more text', bg='blue', fg='white'))\nclick.echo(click.style('ATTENTION', blink=True, bold=True))\n```\n\nThe combination of {func}`echo` and {func}`style` is also available in a single function called {func}`secho`:\n\n```python\nclick.secho('Hello World!', fg='green')\nclick.secho('Some more text', bg='blue', fg='white')\nclick.secho('ATTENTION', blink=True, bold=True)\n```\n\n## Pager Support\n\nIn some situations, you might want to show long texts on the terminal and let a user scroll through it. This can be\nachieved by using the {func}`echo_via_pager` function which works similarly to the {func}`echo` function, but always\nwrites to stdout and, if possible, through a pager.\n\nExample:\n\n```{eval-rst}\n.. click:example::\n    @click.command()\n    def less():\n        click.echo_via_pager(\"\\n\".join(f\"Line {idx}\" for idx in range(200)))\n```\n\nIf you want to use the pager for a lot of text, especially if generating everything in advance would take a lot of time,\nyou can pass a generator (or generator function) instead of a string:\n\n```{eval-rst}\n.. click:example::\n    def _generate_output():\n        for idx in range(50000):\n            yield f\"Line {idx}\\n\"\n\n    @click.command()\n    def less():\n        click.echo_via_pager(_generate_output())\n```\n\nFor more complex programs, which can't easily use a simple generator, you\ncan get access to a writable file-like object for the pager, and write to\nthat instead:\n\n```{eval-rst}\n.. click:example::\n    @click.command()\n    def less():\n        with click.get_pager_file() as pager:\n            for idx in range(50000):\n                print(idx, file=pager)\n```\n\n```{admonition} Why print() instead of echo()?\n:class: hint\n\nThe pager object deals with ANSI color and style codes itself: they are kept or\nstripped depending on what the pager supports, exactly as {func}`echo` would do.\nAny code that writes to a file, including plain {func}`print`, can therefore be\nused with it.\n```\n\n## Screen Clearing\n\n```{versionadded} 2.0\n```\n\nTo clear the terminal screen, you can use the {func}`clear` function that is provided starting with Click 2.0. It does\nwhat the name suggests: it clears the entire visible screen in a platform-agnostic way:\n\n```python\nimport click\nclick.clear()\n```\n\n## Getting Characters from Terminal\n\n```{versionadded} 2.0\n```\n\nNormally, when reading input from the terminal, you would read from standard input. However, this is buffered input and\nwill not show up until the line has been terminated. In certain circumstances, you might not want to do that and instead\nread individual characters as they are being written.\n\nFor this, Click provides the {func}`getchar` function which reads a single character from the terminal buffer and\nreturns it as a Unicode character.\n\nNote that this function will always read from the terminal, even if stdin is instead a pipe.\n\nExample:\n\n```python\nimport click\n\nclick.echo('Continue? [yn] ', nl=False)\nc = click.getchar()\nclick.echo()\nif c == 'y':\n    click.echo('We will go on')\nelif c == 'n':\n    click.echo('Abort!')\nelse:\n    click.echo('Invalid input :(')\n```\n\nNote that this reads raw input, which means that things like arrow keys will show up in the platform's native escape\nformat. The only characters translated are the ones produced by {kbd}`Ctrl+C` and {kbd}`Ctrl+D`, or {kbd}`Ctrl+Z` on\nWindows, which are converted into keyboard interrupts and end of file exceptions respectively. This is done because\notherwise, it's too easy to forget about that and to create scripts that cannot be properly exited.\n\n## Waiting for Key Press\n\n```{versionadded} 2.0\n```\n\nSometimes, it's useful to pause until the user presses any key on the keyboard. This is especially useful on Windows\nwhere `cmd.exe` will close the window at the end of the command execution by default, instead of waiting.\n\nIn click, this can be accomplished with the {func}`pause` function. This function will print a quick message to the\nterminal (which can be customized) and wait for the user to press a key. In addition to that, it will also become a NOP\n(no operation instruction) if the script is not run interactively.\n\nExample:\n\n```python\nimport click\nclick.pause()\n```\n\n## Launching Editors\n\n```{versionadded} 2.0\n```\n\nClick supports launching editors automatically through {func}`edit`. This is very useful for asking users for multi-line\ninput. It will automatically open the user's defined editor or fall back to a sensible default. If the user closes the\neditor without saving, the return value will be `None`, otherwise the entered text.\n\nExample usage:\n\n```python\nimport click\n\ndef get_commit_message():\n    MARKER = '# Everything below is ignored\\n'\n    message = click.edit('\\n\\n' + MARKER)\n    if message is not None:\n        return message.split(MARKER, 1)[0].rstrip('\\n')\n```\n\nAlternatively, the function can also be used to launch editors for files by a specific filename. In this case, the\nreturn value is always `None`.\n\nExample usage:\n\n```python\nimport click\nclick.edit(filename='/etc/passwd')\n```\n\n## Launching Applications\n\n```{versionadded} 2.0\n```\n\nClick supports launching applications through {func}`launch`. This can be used to open the default application\nassociated with a URL or filetype. This can be used to launch web browsers or picture viewers, for instance. In addition\nto this, it can also launch the file manager and automatically select the provided file.\n\nExample usage:\n\n```python\nclick.launch(\"https://click.palletsprojects.com/\")\nclick.launch(\"/my/downloaded/file.txt\", locate=True)\n```\n\n## Printing Filenames\n\nBecause filenames might not be Unicode, formatting them can be a bit tricky.\n\nThe way this works with click is through the {func}`format_filename` function. It does a best-effort conversion of the\nfilename to Unicode and will never fail. This makes it possible to use these filenames in the context of a full Unicode\nstring.\n\nExample:\n\n```python\nclick.echo(f\"Path: {click.format_filename(b'foo.txt')}\")\n```\n\n## Intelligent File Opening\n\n```{versionadded} 3.0\n```\n\nStarting with Click 3.0 the logic for opening files from the {func}`File` type is exposed through the {func}`open_file`\nfunction. It can intelligently open stdin/stdout as well as any other file.\n\nExample:\n\n```python\nimport click\n\nstdout = click.open_file('-', 'w')\ntest_file = click.open_file('test.txt', 'w')\n```\n\nIf stdin or stdout are returned, the return value is wrapped in a special file where the context manager will prevent\nthe closing of the file. This makes the handling of standard streams transparent and you can always use it like this:\n\n```python\nwith click.open_file(filename, 'w') as f:\n    f.write('Hello World!\\n')\n```\n\n## Finding Application Folders\n\n```{versionadded} 2.0\n```\n\nVery often, you want to open a configuration file that belongs to your application. However, different operating systems\nstore these configuration files in different locations depending on their standards. Click provides a\n{func}`get_app_dir` function which returns the most appropriate location for per-user config files for your application\ndepending on the OS.\n\nExample usage:\n\n```python\nimport os\nimport click\nimport ConfigParser\n\nAPP_NAME = 'My Application'\ndef read_config():\ncfg = os.path.join(click.get_app_dir(APP_NAME), 'config.ini')\nparser = ConfigParser.RawConfigParser()\nparser.read([cfg])\nrv = {}\nfor section in parser.sections():\n    for key, value in parser.items(section):\n        rv[f\"{section}.{key}\"] = value\nreturn rv\n```\n\n## Showing Progress Bars\n\nSometimes, you have command line scripts that need to process a lot of data, but you want to quickly show the user some\nprogress about how long that will take. Click supports simple progress bar rendering for that through the\n{func}`progressbar` function.\n\n```{note} If you find that you have requirements beyond what Click's progress bar supports, try using [tqdm](https://tqdm.github.io/).\n```\n\nThe basic usage is very simple: the idea is that you have an iterable that you want to operate on. For each item in the\niterable it might take some time to do processing. So say you have a loop like this:\n\n```python\nfor user in all_the_users_to_process:\n    modify_the_user(user)\n```\n\nTo hook this up with an automatically updating progress bar, all you need to do is to change the code to this:\n\n```python\nimport click\n\nwith click.progressbar(all_the_users_to_process) as bar:\n    for user in bar:\n        modify_the_user(user)\n```\n\nClick will then automatically print a progress bar to the terminal and calculate the remaining time for you. The\ncalculation of remaining time requires that the iterable has a length. If it does not have a length but you know the\nlength, you can explicitly provide it:\n\n```python\nwith click.progressbar(all_the_users_to_process,\n                       length=number_of_users) as bar:\n    for user in bar:\n        modify_the_user(user)\n```\n\nNote that {func}`progressbar` updates the bar *after* each iteration of the loop. So code like this will render\ncorrectly:\n\n```python\nimport time\n\nwith click.progressbar([1, 2, 3]) as bar:\n    for x in bar:\n        click.echo(f\"sleep({x})...\")\n        time.sleep(x)\n```\n\nAnother useful feature is to associate a label with the progress bar which will be shown preceding the progress bar:\n\n```python\nwith click.progressbar(all_the_users_to_process,\n                       label='Modifying user accounts',\n                       length=number_of_users) as bar:\n    for user in bar:\n        modify_the_user(user)\n```\n\nSometimes, one may need to iterate over an external iterator, and advance the progress bar irregularly. To do so, you\nneed to specify the length (and no iterable), and use the update method on the context return value instead of iterating\ndirectly over it:\n\n```python\nwith click.progressbar(length=total_size,\n                       label='Unzipping archive') as bar:\n    for archive in zip_file:\n        archive.extract()\n        bar.update(archive.size)\n```"
+    },
+    "score": 0.4394234
+  },
+  {
+    "unit": {
+      "name": "prompts",
+      "qualified_name": "docs/prompts.md::prompts",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/docs/prompts.md",
+      "line": 1,
+      "end_line": 168,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# User Input Prompts",
+      "docstring": "# User Input Prompts",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# User Input Prompts\n\n```{currentmodule} click\n```\n\nClick supports prompts in two different places. The first is automated prompts when the parameter handling happens, and\nthe second is to ask for prompts at a later point independently.\n\nThis can be accomplished with the {func}`prompt` function, which asks for valid input according to a type, or the\n{func}`confirm` function, which asks for confirmation (yes/no).\n\n```{contents}\n---\ndepth: 2\nlocal: true\n---\n```\n\n(option-prompting)=\n\n## Option Prompts\n\nOption prompts are integrated into the option interface. Internally, it automatically calls either {func}`prompt` or\n{func}`confirm` as necessary.\n\nIn some cases, you want parameters that can be provided from the command line, but if not provided, ask for user input\ninstead. This can be implemented with Click by defining a prompt string.\n\nExample:\n\n```{eval-rst}\n.. click:example::\n\n    @click.command()\n    @click.option('--name', prompt=True)\n    def hello(name):\n        click.echo(f\"Hello {name}!\")\n\nAnd what it looks like:\n\n.. click:run::\n\n    invoke(hello, args=['--name=John'])\n    invoke(hello, input=['John'])\n```\n\nIf you are not happy with the default prompt string, you can ask for\na different one:\n\n```{eval-rst}\n.. click:example::\n\n    @click.command()\n    @click.option('--name', prompt='Your name please')\n    def hello(name):\n        click.echo(f\"Hello {name}!\")\n\nWhat it looks like:\n\n.. click:run::\n\n    invoke(hello, input=['John'])\n```\n\nIt is advised that prompt not be used in conjunction with the multiple flag set to True. Instead, prompt in the function\ninteractively.\n\nBy default, the user will be prompted for an input if one was not passed through the command line. To turn this behavior\noff, see {ref}`optional-value`.\n\n## Input Prompts\n\nTo manually ask for user input, you can use the {func}`prompt` function. By default, it accepts any Unicode string, but\nyou can ask for any other type. For instance, you can ask for a valid integer:\n\n```python\nvalue = click.prompt('Please enter a valid integer', type=int)\n```\n\nAdditionally, the type will be determined automatically if a default value is provided. For instance, the following will\nonly accept floats:\n\n```python\nvalue = click.prompt('Please enter a number', default=42.0)\n```\n\n## Optional Prompts\n\nIf the option has `prompt` enabled, then setting `prompt_required=False` tells Click to only show the prompt if the\noption's flag is given, instead of if the option is not provided at all.\n\n```{eval-rst}\n.. click:example::\n\n    @click.command()\n    @click.option('--name', prompt=True, prompt_required=False, default=\"Default\")\n    def hello(name):\n        click.echo(f\"Hello {name}!\")\n\n.. click:run::\n\n    invoke(hello)\n    invoke(hello, args=[\"--name\", \"Value\"])\n    invoke(hello, args=[\"--name\"], input=\"Prompt\")\n```\n\nIf `required=True`, then the option will still prompt if it is not given, but it will also prompt if only the flag is\ngiven.\n\n## Confirmation Prompts\n\nTo ask if a user wants to continue with an action, the {func}`confirm` function comes in handy. By default, it returns\nthe result of the prompt as a boolean value:\n\n```python\nif click.confirm('Do you want to continue?'):\n    click.echo('Well done!')\n```\n\nThere is also the option to make the function automatically abort the execution of the program if it does not return\n`True`:\n\n```python\nclick.confirm('Do you want to continue?', abort=True)\n```\n\n## Dynamic Defaults for Prompts\n\nThe `auto_envvar_prefix` and `default_map` options for the context allow the program to read option values from the\nenvironment or a configuration file. However, this overrides the prompting mechanism, so that the user does not get the\noption to change the value interactively.\n\nIf you want to let the user configure the default value, but still be prompted if the option isn't specified on the\ncommand line, you can do so by supplying a callable as the default value. For example, to get a default from the\nenvironment:\n\n```python\nimport os\n\n@click.command()\n@click.option(\n    \"--username\", prompt=True,\n    default=lambda: os.environ.get(\"USER\", \"\")\n)\ndef hello(username):\n    click.echo(f\"Hello, {username}!\")\n```\n\nTo describe what the default value will be, set it in ``show_default``.\n\n```{eval-rst}\n.. click:example::\n\n    import os\n\n    @click.command()\n    @click.option(\n        \"--username\", prompt=True,\n        default=lambda: os.environ.get(\"USER\", \"\"),\n        show_default=\"current user\"\n    )\n    def hello(username):\n        click.echo(f\"Hello, {username}!\")\n\n.. click:run::\n\n   invoke(hello, args=[\"--help\"])\n```"
+    },
+    "score": 0.43151936
+  },
+  {
+    "unit": {
+      "name": "commands-and-groups",
+      "qualified_name": "docs/commands-and-groups.md::commands-and-groups",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/docs/commands-and-groups.md",
+      "line": 1,
+      "end_line": 426,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# Basic Commands, Groups, Context",
+      "docstring": "# Basic Commands, Groups, Context",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# Basic Commands, Groups, Context\n\n```{currentmodule} click\n```\n\nCommands and Groups are the building blocks for Click applications.\n{class}`Command` wraps a function to make it into a cli command. {class}`Group`\nwraps Commands and Groups to make them into applications. {class}`Context` is\nhow groups and commands communicate.\n\n```{contents}\n---\ndepth: 2\nlocal: true\n---\n```\n\n## Commands\n\n### Basic Command Example\n\nA simple command decorator takes no arguments.\n\n```{eval-rst}\n.. click:example::\n\n    @click.command()\n    @click.option('--count', default=1)\n    def hello(count):\n        for x in range(count):\n            click.echo(\"Hello!\")\n\n.. click:run::\n    invoke(hello, args=['--count', '2',])\n```\n\n### Renaming Commands\n\nBy default the command is the function name with underscores replaced by dashes.\nTo change this pass the  desired name into the first positional argument.\n\n```{eval-rst}\n.. click:example::\n\n    @click.command('say-hello')\n    @click.option('--count', default=1)\n    def hello(count):\n        for x in range(count):\n            click.echo(\"Hello!\")\n\n.. click:run::\n    invoke(hello, args=['--count', '2',])\n```\n\n### Deprecating Commands\n\nTo mark a command as deprecated pass in `deprecated=True`\n\n```{eval-rst}\n.. click:example::\n\n    @click.command('say-hello', deprecated=True)\n    @click.option('--count', default=1)\n    def hello(count):\n        for x in range(count):\n            click.echo(\"Hello!\")\n\n.. click:run::\n    invoke(hello, args=['--count', '2',])\n```\n\n## Groups\n\n### Basic Group Example\n\nA group wraps one or more commands. After being wrapped, the commands are nested\nunder that group. You can see that on the help pages and in the execution. By\ndefault, invoking the group with no command shows the help page.\n\n```{eval-rst}\n.. click:example::\n\n    @click.group()\n    def greeting():\n        click.echo('Starting greeting ...')\n\n    @greeting.command('say-hello')\n    @click.option('--count', default=1)\n    def hello(count):\n        for x in range(count):\n            click.echo(\"Hello!\")\n\nAt the top level:\n\n.. click:run::\n\n    invoke(greeting)\n\nAt the command level:\n\n.. click:run::\n\n    invoke(greeting, args=['say-hello'])\n    invoke(greeting, args=['say-hello', '--help'])\n```\n\nAs you can see from the above example, the function wrapped by the group\ndecorator executes unless it is interrupted (for example by calling the help).\n\n### Renaming Groups\n\nTo have a name other than the decorated function name as the group name, pass it\nin as the first positional argument.\n\n```{eval-rst}\n.. click:example::\n\n    @click.group('greet-someone')\n    def greeting():\n        click.echo('Starting greeting ...')\n\n    @greeting.command('say-hello')\n    @click.option('--count', default=1)\n    def hello(count):\n        for x in range(count):\n            click.echo(\"Hello!\")\n\n.. click:run::\n\n    invoke(greeting, args=['say-hello'])\n```\n\n### Group Invocation Without Command\n\nBy default, if a group is passed without a command, the group is not invoked and\na command automatically passes `--help`. To change this, pass\n`invoke_without_command=True` to the group. The context object also includes\ninformation about whether or not the group invocation would go to a command\nnested under it.\n\n```{eval-rst}\n.. click:example::\n\n    @click.group(invoke_without_command=True)\n    @click.pass_context\n    def cli(ctx):\n        if ctx.invoked_subcommand is None:\n            click.echo('I was invoked without subcommand')\n        else:\n            click.echo(f\"I am about to invoke {ctx.invoked_subcommand}\")\n\n    @cli.command()\n    def sync():\n        click.echo('The subcommand')\n\n.. click:run::\n\n    invoke(cli, prog_name='tool', args=[])\n    invoke(cli, prog_name='tool', args=['sync'])\n```\n\n### Group Separation\n\nCommand {ref}`parameters` attached to a command belong only to that command.\n\n```{eval-rst}\n.. click:example::\n\n    @click.group()\n    def greeting():\n        pass\n\n    @greeting.command()\n    @click.option('--count', default=1)\n    def hello(count):\n        for x in range(count):\n            click.echo(\"Hello!\")\n\n    @greeting.command()\n    @click.option('--count', default=1)\n    def goodbye(count):\n        for x in range(count):\n            click.echo(\"Goodbye!\")\n\n.. click:run::\n\n    invoke(greeting, args=['hello', '--count', '2'])\n    invoke(greeting, args=['goodbye', '--count', '2'])\n    invoke(greeting)\n```\n\nAdditionally parameters for a given group belong only to that group and not to\nthe commands under it. What this means is that options and arguments for a\nspecific command have to be specified *after* the command name itself, but\n*before* any other command names.\n\nThis behavior is observable with the `--help` option. Suppose we have a group\ncalled `tool` containing a command called `sub`.\n\n- `tool --help` returns the help for the whole program (listing subcommands).\n- `tool sub --help` returns the help for the `sub` subcommand.\n- But `tool --help sub` treats `--help` as an argument for the main program.\n  Click then invokes the callback for `--help`, which prints the help and aborts\n  the program before click can process the subcommand.\n\n### Arbitrary Nesting\n\n{class}`Commands <Command>` are attached to a {class}`Group`. Multiple groups can be attached to another group. Groups containing multiple groups can be attached to a group, and so on. To invoke a command nested under multiple groups, all the groups under which it is nested must be invoked.\n\n```{eval-rst}\n.. click:example::\n\n    @click.group()\n    def cli():\n        pass\n\n    # Not @click so that the group is registered now.\n    @cli.group()\n    def session():\n        click.echo('Starting session')\n\n    @session.command()\n    def initdb():\n        click.echo('Initialized the database')\n\n    @session.command()\n    def dropdb():\n        click.echo('Dropped the database')\n\n.. click:run::\n\n    invoke(cli, args=['session', 'initdb'])\n```\n\n### Lazily Attaching Commands\n\nMost examples so far have attached the commands to a group immediately, but\ncommands may be registered later. This could be used to split commands into\nmultiple Python modules. Regardless of how they are attached, the commands are\ninvoked identically.\n\n```{eval-rst}\n.. click:example::\n\n    @click.group()\n    def cli():\n        pass\n\n    @cli.command()\n    def initdb():\n        click.echo('Initialized the database')\n\n    @click.command()\n    def dropdb():\n        click.echo('Dropped the database')\n\n    cli.add_command(dropdb)\n\n.. click:run::\n\n    invoke(cli, args=['initdb'])\n    invoke(cli, args=['dropdb'])\n```\n\n## Context Object\nThe {class}`Context` object is how commands and groups communicate.\n\n### Auto Envvar Prefix\n\nAutomatically built environment variables are supported for options only. To\nenable this feature, the `auto_envvar_prefix` parameter needs to be passed to\nthe script that is invoked.  Each command and parameter is then added as an\nuppercase underscore-separated variable.  If you have a subcommand\ncalled `run` taking an option called `reload` and the prefix is `WEB`, then the\nvariable is `WEB_RUN_RELOAD`.\n\nExample usage:\n\n```{eval-rst}\n.. click:example::\n\n    @click.command()\n    @click.option('--username')\n    def greet(username):\n        click.echo(f'Hello {username}!')\n\n    if __name__ == '__main__':\n        greet(auto_envvar_prefix='GREETER')\n\nAnd from the command line:\n\n.. click:run::\n\n    invoke(greet, env={'GREETER_USERNAME': 'john'},\n           auto_envvar_prefix='GREETER')\n```\n\nWhen using `auto_envvar_prefix` with command groups, the command name\nneeds to be included in the environment variable, between the prefix and\nthe parameter name, *i.e.* `PREFIX_COMMAND_VARIABLE`. If you have a\nsubcommand called `run-server` taking an option called `host` and\nthe prefix is `WEB`, then the variable is `WEB_RUN_SERVER_HOST`.\n\n```{eval-rst}\n.. click:example::\n\n   @click.group()\n   @click.option('--debug/--no-debug')\n   def cli(debug):\n       click.echo(f\"Debug mode is {'on' if debug else 'off'}\")\n\n   @cli.command()\n   @click.option('--username')\n   def greet(username):\n       click.echo(f\"Hello {username}!\")\n\n   if __name__ == '__main__':\n       cli(auto_envvar_prefix='GREETER')\n\n.. click:run::\n\n   invoke(cli, args=['greet',],\n          env={'GREETER_GREET_USERNAME': 'John', 'GREETER_DEBUG': 'false'},\n          auto_envvar_prefix='GREETER')\n```\n\n### Global Context Access\n\n```{versionadded} 5.0\n```\n\nStarting with Click 5.0 it is possible to access the current context from\nanywhere within the same thread through the use of the\n{func}`get_current_context` function which returns it.  This is primarily\nuseful for accessing the context bound object as well as some flags that\nare stored on it to customize the runtime behavior.  For instance the\n{func}`echo` function does this to infer the default value of the `color`\nflag.\n\nExample usage:\n\n```python\n    def get_current_command_name():\n        return click.get_current_context().info_name\n```\n\nIt should be noted that this only works within the current thread.  If you\nspawn additional threads then those threads will not have the ability to\nrefer to the current context.  If you want to give another thread the\nability to refer to this context you need to use the context within the\nthread as a context manager:\n\n```python\n    def spawn_thread(ctx, func):\n        def wrapper():\n            with ctx:\n                func()\n        t = threading.Thread(target=wrapper)\n        t.start()\n        return t\n```\n\nNow the thread function can access the context like the main thread would\ndo.  However if you do use this for threading you need to be very careful\nas the vast majority of the context is not thread safe!  You are only\nallowed to read from the context, but not to perform any modifications on\nit.\n\n\n### Parameter Source Priority\n\nWhen a parameter's value is resolved, Click checks several sources\nin the following order of precedence:\n\n1.  **Prompt** (`PROMPT`): interactively provided by the user at a prompt.\n2.  **Command line** (`COMMANDLINE`): provided as a CLI argument or option.\n3.  **Environment variable** (`ENVIRONMENT`): read from an environment variable.\n4.  **Default map** (`DEFAULT_MAP`): looked up from {attr}`Context.default_map`.\n5.  **Default** (`DEFAULT`): the default value defined on the parameter.\n\n{class}`~click.core.ParameterSource` members are ordered from most\nexplicit to least explicit. Because it is an {class}`~enum.IntEnum`,\nyou can use comparison operators to check how explicitly a value was\nprovided:\n\n```python\nsource = ctx.get_parameter_source(\"port\")\n\n# True if the value was explicitly set (command line, prompt, or env var).\nif source < click.ParameterSource.DEFAULT_MAP:\n    ...\n\n# True if the value came from any kind of default.\nif source >= click.ParameterSource.DEFAULT_MAP:\n    ...\n```\n\n\n### Detecting the Source of a Parameter\n\nIn some situations it's helpful to understand whether or not an option\nor parameter came from the command line, the environment, the default\nvalue, or {attr}`Context.default_map`. The\n{meth}`Context.get_parameter_source` method can be used to find this\nout. It will return a member of the {class}`~click.core.ParameterSource`\nenum.\n\n```{eval-rst}\n.. click:example::\n\n    @click.command()\n    @click.argument('port', nargs=1, default=8080, envvar=\"PORT\")\n    @click.pass_context\n    def cli(ctx, port):\n        source = ctx.get_parameter_source(\"port\")\n        click.echo(f\"Port came from {source.name}\")\n\n.. click:run::\n\n    invoke(cli, prog_name='cli', args=['8080'])\n    println()\n    invoke(cli, prog_name='cli', args=[], env={\"PORT\": \"8080\"})\n    println()\n    invoke(cli, prog_name='cli', args=[])\n    println()\n```"
+    },
+    "score": 0.38942418
+  },
+  {
+    "unit": {
+      "name": "faqs",
+      "qualified_name": "docs/faqs.md::faqs",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/docs/faqs.md",
+      "line": 1,
+      "end_line": 251,
+      "language": "markdown",
+      "unit_type": "document",
+      "signature": "# Frequently Asked Questions",
+      "docstring": "# Frequently Asked Questions",
+      "parameters": [],
+      "return_type": null,
+      "extends": null,
+      "parent_class": null,
+      "calls": [],
+      "called_by": [],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "# Frequently Asked Questions\n\n```{contents}\n:depth: 2\n:local: true\n```\n\n## General\n\n### Calling a command as a regular function\n\nI decorated a function with `@click.command()` to make it a CLI. When I import that name and call it from Python, it does not run my function. It parses arguments, prints a usage error and exits the process:\n\n```pytb\n>>> nasa_date_to_iso(\"2017-090\")\nUsage: cli [OPTIONS] DATESTR\nTry 'cli --help' for help.\n\nError: Got unexpected extra arguments (0 1 7 - 0 9 0)\nSystemExit: 2\n```\n\n#### Answer\n\nThis is not a bug in Click. The decorator replaced the function with a {class}`Command` object. Calling that object runs the Click pipeline, and its argument is the list of command line arguments to parse, not the function's parameters.\n\nThe recommended pattern is to keep a plain function and wrap it with a thin command:\n\n```python\ndef nasa_date_to_iso(datestr): ...\n\n\n@click.command(\"nasa_date_to_iso\")\n@click.argument(\"datestr\")\ndef nasa_date_to_iso_command(datestr):\n    click.echo(nasa_date_to_iso(datestr))\n```\n\nThe function stays available as a Python API, and the command adds the CLI on top. Extracting behavior into a shared function used by several entry points is a common refactor.\n\nIf you still want to run the command itself from Python, call it with a list of arguments and `standalone_mode=False` so it returns the result instead of exiting. This runs the Click pipeline, including parsing, validation and callbacks:\n\n```python\nnasa_date_to_iso_command([\"2017-090\"], standalone_mode=False)\n```\n\nAn alternative form is:\n\n```python\nnasa_date_to_iso_command.main([\"2017-090\"], standalone_mode=False)\n```\n\n### Shell Variable Expansion On Windows\n\nI have a simple Click app :\n\n```\nimport click\n\n@click.command()\n@click.argument('message')\ndef main(message: str):\n    click.echo(message)\n\nif __name__ == '__main__':\n    main()\n\n```\n\nWhen you pass an environment variable in the argument, it expands it:\n\n```{code-block} powershell\n> Desktop python foo.py '$M0/.viola/2025-01-25-17-20-23-307878'\n> M:/home/ramrachum/.viola/2025-01-25-17-20-23-307878\n>\n```\nNote that I used single quotes above, so my shell is not expanding the environment variable, Click does. How do I get Click to not expand it?\n\n#### Answer\n\nIf you don't want Click to emulate (as best it can) unix expansion on Windows, pass windows_expand_args=False when calling the CLI.\nWindows command line doesn't do any *, ~, or $ENV expansion. It also doesn't distinguish between double quotes and single quotes (where the later means \"don't expand here\"). Click emulates the expansion so that the app behaves similarly on both platforms, but doesn't receive information about what quotes were used.\n\n### `UnicodeEncodeError` on Windows\n\nA Click CLI that uses Unicode characters in its help text or `echo` output can raise `UnicodeEncodeError`:\n\n```pytb\nUnicodeEncodeError: 'charmap' codec can't encode character '\\u2023' in position 62: character maps to <undefined>\n```\n\nThis is not a bug in Click. When `<stdout>` is a console, Click relies on the Windows console API, which supports full Unicode rendering. But when `<stdout>` is redirected, it cannot use that API, so Python falls back to encoding the stream with the system's code page (often `cp1252`) and `errors=\"strict\"`. That codec cannot represent every Unicode character, so the write fails.\n\n#### Answer\n\nRun Python in [UTF-8 mode](https://docs.python.org/3/library/os.html#utf8-mode) so that redirected streams use UTF-8 instead of the code page.\n\nYou can enforce that by:\n- Setting the `PYTHONUTF8=1` environment variable, or\n- Passing `-X utf8` to the `python` executable, or\n- Setting `PYTHONIOENCODING=utf8`, which configures only the standard streams, or\n- From your code, call `sys.stdout.reconfigure(encoding=\"utf-8\")` and `sys.stderr.reconfigure(encoding=\"utf-8\")` before producing output.\n\nThis is not a bug for Click to fix, but a system configuration. It will naturally go away with UTF-8 mode becoming the default in Python 3.15 (see [PEP 686](https://peps.python.org/pep-0686/)).\n\n#### For library authors\n\nClick intentionally does not fix this in code: it has no way to know what the caller expects. Reconfiguring the stream itself would mix encodings within one process: `echo` could write UTF-8 to a redirected file while a bare `print()` still writes the code page. A loud `UnicodeEncodeError` is easier to diagnose than silently interleaved encodings.\n\nBut if your own CLI knows the environment it runs under, it can choose to degrade its output:\n\n```python\nimport sys\n\nencoding = getattr(sys.stdout, \"encoding\", \"\") or \"\"\nascii_only = not encoding.lower().startswith(\"utf\")\n```\n\nNote that the check we recommend here is against `sys.stdout.encoding`, not `sys.flags.utf8_mode`: only the former reports UTF-8 for all three options listed below.\n\n| Invocation                              | `sys.flags.utf8_mode` | `sys.stdout.encoding` |\n| :-------------------------------------- | :-------------------: | :-------------------: |\n| `PYTHONIOENCODING=utf8`                 |          `0`          |        `utf-8`        |\n| `python -X utf8`                        |          `1`          |        `utf-8`        |\n| `sys.stdout.reconfigure(encoding=…)`    |          `0`          |        `utf-8`        |\n\nDo not rely on `sys.getfilesystemencoding()` on Windows either: [PEP 529](https://peps.python.org/pep-0529/) makes it `utf-8` regardless of the actual stream encoding.\n\n(edit-wait)=\n### The `edit` utility fails to open Visual Studio Code\n\nLet's say our default editor is Visual Studio Code. A Click CLI calling `edit()` is supposed to open a new VSCode window on a temporary file then wait for us to edit that file before returning back the CLI execution.\n\nBut VSCode (and some other editors) returns immediately: the file is deleted before you had a chance to edit it. With `require_save=True` (the default), the function also returns `None` instead of the edited content.\n\nThis is not a bug in Click. In that particular case, the `code` command (VSCode's executable) is a launcher: it starts the real editor in the background, then exits. Click waits on that process and reads its exit as the end of the editing session. The same happens on any platform with any editor whose command returns before its window closes.\n\n#### Answer\n\nSetup your editor to make its launcher block until the window is closed, so Click keeps waiting on it.\n\nYou can set the `EDITOR` in your environment with its appropriate flags:\n\n| Editor | Flags |\n|---|---|\n| Visual Studio Code | `EDITOR=\"code --wait\"` |\n| Sublime Text | `EDITOR=\"subl -w\"` |\n\nFor an editor with no such flag, a workaround is to point `EDITOR` at a small wrapper script that opens the editor and blocks until it exits.\n\n### Tab completion during interactive prompts\n\nA command asks for a file path while it runs:\n\n```python\nimport click\n\n\n@click.command()\ndef convert():\n    source = click.prompt(\"File to convert\", type=click.Path(exists=True))\n    click.echo(f\"Converting {source}\")\n```\n\nPressing {kbd}`Tab` while typing the answer inserts a tab character instead of completing the path:\n\n```console\n$ convert\nFile to convert: Doc<TAB>\nError: Path 'Doc\\t' does not exist.\n```\n\nThis is not a bug in Click. Tab completion of the command line belongs to the shell: the shell asks the program for candidates through Click's completion mode, before any command code runs. A prompt works the other way around. The program already runs and reads the line itself, so Click never sees the {kbd}`Tab` key.\n\n{func}`~click.prompt` reads that line with the built-in {func}`input`, and Click passes the whole prompt text to it as-is. This is where Python's {mod}`readline` module takes over, but nothing binds {kbd}`Tab` to completion by default.\n\n#### Answer\n\nBind {kbd}`Tab` in `readline` and the prompt completes paths with no other change:\n\n```python\nimport readline\n\nif \"libedit\" in (readline.__doc__ or \"\"):\n    readline.parse_and_bind(\"bind ^I rl_complete\")\nelse:\n    readline.parse_and_bind(\"tab: complete\")\n```\n\nSee the {mod}`readline` documentation for the binding syntax, for the two libraries it can be built on, and for writing a completer of your own. The module is Unix-only, so the import fails on Windows.\n\nReadline completes file names. It knows nothing about the parameter, so it cannot complete other values, such as the choices of a {class}`~click.Choice` parameter. Click embeds no line editor of its own: for completion of such values at a prompt, use one of the [interactive input libraries](contrib.md#interactive-input-libraries).\n\nWhen the value does not have to be asked while the command runs, another option is to take it out of the prompt and put it on the command line, as an argument or an option:\n\n```python\n@click.command()\n@click.argument(\"source\", type=click.Path(exists=True))\ndef convert(source):\n    click.echo(f\"Converting {source}\")\n```\n\nThe shell completes paths there natively and Click's completion mode takes part in it (as described in [Shell Completion](shell-completion.md)).\n\n(custom-completions-show-the-full-value)=\n### Custom completions show the full value\n\n`Path` and `File` parameters complete differently from a parameter with a custom completer. Take a command with one of each:\n\n```python\ndef complete_dirs(ctx, param, incomplete):\n    return [\n        CompletionItem(incomplete + name)\n        for name in (\"Documents\", \"Downloads\", \"Pictures\")\n    ]\n\n\n@click.command()\n@click.option(\"--src\", type=click.Path())\n@click.option(\"--dest\", shell_complete=complete_dirs)\ndef copy(src, dest):\n    click.echo(f\"Copy from {src} to {dest}\")\n```\n\nCompleting `--src` shows only the last component of each candidate, and omits the leading path:\n\n```console\n$ copy --src /home/user/<TAB><TAB>\nDocuments  Downloads  Pictures\n```\n\nCompleting `--dest` shows each value in full, exactly as the completer returned it:\n\n```console\n$ copy --dest /home/user/<TAB><TAB>\n/home/user/Documents  /home/user/Downloads  /home/user/Pictures\n```\n\nThis is not a bug in Click. The two parameters are completed by different sides.\n\n`Path.shell_complete` and `File.shell_complete` never enumerate the directory: each returns a single item that is the incomplete value itself, tagged `file` (or `dir` for a `Path` restricted to directories). Then the shell takes over to propose completions, and each shell does so in its own way.\n\nA custom completer sends no such marker. Its `CompletionItem` carries the value, a `type` marker, and an optional `help` string. The value a completer returns is both what the shell displays and what it inserts into the command line.\n\n#### Answer\n\nTo change how suggestions are displayed, work on the shell side:\n\n- Check whether your shell's completion system has an option that changes how candidates are displayed.\n- Write a `ShellComplete` subclass and register it with `add_completion_class`, as described in [Adding Support for a Shell](shell-completion.md#adding-support-for-a-shell).\n- Or return the shortened form directly from your completer, but make the parameter accept and interpret that shortened form into the full value."
+    },
+    "score": 0.38019767
+  }
+]

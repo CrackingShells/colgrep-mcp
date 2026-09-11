@@ -1,0 +1,38 @@
+[
+  {
+    "unit": {
+      "name": "add_argument",
+      "qualified_name": "parser.py::_OptionParser::add_argument",
+      "file": "/private/tmp/claude-501/-Users-hacker-Documents-explore-colgrep-mcp/a8c80498-9a50-45ec-b1a2-c45eb195404d/scratchpad/corpus/click/src/click/parser.py",
+      "line": 1,
+      "end_line": 533,
+      "language": "python",
+      "unit_type": "method",
+      "signature": "def add_argument(self, obj: CoreArgument, dest: str | None, nargs: int = 1) -> None:",
+      "docstring": "\"\"\"Adds a positional argument named `dest` to the parser.\n\n        The `obj` can be used to identify the option in the order list\n        that is returned from the parser.",
+      "parameters": [
+        "obj",
+        "dest",
+        "nargs"
+      ],
+      "return_type": "None",
+      "extends": null,
+      "parent_class": "_OptionParser",
+      "calls": [
+        "append"
+      ],
+      "called_by": [
+        "Argument",
+        "add_to_parser"
+      ],
+      "complexity": 1,
+      "has_loops": false,
+      "has_branches": false,
+      "has_error_handling": false,
+      "variables": [],
+      "imports": [],
+      "code": "    def add_argument(self, obj: CoreArgument, dest: str | None, nargs: int = 1) -> None:\n        \"\"\"Adds a positional argument named `dest` to the parser.\n\n        The `obj` can be used to identify the option in the order list\n        that is returned from the parser.\n        \"\"\"\n        self._args.append(_Argument(obj, dest=dest, nargs=nargs))"
+    },
+    "score": 1.1322423
+  }
+]
