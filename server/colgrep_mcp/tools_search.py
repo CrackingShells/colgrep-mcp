@@ -117,11 +117,13 @@ def render_search_text(result: SearchResult, budget: int) -> tuple[str, bool]:
     one (R01 §Token-budget invariant: "capped at N characters"), so if the
     note itself would overflow `budget` a previously-emitted hit is dropped
     to make room for it, repeatedly if needed, rather than let the note push
-    the text past the limit. The one exception is a budget too small to fit
-    even the header plus note: nothing is left to drop, so that minimal text
-    is returned as-is. Trailing `result.notes` (e.g. R05 D5's
+    the text past the limit. Trailing `result.notes` (e.g. R05 D5's
     exhaustive-search caveat) are always appended last, so a zero-hit result
-    still renders them.
+    still renders them — but the cap stays hard even then: if `budget` is
+    too small to fit even the header (plus the mandatory note, plus
+    `result.notes`) with nothing left to drop, the joined text is
+    hard-truncated to `budget` characters as the last resort, rather than
+    ever returning more than requested.
 
     Returns `(text, was_capped)`; `was_capped` reflects only this rendering
     step, not `result.truncated` (which may already be true upstream).
@@ -144,7 +146,11 @@ def render_search_text(result: SearchResult, budget: int) -> tuple[str, bool]:
 
     remaining = len(result.hits) - emitted
     if capped and remaining > 0:
-        while True:
+        # Bounded by construction: each non-appending iteration drops one
+        # previously-emitted hit, so this runs at most `emitted + 1` times
+        # (one drop per already-emitted hit, plus the final appending pass)
+        # before either fitting or running out of hits to drop.
+        for _ in range(emitted + 1):
             note = f"[{remaining} more hits in structured_content; call expand(hit_ids=[...]) for code]"
             candidate_len = text_len + 1 + len(note)
             if candidate_len <= budget or emitted == 0:
@@ -159,6 +165,14 @@ def render_search_text(result: SearchResult, budget: int) -> tuple[str, bool]:
     text = "\n".join(blocks)
     for note in result.notes:
         text = f"{text}\n{note}"
+
+    # Hard cap (R01 §Token-budget invariant): the backtracking above can
+    # still leave `header (+ note) (+ result.notes)` longer than `budget`
+    # when `budget` is smaller than that unavoidable minimum — hard-truncate
+    # as the last resort rather than ever exceed what was requested.
+    if len(text) > budget:
+        text = text[:budget]
+        capped = True
 
     return text, capped
 
@@ -196,7 +210,8 @@ def render_files_text(result: FileResult, budget: int) -> tuple[str, bool]:
 
     remaining = len(result.files) - emitted
     if capped and remaining > 0:
-        while True:
+        # Bounded by construction: same reasoning as `render_search_text`.
+        for _ in range(emitted + 1):
             note = f"[{remaining} more files in structured_content]"
             candidate_len = text_len + 1 + len(note)
             if candidate_len <= budget or emitted == 0:
@@ -208,7 +223,14 @@ def render_files_text(result: FileResult, budget: int) -> tuple[str, bool]:
             emitted -= 1
             remaining += 1
 
-    return "\n".join(blocks), capped
+    text = "\n".join(blocks)
+
+    # Hard cap — see `render_search_text`'s matching comment.
+    if len(text) > budget:
+        text = text[:budget]
+        capped = True
+
+    return text, capped
 
 
 async def _client_roots(ctx: Context) -> list[Path] | None:
