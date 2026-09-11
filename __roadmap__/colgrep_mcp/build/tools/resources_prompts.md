@@ -5,10 +5,10 @@
 - [ ] `build/colgrep_adapter` merged; `build/agent_skill` merged (`server/colgrep_mcp/guide.md` exists)
 - [ ] `server/colgrep_mcp/resources.py` and `prompts.py` stubs exist
 **Success Gates**:
-- ⬜ [run] `cd server && uv run pytest -q tests/test_resources.py tests/test_prompts.py` passes
-- ⬜ [run] `Client(build()).list_resources()` returns `colgrep://guide` (text/markdown), `colgrep://settings`, `colgrep://indexes` (application/json); `list_resource_templates()` returns `colgrep://status/{+path}`; reading `colgrep://status/Users/x/proj` yields `IndexStatus` JSON for `/Users/x/proj`
-- ⬜ [run] `list_prompts()` returns `explore`, `locate`, `impact`, each with a required first argument and optional `path`; `get_prompt("explore", {"question": "…"})` returns one user message whose text names the tools `search`, `expand` and forbids shell grep
-- ⬜ [run] `complete()` for the template's `path` argument and for a prompt's `path` argument returns indexed project paths from the fake `--stats` (prefix-filtered)
+- ✅ [run] `cd server && uv run pytest -q tests/test_resources.py tests/test_prompts.py` passes
+- ✅ [run] `Client(build()).list_resources()` returns `colgrep://guide` (text/markdown), `colgrep://settings`, `colgrep://indexes` (application/json); `list_resource_templates()` returns `colgrep://status/{+path}`; reading `colgrep://status/Users/x/proj` yields `IndexStatus` JSON for `/Users/x/proj`
+- ✅ [run] `list_prompts()` returns `explore`, `locate`, `impact`, each with a required first argument and optional `path`; `get_prompt("explore", {"question": "…"})` returns one user message whose text names the tools `search`, `expand` and forbids shell grep
+- ✅ [run] `complete()` for the template's `path` argument and for a prompt's `path` argument returns indexed project paths from the fake `--stats` (prefix-filtered)
 **References**: [R01 §Resources and completions](../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R01 §Prompts](../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R02 Resources / Prompts tables](../../../../__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md) — adopt-guarded: resources must never be load-bearing (every fact they expose is also reachable by a tool); [R05 D5, D11](../../../../__reports__/colgrep_mcp/02-architecture_v1.md) — prompt text must say `limit=None` is exhaustive only together with `pattern`, and that colgrep's runtime default is 15
 
 ## Step 1: Resources and the status template
