@@ -17,8 +17,8 @@ Prove the server works end-to-end and release it.
 ```mermaid
 graph TD
     e2e_validation[End-to-End Validation]:::done
-    release_0_1_0[Release 0.1.0]:::planned
-    code_review[Code Review Pass]:::inprogress
+    release_0_1_0[Release 0.1.0]:::inprogress
+    code_review[Code Review Pass]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -30,8 +30,8 @@ graph TD
 | Node | Type | Status |
 |:-----|:-----|:-------|
 | `e2e_validation.md` | 📄 Leaf Task | ✅ Done |
-| `release_0_1_0.md` | 📄 Leaf Task | ⬜ Planned |
-| `code_review.md` | 📄 Leaf Task | 🔄 In Progress |
+| `release_0_1_0.md` | 📄 Leaf Task | 🔄 In Progress |
+| `code_review.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -41,3 +41,5 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `e2e_validation.md` | `task/e2e_validation` | 1 | median warm search 759 ms; cold build 16.2 s, 4 progress notifications; claude -p blocked by expired OAuth, `mcp list` shows Connected |
+| `code_review.md` | `task/code_review` + `task/code_review_fixes` | 1 + 11 | 14 findings; F1-F6, F8, F9, F11-F14 fixed with regression tests; F7, F10 deferred |
