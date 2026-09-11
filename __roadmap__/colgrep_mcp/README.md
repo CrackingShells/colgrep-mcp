@@ -54,3 +54,6 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `research_mcp_features.md` | `task/research_mcp_features` | 1 | 38-row feature matrix; roots/sampling/logging deprecated in 2026-07-28 → guarded use only |
+| `research_colgrep_behaviour.md` | `task/research_colgrep_behaviour` | 1 | 35 probes; line/end_line unreliable → R05 D1; project-root folding → R05 D3 |
+| `scaffold_package.md` | `milestone/colgrep_mcp` (lead, direct) | 1 | package, fake colgrep, CHANGELOG, LICENSE |
