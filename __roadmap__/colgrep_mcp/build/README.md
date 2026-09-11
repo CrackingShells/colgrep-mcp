@@ -18,10 +18,10 @@ Deliver the foundations that every MCP handler needs: a fixture-tested adapter, 
 ## Status
 ```mermaid
 graph TD
-    colgrep_adapter[colgrep Adapter]:::inprogress
+    colgrep_adapter[colgrep Adapter]:::done
     plugin_packaging[Plugin Packaging]:::done
     agent_skill[Agent Usage Skill]:::done
-    tools[Tools]:::planned
+    tools[Tools]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -32,10 +32,10 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `colgrep_adapter.md` | 📄 Leaf Task | 🔄 In Progress |
+| `colgrep_adapter.md` | 📄 Leaf Task | ✅ Done |
 | `plugin_packaging.md` | 📄 Leaf Task | ✅ Done |
 | `agent_skill.md` | 📄 Leaf Task | ✅ Done |
-| `tools/` | 📁 Directory | ⬜ Planned |
+| `tools/` | 📁 Directory | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -46,3 +46,4 @@ graph TD
 |:-----|:-------|:--------|:------|
 | `plugin_packaging.md` | `task/plugin_packaging` | 2 (+1 lead: scripts/launch.sh) | `claude plugin validate .` passes; server connects under `--plugin-dir .` |
 | `agent_skill.md` | `task/agent_skill` | 1 | SKILL.md 105 lines, guide.md 126 lines; D5 wording fix deferred to docs_readme |
+| `colgrep_adapter.md` | `task/colgrep_adapter` | 3 | 75 tests; locate_unit recovers lines (R05 D1); parse_index_summary for progress |

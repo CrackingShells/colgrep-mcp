@@ -16,9 +16,9 @@ Implement the complete MCP surface defined in R01: search/find_files/expand, ind
 ## Status
 ```mermaid
 graph TD
-    search_tools[Search Tools]:::planned
-    index_tools[Index Tools]:::planned
-    resources_prompts[Resources, Prompts, Completions]:::planned
+    search_tools[Search Tools]:::inprogress
+    index_tools[Index Tools]:::inprogress
+    resources_prompts[Resources, Prompts, Completions]:::inprogress
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -30,9 +30,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `search_tools.md` | 📄 Leaf Task | ⬜ Planned |
-| `index_tools.md` | 📄 Leaf Task | ⬜ Planned |
-| `resources_prompts.md` | 📄 Leaf Task | ⬜ Planned |
+| `search_tools.md` | 📄 Leaf Task | 🔄 In Progress |
+| `index_tools.md` | 📄 Leaf Task | 🔄 In Progress |
+| `resources_prompts.md` | 📄 Leaf Task | 🔄 In Progress |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
