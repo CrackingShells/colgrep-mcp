@@ -4,9 +4,9 @@
 **Pre-conditions**:
 - [ ] All `build/tools/integrate/*.md` leaves merged; full suite green
 **Success Gates**:
-- ⬜ [static] `__reports__/colgrep_mcp/02-observation_code_review_v0.md` exists (one `observation` report per distinct finding is also acceptable, named `02-observation_<slug>_v0.md`), each finding with: file:line, the traced scenario, severity (bug / risk / consolidation), and a proposed fix
-- ⬜ [static] Every finding rated `bug` is either fixed in a `fix(<scope>): …` commit with a regression test, or explicitly deferred in the knowledge-transfer report with a reason
-- ⬜ [static] Review covers at minimum: `adapter._run` (timeout/kill/zombie, stderr drain deadlock, large stdout), `locate.locate_unit` (ambiguity, CRLF, trailing whitespace, code shorter than file tail), `tools_search.render_*` (budget backtracking termination, empty hits), `tools_index.index_build` heartbeat task cancellation on client disconnect, `index_clear` guard ordering, `paths.resolve_paths` (symlinks, `~`, files vs dirs), `resources` standalone adapter lifetime, `errors` coverage of every raise site
+- ✅ [static] `__reports__/colgrep_mcp/02-observation_code_review_v0.md` exists (one `observation` report per distinct finding is also acceptable, named `02-observation_<slug>_v0.md`), each finding with: file:line, the traced scenario, severity (bug / risk / consolidation), and a proposed fix
+- ✅ [static] Every finding rated `bug` is either fixed in a `fix(<scope>): …` commit with a regression test, or explicitly deferred in the knowledge-transfer report with a reason
+- ✅ [static] Review covers at minimum: `adapter._run` (timeout/kill/zombie, stderr drain deadlock, large stdout), `locate.locate_unit` (ambiguity, CRLF, trailing whitespace, code shorter than file tail), `tools_search.render_*` (budget backtracking termination, empty hits), `tools_index.index_build` heartbeat task cancellation on client disconnect, `index_clear` guard ordering, `paths.resolve_paths` (symlinks, `~`, files vs dirs), `resources` standalone adapter lifetime, `errors` coverage of every raise site
 **References**: [R01 §Contracts & Invariants](../../../../../../__reports__/colgrep_mcp/00-architecture_v0.md); [R05](../../../../../../__reports__/colgrep_mcp/02-architecture_v1.md); `writing-reports` reference `observation.md`
 
 ## Step 1: Trace, report, and route fixes
