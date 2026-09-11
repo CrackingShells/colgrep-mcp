@@ -1,0 +1,20 @@
+{
+  "name": "colgrep-mcp-marketplace",
+  "interface": {
+    "displayName": "colgrep"
+  },
+  "plugins": [
+    {
+      "name": "colgrep-mcp",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "NONE"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
