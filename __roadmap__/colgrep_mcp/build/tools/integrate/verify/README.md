@@ -18,6 +18,7 @@ Prove the server works end-to-end and release it.
 graph TD
     e2e_validation[End-to-End Validation]:::planned
     release_0_1_0[Release 0.1.0]:::planned
+    code_review[Code Review Pass]:::amendment
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -30,10 +31,12 @@ graph TD
 |:-----|:-----|:-------|
 | `e2e_validation.md` | 📄 Leaf Task | ⬜ Planned |
 | `release_0_1_0.md` | 📄 Leaf Task | ⬜ Planned |
+| `code_review.md` | 📄 Leaf Task | 🔵 Amendment |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
 |:---|:-----|:-------|:------------|:----------|
+| A02 | 2026-09-12 | PI recommendation | `code_review.md` | A reader should trace paths tests cannot easily prove (subprocess lifecycle, unit location, budget, guards) before release |
 
 ## Progress
 | Node | Branch | Commits | Notes |
