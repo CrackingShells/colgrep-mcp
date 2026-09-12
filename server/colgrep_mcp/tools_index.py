@@ -22,7 +22,7 @@ from .locks import project_lock
 from .logging_utils import safe_log, safe_notify_resource_updated, safe_progress
 from .models import Doctor, IndexBuildResult, IndexClearResult, IndexInfo, IndexList, IndexStatus
 from .paths import client_roots, default_root, resolve_target_paths
-from .server import READ_ONLY_TOOL, get_adapter, get_settings
+from .server import READ_ONLY_TOOL, get_adapter, get_settings, register_tool
 
 #: Interval between indeterminate progress heartbeats during `index_build`
 #: (R05 D2: colgrep emits no per-file progress, only a final summary line).
@@ -337,16 +337,20 @@ async def index_clear(
 
 def register(mcp: MCPServer) -> None:
     """Attach this module's handlers to the server."""
-    mcp.tool(title="Index status", annotations=READ_ONLY_TOOL)(index_status)
-    mcp.tool(title="List indexes", annotations=READ_ONLY_TOOL)(list_indexes)
-    mcp.tool(title="Doctor", annotations=READ_ONLY_TOOL)(doctor)
-    mcp.tool(
+    register_tool(mcp, index_status, title="Index status", annotations=READ_ONLY_TOOL)
+    register_tool(mcp, list_indexes, title="List indexes", annotations=READ_ONLY_TOOL)
+    register_tool(mcp, doctor, title="Doctor", annotations=READ_ONLY_TOOL)
+    register_tool(
+        mcp,
+        index_build,
         title="Build or refresh index",
         annotations=ToolAnnotations(
             read_only_hint=False, destructive_hint=False, idempotent_hint=True, open_world_hint=False
         ),
-    )(index_build)
-    mcp.tool(
+    )
+    register_tool(
+        mcp,
+        index_clear,
         title="Clear index",
         annotations=ToolAnnotations(destructive_hint=True, open_world_hint=False),
-    )(index_clear)
+    )

@@ -29,3 +29,18 @@ async def test_server_initializes(settings_env):
         assert client.server_info.version == __version__
         tools = await client.list_tools()
         assert isinstance(tools.tools, list)
+
+
+@pytest.mark.anyio
+async def test_tool_descriptions_are_dedented(settings_env):
+    """`register_tool` ships docstrings through `inspect.getdoc`: no line of any
+    tool description starts with indentation and none ends in trailing
+    whitespace — bytes every client would otherwise receive on every
+    `tools/list`."""
+    async with Client(build(), raise_exceptions=True) as c:
+        tools = (await c.list_tools()).tools
+    assert tools
+    for tool in tools:
+        desc = tool.description or ""
+        assert desc == desc.strip(), tool.name
+        assert not any(line.startswith((" ", "\t")) for line in desc.splitlines()), tool.name

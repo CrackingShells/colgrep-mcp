@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+import inspect
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
@@ -80,6 +81,19 @@ def get_adapter(ctx: Context | None = None) -> ColgrepAdapter:
 
 def get_settings(ctx: Context | None = None) -> Settings:
     return get_app(ctx).settings
+
+
+def register_tool(
+    server: MCPServer, handler: Callable[..., object], *, title: str, annotations: ToolAnnotations
+) -> None:
+    """Register `handler` as a tool whose description is its docstring, dedented.
+
+    The SDK takes `handler.__doc__` verbatim, so a multi-line docstring's
+    indentation (and its trailing newline-plus-spaces) would be shipped to
+    every client on every `tools/list`. `inspect.getdoc` strips exactly that
+    and nothing else; the words the model reads are unchanged.
+    """
+    server.tool(title=title, description=inspect.getdoc(handler), annotations=annotations)(handler)
 
 
 def build() -> MCPServer:
