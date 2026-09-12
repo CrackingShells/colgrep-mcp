@@ -11,11 +11,10 @@ import time
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel, Field
-
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability, TextContent, ToolAnnotations
+from pydantic import BaseModel, Field
 
 from .adapter import ColgrepError, ColgrepNotFound
 from .errors import Code, from_adapter_error, tool_error
@@ -296,7 +295,10 @@ async def index_clear(
             has_elicitation = False
 
         if not has_elicitation:
-            raise tool_error(Code.CONFIRMATION_REQUIRED, f"Refusing to delete the index for {resolved} without confirmation.")
+            raise tool_error(
+                Code.CONFIRMATION_REQUIRED,
+                f"Refusing to delete the index for {resolved} without confirmation.",
+            )
 
         try:
             res = await ctx.elicit(
