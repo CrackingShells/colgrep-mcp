@@ -50,7 +50,7 @@ end-to-end driver (never against this repository, see Traps).
 - Branches: `main` is always installable; one `task/<leaf>` branch per roadmap
   leaf; rebase onto the target, re-run the gates, merge with `--no-ff`.
 - One roadmap step = one commit; the step's `**Commit**` field is the subject.
-- Releases: `cd server && uv run cz bump --changelog && uv sync && uv run pytest`,
+- Releases: `cd server && uv run cz bump --changelog && uv run pytest`,
   on `main`. This rewrites pyproject, the three manifests and `CHANGELOG.md`,
   commits `release(colgrep-mcp): v<x.y.z>` and tags `v<x.y.z>`. Never edit a
   version number by hand.
@@ -86,9 +86,9 @@ end-to-end driver (never against this repository, see Traps).
   expanded; that is why the plugin's MCP config lives in
   `.claude-plugin/mcp.json`. What each ecosystem expands where is in
   `__reports__/repo_health/00-findings_launch_placeholders_v0.md`.
-- **Manifest and `__init__` versions are derived.** If a test says they
-  disagree, run `uv sync` (editable metadata lags a bump) before suspecting
-  the files.
+- **Manifest and `__init__` versions are derived.** `uv run` re-syncs the
+  editable install after a bump, so if a test says they disagree, a file was
+  hand-edited; fix the file, not the environment.
 
 ## Where to read more
 

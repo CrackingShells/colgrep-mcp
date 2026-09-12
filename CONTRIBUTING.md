@@ -36,7 +36,7 @@ Pick the most specific topic. Current vocabulary (extend deliberately, keep keba
 
 ### Rules
 
-- Imperative mood, lowercase after the colon, no trailing period, subject ≤ 72 chars.
+- Imperative mood, lowercase after the colon, no trailing period, subject ≤ 100 chars (the whole line, prefix included; `cz check` enforces it).
 - Strongly favour a body. A subject-only commit is for trivial, self-evident changes.
 - One roadmap step = one commit. The step's `**Commit**` field is the subject line.
 - Never commit secrets (`.env`, tokens, private keys).
@@ -65,20 +65,15 @@ The release recipe is:
 ```
 cd server
 uv run cz bump --changelog
-uv sync       # refresh editable metadata so __version__ matches the new pyproject version
-uv run pytest
+uv run pytest   # uv run re-syncs the editable install, so __version__ already reports the new version
 ```
-
-`uv sync` matters: `uv run` alone does not refresh the installed editable metadata after a
-version bump, so `__version__` would otherwise lag one release behind until the next `uv sync`
-or fresh `uv run` reinstall.
 
 ### Checks
 
 Gate commands, run from `server/`:
 
 - `uv run pytest` — the test suite, including the version-drift guards in
-  `tests/test_version.py` and `tests/test_manifests.py`.
+  `tests/test_version.py`, `tests/test_manifests.py` and `tests/test_changelog.py`.
 - `uv run ruff check` — lint; clean is the norm, not aspirational.
 - `uv run cz check --rev-range main..HEAD` — validates every commit on the branch against the
   vocabulary above.

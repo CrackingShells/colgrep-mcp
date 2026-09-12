@@ -51,10 +51,10 @@ version_files = [
 ]
 
 [tool.commitizen.customize]
-schema = "type(scope): description"
-schema_pattern = "^(feat|fix|refactor|perf|test|docs|build|chore|release)\\([a-z][a-z0-9-]*\\)!?: .+"
+schema = "type(scope): description  (scope mandatory; subject <= 100 chars, lowercase start, no trailing period)"
+schema_pattern = "(?s)^(?=[^\\n]{1,100}(\\n|$))(feat|fix|refactor|perf|test|docs|build|chore|release)\\([a-z][a-z0-9-]*\\)!?: [a-z0-9`]([^\\n]*[^.\\n])?(\\n.*)?$"
 example = "fix(server): guard against empty query strings"
-bump_pattern = "^(BREAKING[\\-\\ ]CHANGE|feat|fix|perf)(\\(.+\\))?(!)?"
+bump_pattern = "^((BREAKING[\\-\\ ]CHANGE|feat|fix|refactor|perf|test|docs|build|chore)(\\(.+\\))?!?):"
 bump_map = { "^.+!$" = "MAJOR", "^BREAKING[\\-\\ ]CHANGE" = "MAJOR", "^feat" = "MINOR", "^fix" = "PATCH", "^perf" = "PATCH" }
 change_type_order = ["BREAKING CHANGE", "feat", "fix", "perf"]
 commit_parser = "^(?P<change_type>feat|fix|refactor|perf|test|docs|build|chore|release)\\((?P<scope>[a-z][a-z0-9-]*)\\)(?P<breaking>!)?:\\s(?P<message>.*)?"
