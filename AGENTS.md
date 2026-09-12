@@ -15,7 +15,7 @@ plugin; all three launch the same server with `uv run`.
 | Path | Holds | Edited by |
 |:--|:--|:--|
 | `server/colgrep_mcp/` | the server: `server.py` (assembly), `adapter.py` (colgrep subprocess), `tools_search.py`, `tools_index.py`, `resources.py`, `prompts.py`, `errors.py`, `guide.md` (agent guide served as a resource) | implementers |
-| `server/tests/` | pytest suite against `fake_colgrep.py`; `test_manifests.py`, `test_version.py`, `test_readme.py` are drift guards; `e2e/run_e2e.py` drives the real binary (not collected by pytest) | implementers |
+| `server/tests/` | pytest suite against `fake_colgrep.py`; `test_manifests.py`, `test_version.py`, `test_changelog.py`, `test_readme.py` are drift guards; `e2e/run_e2e.py` drives the real binary (not collected by pytest) | implementers |
 | `server/pyproject.toml` | the only version source, dependencies, `[tool.commitizen]`, `[tool.ruff]`, pytest config | `cz bump` for the version; humans/agents for the rest |
 | `plugin.json`, `mcp.json`, `.claude-plugin/`, `.codex-plugin/`, `.agents/` | plugin manifests for the three ecosystems; the Claude Code and Codex MCP config is `.claude-plugin/mcp.json`; `version` fields are written by `cz bump` only | launcher/packaging changes |
 | `skills/colgrep-search/SKILL.md` | the skill that teaches agents when to use the tools | when tool semantics change |
