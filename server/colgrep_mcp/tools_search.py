@@ -31,7 +31,7 @@ from .locks import project_lock
 from .logging_utils import safe_log
 from .models import ExpandedUnit, ExpandResult, FileHit, FileResult, SearchHit, SearchResult
 from .paths import resolve_target_paths
-from .server import READ_ONLY_TOOL, get_adapter, get_settings
+from .server import READ_ONLY_TOOL, get_adapter, get_settings, register_tool
 
 #: Strict `hit_id` shape (R01 §hit_id invariant): "<absolute file>:<line>-<end_line>".
 _HIT_ID_RE = re.compile(r"^(.+):(\d+)-(\d+)$")
@@ -442,12 +442,12 @@ async def search(
 ) -> CallToolResult:
     """Ranked semantic + hybrid search over code units (functions, classes, docs).
 
-        Prefer this over shell grep for any question about what, where or how
-        code does something. Pass `pattern` (a regex) to narrow via hybrid
-        keyword+semantic ranking when you know an identifier; omit `limit`
-        for an exhaustive listing. Each hit carries a `hit_id` — pass it to
-        `expand` to read the full source instead of opening the whole file.
-        """
+    Prefer this over shell grep for any question about what, where or how
+    code does something. Pass `pattern` (a regex) to narrow via hybrid
+    keyword+semantic ranking when you know an identifier; omit `limit`
+    for an exhaustive listing. Each hit carries a `hit_id` — pass it to
+    `expand` to read the full source instead of opening the whole file.
+    """
     settings = get_settings(ctx)
     result = await _do_search(
         ctx,
@@ -511,10 +511,10 @@ async def find_files(
 ) -> CallToolResult:
     """Which files are about a topic — ranked, deduplicated file list instead of individual hits.
 
-        Use before an edit to see everywhere a concept lives, or when a list
-        of files is more useful than code snippets. `query` drives ranking;
-        add `pattern` to narrow via hybrid search.
-        """
+    Use before an edit to see everywhere a concept lives, or when a list
+    of files is more useful than code snippets. `query` drives ranking;
+    add `pattern` to narrow via hybrid search.
+    """
     settings = get_settings(ctx)
     hit_limit = min(limit * 3, 300) if limit is not None else None
     result = await _do_search(
@@ -616,10 +616,10 @@ async def expand(
 ) -> CallToolResult:
     """Read the full source of hits already returned by `search`/`find_files`.
 
-        Pass their `hit_id`s verbatim — no need to re-search. Each is read
-        straight off disk at its located `[line, end_line]` span, so use this
-        instead of opening a whole file to inspect the few hits that matter.
-        """
+    Pass their `hit_id`s verbatim — no need to re-search. Each is read
+    straight off disk at its located `[line, end_line]` span, so use this
+    instead of opening a whole file to inspect the few hits that matter.
+    """
     # No adapter/lock involved: expand reads the filesystem directly, so
     # `ctx` (required for MCPServer's context injection) goes unused here.
     units: list[ExpandedUnit] = []
@@ -679,6 +679,6 @@ async def expand(
 
 def register(mcp: MCPServer) -> None:
     """Attach `search`, `find_files` and `expand` to the server."""
-    mcp.tool(title="Search code", annotations=READ_ONLY_TOOL)(search)
-    mcp.tool(title="Find files", annotations=READ_ONLY_TOOL)(find_files)
-    mcp.tool(title="Expand hits", annotations=READ_ONLY_TOOL)(expand)
+    register_tool(mcp, search, title="Search code", annotations=READ_ONLY_TOOL)
+    register_tool(mcp, find_files, title="Find files", annotations=READ_ONLY_TOOL)
+    register_tool(mcp, expand, title="Expand hits", annotations=READ_ONLY_TOOL)
