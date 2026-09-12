@@ -315,6 +315,16 @@ async def _run_adapter_search(
     caller's job — a step parameterised by what each tool actually needs
     (R01 §C6), so this stops short of it.
 
+    `on_stderr` only collects `stderr_lines` (still needed for
+    `index_updated`, R05 D7) rather than forwarding a `notifications/message`
+    per line: colgrep's stderr chatter can run to several lines per call
+    while the logging capability is deprecated upstream, so a client paid one
+    round-trip per line for nothing an agent acts on. The one fact worth
+    surfacing — the index was rebuilt, so this call's `elapsed_ms` includes a
+    cold build — is sent as at most one summary notification below, only
+    when `index_updated` is true (R01 §C6, a deliberate client-visible
+    delta: was one notification per stderr line).
+
     Raises `ToolError` (via `resolve_target_paths` for a bad path, via
     `translate_adapter_errors` for an adapter failure); never a bare adapter
     exception.
@@ -325,7 +335,6 @@ async def _run_adapter_search(
 
     async def on_stderr(line: str) -> None:
         stderr_lines.append(line)
-        await safe_log(ctx, "info", line)
 
     adapter = get_adapter(ctx).with_stderr(on_stderr)
     req = SearchRequest(
@@ -360,11 +369,18 @@ async def _run_adapter_search(
             raw_hits = await adapter.search(req)
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
+    index_updated = any("Building index" in line for line in stderr_lines)  # R05 D7
+    if index_updated:
+        # One summary notification instead of one per stderr line (R01 §C6):
+        # the only fact a client would otherwise have to reconstruct from N
+        # lines of colgrep chatter is that the index was rebuilt.
+        await safe_log(ctx, "info", "colgrep rebuilt its index before this search; elapsed_ms includes the rebuild")
+
     return _RawSearchOutcome(
         raw_hits=raw_hits,
         resolved=resolved,
         elapsed_ms=elapsed_ms,
-        index_updated=any("Building index" in line for line in stderr_lines),
+        index_updated=index_updated,
     )
 
 
