@@ -16,6 +16,8 @@ adapter straight from `Settings.from_env()`, exactly as `server.lifespan` does.
 from __future__ import annotations
 
 import importlib.resources
+import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -41,12 +43,28 @@ def _map_adapter_error(exc: ColgrepError) -> ResourceError:
     return ResourceError(str(from_adapter_error(exc)))
 
 
+#: A drive-rooted Windows path, e.g. `C:/Users/x` or `C:\Users\x`, optionally
+#: with one redundant leading `/` (the same redundant slash the POSIX branch
+#: below tolerates coming from `{+path}`).
+_WIN_DRIVE_RE = re.compile(r"^/?([A-Za-z]:[/\\].*)$")
+
+
 def _normalize_status_path(path: str) -> Path:
     """Accept `path` with or without a leading `/` and return an absolute `Path`.
 
     `{+path}` keeps inner slashes; the client may reasonably supply either
     `colgrep://status/Users/x/proj` or `colgrep://status//Users/x/proj`.
+
+    On Windows a real absolute path is drive-rooted (`C:/Users/x`), never
+    `/`-rooted — `pathlib` never considers a bare `/foo` "absolute" there
+    without a drive. Unconditionally prepending `/` (the POSIX-only rule
+    below) would turn an already-absolute Windows path into a non-absolute
+    one, so a drive-rooted `path` is used as-is instead.
     """
+    if sys.platform == "win32":
+        m = _WIN_DRIVE_RE.match(path)
+        if m:
+            return Path(m.group(1))
     if not path.startswith("/"):
         path = "/" + path
     return Path(path)
