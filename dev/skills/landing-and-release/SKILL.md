@@ -43,7 +43,11 @@ its target, re-run the gates, then `git merge --no-ff -m "<message>"` into the
 target — never `git merge -F -`, which does not read stdin inside an `&&`
 chain. After any conflicting merge, search the tree for `<<<<<<<` before
 committing; it has bitten this repository twice. (`KT-C`, `KT-B` §Pain
-Points.) The general rebase-then-merge method is the machine-level
+Points.) The merge commit is a commit too: probe its subject with
+`cz check --message` before merging, and run `cz check --rev-range
+main..HEAD` on the campaign branch before pushing — checking each task
+branch's range is not enough (PR #4 of the `dev_plugin` campaign failed CI
+on a 111-char merge subject the lead wrote; `land_branch.sh` now probes it). The general rebase-then-merge method is the machine-level
 `writing-history` skill (`~/.claude/skills/writing-history/SKILL.md`,
 `references/branches.md`); `scripts/land_branch.sh` runs the sequence for
 this repository's gates.
