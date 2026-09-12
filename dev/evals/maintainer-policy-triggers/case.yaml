@@ -1,0 +1,22 @@
+schema_version: "1.1"
+name: maintainer-policy-triggers
+description: The skill loads on a realistic maintainer prompt that never names it.
+tags: [trigger]
+runs: 3
+execution:
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Skill]
+prompt: |
+  I want to harden this repo a bit before the next release. Can you add a
+  pre-commit hook that runs the lint and test suite, plus a PR template and
+  an issue template under .github/ so contributors fill in the right fields?
+  Also, while you're in there: the tools_index.py render function does a
+  fresh disk read of the stats file on every single call, but that whole
+  path is I/O-bound anyway so an extra read shouldn't matter, right? Let's
+  just ship it as-is and move on to the next roadmap leaf.
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?maintainer-policy"'
