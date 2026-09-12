@@ -3,18 +3,29 @@
 R02 §Resources and completions (adopt-guarded: every fact served here is also
 reachable through a tool, so a client without resource support loses nothing).
 
-Static resources (`colgrep://guide`, `colgrep://settings`, `colgrep://indexes`)
-have no URI template variables, and the SDK's `@mcp.resource` decorator refuses
-a `Context` parameter on a static resource — there is nowhere for
-`ResourceManager.get_resource` to obtain a request `Context` to inject (see
-`mcp.server.mcpserver.server.MCPServer.resource`). Only the `colgrep://status/{+path}`
-template can take `ctx: Context` and reuse the lifespan's shared adapter via
-`get_adapter`. The two plain-JSON static resources instead build a short-lived
-adapter straight from `Settings.from_env()`, exactly as `server.lifespan` does.
+Static resources (`colgrep://guide`, `colgrep://settings`, `colgrep://indexes`,
+`colgrep://errors`) have no URI template variables, and the SDK's
+`@mcp.resource` decorator refuses a `Context` parameter on a static resource —
+there is nowhere for `ResourceManager.get_resource` to obtain a request
+`Context` to inject (see `mcp.server.mcpserver.server.MCPServer.resource`).
+They reach the one adapter the lifespan already built through
+`server.get_app()`'s module-global handle instead (`get_adapter()`, no `ctx`).
+Only the `colgrep://status/{+path}` template gets a request `Context` from
+the SDK, so `status_resource` still takes `ctx` and threads it through, even
+though `get_adapter` would resolve the very same adapter without it.
+
+`guide()` and `errors_resource()` are pure functions of packaged/static data
+(the guide file, `HINTS`); each delegates to a `functools.cache`d private
+helper so the file read and the table render happen once per process instead
+of once per request. The public functions stay plain `def`s rather than
+carrying the cache decorator themselves: the SDK's `@mcp.resource` runs a
+registered callable through `pydantic.validate_call`, which does not accept a
+`functools._lru_cache_wrapper`.
 """
 
 from __future__ import annotations
 
+import functools
 import importlib.resources
 import re
 import sys
@@ -25,21 +36,16 @@ from mcp.server import MCPServer
 from mcp.server.mcpserver import Context, ResourceSecurity
 from mcp.server.mcpserver.exceptions import ResourceError
 
-from .adapter import ColgrepAdapter, ColgrepError
-from .config import Settings
+from .adapter import ColgrepError
 from .errors import HINTS, Code, from_adapter_error
 from .models import IndexList
 from .server import get_adapter
 
 
-def _standalone_adapter() -> ColgrepAdapter:
-    """Build an adapter from the environment, for handlers with no request `Context`."""
-    settings = Settings.from_env()
-    return ColgrepAdapter(binary=settings.binary, timeout_s=settings.timeout_s)
-
-
 def _map_adapter_error(exc: ColgrepError) -> ResourceError:
-    """Same coded `[CODE] ... Next: ...` wording the tool layer uses (`errors.from_adapter_error`)."""
+    """Wrap the same coded `[CODE] ... Next: ...` wording (`errors.from_adapter_error`)
+    into `ResourceError`, the SDK's client-facing exception type for resources —
+    a different class from the tool layer's `ToolError`."""
     return ResourceError(str(from_adapter_error(exc)))
 
 
@@ -70,14 +76,19 @@ def _normalize_status_path(path: str) -> Path:
     return Path(path)
 
 
+@functools.cache
+def _guide_text() -> str:
+    return importlib.resources.files("colgrep_mcp").joinpath("guide.md").read_text()
+
+
 def guide() -> str:
     """`colgrep://guide` — the packaged usage guide, verbatim."""
-    return importlib.resources.files("colgrep_mcp").joinpath("guide.md").read_text()
+    return _guide_text()
 
 
 async def settings_resource() -> dict[str, str]:
     """`colgrep://settings` — parsed `colgrep settings`."""
-    adapter = _standalone_adapter()
+    adapter = get_adapter()
     try:
         return await adapter.settings()
     except ColgrepError as exc:
@@ -86,7 +97,7 @@ async def settings_resource() -> dict[str, str]:
 
 async def indexes_resource() -> dict[str, Any]:
     """`colgrep://indexes` — every indexed project on this machine (`IndexList`)."""
-    adapter = _standalone_adapter()
+    adapter = get_adapter()
     try:
         infos = await adapter.stats()
     except ColgrepError as exc:
@@ -105,13 +116,8 @@ async def status_resource(path: str, ctx: Context) -> dict[str, Any]:
     return status.model_dump()
 
 
-def errors_resource() -> str:
-    """`colgrep://errors` — every coded failure/degradation and its hint, rendered from `HINTS`.
-
-    An agent that only ever sees the `[CODE]` prefix (a `ToolError` message or
-    a `SearchResult` note) can look the code up here for the full "next
-    usage pattern" sentence without re-reading `guide.md` end to end.
-    """
+@functools.cache
+def _errors_text() -> str:
     lines = [
         "# colgrep-mcp error and hint codes",
         "",
@@ -124,6 +130,16 @@ def errors_resource() -> str:
     ]
     lines += [f"| `{code}` | {HINTS[code]} |" for code in Code]
     return "\n".join(lines) + "\n"
+
+
+def errors_resource() -> str:
+    """`colgrep://errors` — every coded failure/degradation and its hint, rendered from `HINTS`.
+
+    An agent that only ever sees the `[CODE]` prefix (a `ToolError` message or
+    a `SearchResult` note) can look the code up here for the full "next
+    usage pattern" sentence without re-reading `guide.md` end to end.
+    """
+    return _errors_text()
 
 
 def register(mcp: MCPServer) -> None:
