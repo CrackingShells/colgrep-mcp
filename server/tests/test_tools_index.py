@@ -155,7 +155,7 @@ async def test_doctor_reports_client_root_when_env_root_unset(monkeypatch, fake_
     monkeypatch.setenv("COLGREP_MCP_TIMEOUT", "30")
 
     async def list_roots(context: object) -> ListRootsResult:
-        return ListRootsResult(roots=[Root(uri=f"file://{tmp_path}")])
+        return ListRootsResult(roots=[Root(uri=tmp_path.as_uri())])  # file:///C:/... on Windows
 
     # `roots/list` is a server-initiated back channel, which only
     # `mode="legacy"` negotiates under the 2026-07-28 protocol (same reason

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
+from urllib.request import url2pathname
 
 from mcp.server.mcpserver import Context
 
@@ -76,7 +77,11 @@ async def client_roots(ctx: Context) -> list[Path] | None:
     if not result.roots:
         return None
     try:
-        return [Path(root.uri.path) for root in result.roots if root.uri.path]
+        # A root is a `file:` URI: `url2pathname` percent-decodes it (a root
+        # with a space arrives as `%20`) and, on Windows, turns the URI form
+        # `/C:/Users/x` into the drive-rooted path `C:\Users\x` — `Path()` on
+        # the raw `.path` did neither, so such roots resolved to nonsense.
+        return [Path(url2pathname(root.uri.path)) for root in result.roots if root.uri.path]
     except Exception:
         return None
 

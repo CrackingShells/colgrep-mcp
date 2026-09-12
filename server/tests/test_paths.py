@@ -49,3 +49,24 @@ def test_roots_can_matter_only_without_env_root_and_with_something_relative(tmp_
     assert _roots_can_matter(None, Settings()) is True
     assert _roots_can_matter(["rel/path"], Settings()) is True
     assert _roots_can_matter([str(tmp_path)], Settings()) is False
+
+
+@pytest.mark.anyio
+async def test_client_roots_decodes_file_uris(tmp_path):
+    """A client root is a `file:` URI: percent-encoding is decoded and (on
+    Windows) the `/C:/...` URI form becomes a drive-rooted path, so the
+    result equals what `Path.as_uri()` started from."""
+    from types import SimpleNamespace
+
+    from mcp.types import ListRootsResult, Root
+
+    from colgrep_mcp.paths import client_roots
+
+    spaced = tmp_path / "a b"
+    spaced.mkdir()
+
+    async def list_roots():
+        return ListRootsResult(roots=[Root(uri=spaced.as_uri())])
+
+    ctx = SimpleNamespace(session=SimpleNamespace(list_roots=list_roots))
+    assert await client_roots(ctx) == [spaced]
