@@ -289,6 +289,27 @@ async def test_find_files_does_not_read_hit_files(settings_env, monkeypatch):
     assert calls == []
 
 
+async def test_find_files_never_builds_search_hits(settings_env, monkeypatch):
+    """R01 §C6: `find_files` folds raw hits straight into `FileHit`s; it must
+    never call `hit_from_raw` (which builds a discarded `SearchHit`/`hit_id`
+    and does a wasted `locate_unit` pass) at all — not once per hit, as the
+    pre-restructure `_do_search` did for every path including `locate=False`."""
+    calls: list[None] = []
+    real_hit_from_raw = tools_search.hit_from_raw
+
+    def spy(*args: object, **kwargs: object):
+        calls.append(None)
+        return real_hit_from_raw(*args, **kwargs)
+
+    monkeypatch.setattr(tools_search, "hit_from_raw", spy)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("find_files", {"query": "config parsing"})
+
+    assert r.is_error is False
+    assert calls == []
+
+
 # --- off-loop file I/O (F11) --------------------------------------------
 
 
