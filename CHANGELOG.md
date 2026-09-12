@@ -5,6 +5,14 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.3.0 (2026-09-13)
+
+### Added
+
+- **plugin**: publish colgrep-mcp to PyPI and launch it with uvx from every manifest (PR #6)
+- **plugin**: publish colgrep-mcp to PyPI and launch it with uvx from every manifest
+- **plugin**: launch uvx colgrep-mcp pinned to the plugin version from every manifest
+
 ## v0.2.0 (2026-09-12)
 
 ### Added
