@@ -9,7 +9,7 @@
   },
   "homepage": "https://github.com/eliottjacopin/colgrep-mcp",
   "repository": "https://github.com/eliottjacopin/colgrep-mcp",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "keywords": ["mcp", "colgrep", "semantic-search", "code-search", "agents"],
   "mcpServers": "./.claude-plugin/mcp.json",
   "skills": "./skills/"
