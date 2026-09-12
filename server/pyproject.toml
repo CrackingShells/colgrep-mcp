@@ -55,6 +55,9 @@ version_files = [
     "uv.lock:^name = \"colgrep-mcp\"$",
 ]
 pre_bump_hooks = ["uv lock"]
+# commitizen's defaults, plus GitHub's machine-written root commit that joined
+# this history when the repository was created on github.com (2026-09-12).
+allowed_prefixes = ["Merge", "Revert", "Pull request", "fixup!", "squash!", "Initial commit"]
 
 [tool.commitizen.customize]
 schema = "type(scope): description  (scope mandatory; subject <= 100 chars, lowercase start, no trailing period)"
