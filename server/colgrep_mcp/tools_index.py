@@ -41,6 +41,22 @@ async def _resolve_one(path: str | None, ctx: Context) -> Path:
     return (await resolve_target_paths(ctx, [path] if path else None))[0]
 
 
+def _match_stats(status: IndexStatus, stats: list[IndexInfo]) -> IndexInfo | None:
+    """Find `status.project`'s entry in `stats` without a `Path.resolve()` syscall per candidate.
+
+    `status.project` and `info.project` are usually the same string colgrep
+    reported for the same project, so a plain string comparison matches the
+    common case with no filesystem access at all. Only when nothing matches
+    that way do we pay for resolving each `info.project` (symlinks, a
+    trailing `/.`, ...) against the one already-resolved `status.project`.
+    """
+    match = next((info for info in stats if info.project == status.project), None)
+    if match is not None:
+        return match
+    target = Path(status.project).resolve()
+    return next((info for info in stats if Path(info.project).resolve() == target), None)
+
+
 # --- rendering ---------------------------------------------------------------
 
 
@@ -114,10 +130,7 @@ async def index_status(
             stats = await adapter.stats()
         except ColgrepError:
             stats = []
-        match = next(
-            (info for info in stats if Path(info.project).resolve() == Path(status.project).resolve()),
-            None,
-        )
+        match = _match_stats(status, stats)
         if match is not None:
             status = status.model_copy(
                 update={"units_indexed": match.units_indexed, "search_count": match.search_count}
