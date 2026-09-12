@@ -3,8 +3,8 @@
   "mcpServers": {
     "colgrep": {
       "type": "stdio",
-      "command": "./scripts/launch.sh",
-      "args": [],
+      "command": "uv",
+      "args": ["run", "--quiet", "--directory", "${PLUGIN_ROOT}/server", "colgrep-mcp"],
       "env": {
         "UV_PROJECT_ENVIRONMENT": "${PLUGIN_DATA}/venv"
       }
