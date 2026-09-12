@@ -35,7 +35,7 @@ graph TD
     skill_policy[Skill: Maintainer Policy]:::done
     skill_campaign_lead[Skill: Campaign Lead]:::inprogress
     skill_landing_release[Skill: Landing and Release]:::inprogress
-    skill_stack_traps[Skill: Stack Traps]:::inprogress
+    skill_stack_traps[Skill: Stack Traps]:::done
     search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::inprogress
     list_indexes_budget[list_indexes Text Budget]:::inprogress
     integrate[Integrate]:::planned
@@ -52,7 +52,7 @@ graph TD
 | `skill_policy.md` | 📄 Leaf Task | ✅ Done |
 | `skill_campaign_lead.md` | 📄 Leaf Task | 🔄 In Progress |
 | `skill_landing_release.md` | 📄 Leaf Task | 🔄 In Progress |
-| `skill_stack_traps.md` | 📄 Leaf Task | 🔄 In Progress |
+| `skill_stack_traps.md` | 📄 Leaf Task | ✅ Done |
 | `search_path.md` | 📄 Leaf Task | 🔄 In Progress |
 | `list_indexes_budget.md` | 📄 Leaf Task | 🔄 In Progress |
 | `integrate/` | 📁 Directory | ⬜ Planned |
