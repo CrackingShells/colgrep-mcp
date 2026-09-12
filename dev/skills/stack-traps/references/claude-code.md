@@ -13,20 +13,43 @@ loader, one that has no notion of `CLAUDE_PLUGIN_ROOT` and so leaves the
 placeholder unexpanded, tried literally as a path. This is why this
 repository's MCP config lives at `.claude-plugin/mcp.json` instead: a
 root-level project open then discovers no `mcpServers.colgrep` entry at
-all. Placeholders belong only in `args`/`env` (never `command` — no
-ecosystem expands placeholders there); `${VAR:-default}` fallback syntax is
-documented only for *project*-scope `.mcp.json`, not for the plugin
-substitution path, so don't rely on it there. Agent Plugins 1.0 goes
-further and forbids any fallback syntax outright — "unrecognized
-placeholder-like text MUST remain literal." Whether Codex expands
-`${CLAUDE_PLUGIN_ROOT}` in the shared `.mcp.json` it also points at is still
-unverified (no Codex CLI on this machine). (`PH`.)
+all. Since 0.3.0 no manifest carries a placeholder in `args` at all — every
+one launches `uvx colgrep-mcp==<version>` (see `#uvx-pin`) — and the only
+one left, `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in `env`, is in the Claude
+Code manifest only; Codex has its own `.codex-plugin/mcp.json` without it.
+Placeholders belong only in `args`/`env` (never `command` — no ecosystem
+expands placeholders there); `${VAR:-default}` fallback syntax is documented
+only for *project*-scope `.mcp.json`, not for the plugin substitution path,
+so don't rely on it there. Agent Plugins 1.0 goes further and forbids any
+fallback syntax outright — "unrecognized placeholder-like text MUST remain
+literal." (`PH`, pypi_publication R01 §C6.)
 
 **What to do**: never add or restore a root-level `.mcp.json` to this
 repository. If a manifest needs to reference the server config, point it at
 `.claude-plugin/mcp.json`. If you need a fallback value in a plugin-scope
 manifest, don't assume `${VAR:-default}` works — treat it as unverified and
 either hardcode or make the field required.
+
+## The plugin connects but runs the PyPI release, not your tree {#uvx-pin}
+
+**Symptom**: `claude --plugin-dir . mcp list` shows `✔ Connected` while an
+edit you just made is not in the running server; or, right after a `cz
+bump`, the plugin fails to start with a uv resolution error naming a
+version.
+
+**Cause**: every MCP manifest launches `uvx colgrep-mcp==<version>` from
+PyPI, pinned to the plugin's version; the plugin loader never runs the
+checkout's code. The pin is a `version_files` target, so between the bump
+commit and a successful `publish.yml` run it names a version PyPI does not
+have yet — by design, so that a plugin update can never reuse a stale
+cached environment (pypi_publication R01 §C6, D4).
+
+**What to do**: to exercise the tree, register it directly —
+`claude mcp add colgrep-dev -- uv run --quiet --directory ./server
+colgrep-mcp` — and read `claude --plugin-dir . mcp list` only as "the
+manifest is well-formed". After a bump, wait for `publish.yml` to go green
+(re-run it from the Actions tab if the upload failed); never edit the pin by
+hand and never re-tag.
 
 ## The install/list command reads oddly or fails to resolve {#namespaces}
 
