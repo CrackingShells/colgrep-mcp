@@ -1,11 +1,11 @@
 """Guards that the version lives in exactly one place: `server/pyproject.toml`.
 
 `colgrep_mcp.__version__` is derived from installed package metadata (see
-`colgrep_mcp/__init__.py`), and the three plugin manifests mirror the
-pyproject version by hand until a release bumps them all together. Nothing
-else enforces that they stay aligned except this test and
-`tests/test_manifests.py` (owned by the sibling `launcher` leaf, not edited
-here).
+`colgrep_mcp/__init__.py`); the plugin manifests and the `uvx
+colgrep-mcp==<version>` pin in the three MCP manifests are rewritten by
+`cz bump` through `version_files` (pypi_publication R01 §C6). Nothing else
+enforces that they stay aligned except this test and
+`tests/test_manifests.py`.
 """
 
 from __future__ import annotations
@@ -36,6 +36,15 @@ def test_manifests_match_pyproject():
     for relpath in ("plugin.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
         manifest = json.loads((REPO_ROOT / relpath).read_text())
         assert manifest["version"] == version, f"{relpath} version mismatch"
+
+
+def test_mcp_manifests_pin_the_pyproject_version():
+    """The `colgrep-mcp==` regex in `version_files` must have rewritten every pin; a lag means a hand edit."""
+    version = _pyproject_version()
+
+    for relpath in (".claude-plugin/mcp.json", ".codex-plugin/mcp.json", "mcp.json"):
+        server = json.loads((REPO_ROOT / relpath).read_text())["mcpServers"]["colgrep"]
+        assert server["args"] == [f"colgrep-mcp=={version}"], f"{relpath} pin mismatch"
 
 
 def test_uv_lock_records_the_pyproject_version():

@@ -16,6 +16,12 @@ dependencies = [
     "pydantic>=2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/CrackingShells/colgrep-mcp"
+Repository = "https://github.com/CrackingShells/colgrep-mcp"
+Changelog = "https://github.com/CrackingShells/colgrep-mcp/blob/main/CHANGELOG.md"
+Issues = "https://github.com/CrackingShells/colgrep-mcp/issues"
+
 [project.scripts]
 colgrep-mcp = "colgrep_mcp.__main__:main"
 
@@ -49,6 +55,13 @@ version_files = [
     "../.claude-plugin/plugin.json:\"version\"",
     "../.codex-plugin/plugin.json:\"version\"",
     "../dev/.claude-plugin/plugin.json:\"version\"",
+    # The three MCP manifests launch `uvx colgrep-mcp==<version>`: the pin is
+    # the plugin version by construction, and moving it changes uvx's cache
+    # key so a plugin update never reuses a stale server environment
+    # (pypi_publication R01 §C6, D4).
+    "../.claude-plugin/mcp.json:colgrep-mcp==",
+    "../.codex-plugin/mcp.json:colgrep-mcp==",
+    "../mcp.json:colgrep-mcp==",
     # uv.lock records this project's own version too. The pattern below never
     # contains a version string, so commitizen rewrites nothing here, but it
     # stages every listed file after the pre-bump hook has re-locked, which is
