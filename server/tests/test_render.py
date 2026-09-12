@@ -1,4 +1,4 @@
-"""Tests for the Step 1 pure helpers in `tools_search` (R01 §Token-budget invariant,
+"""Tests for the pure helpers in `tools_search` (R01 §Token-budget invariant,
 R05 D1 `hit_id`/`location_verified`)."""
 
 from __future__ import annotations

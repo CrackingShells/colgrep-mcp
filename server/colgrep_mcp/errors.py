@@ -1,6 +1,5 @@
-"""Coded errors and hints (R01 §Error model; PI request 2026-09-12, mid-run):
-"standardized tool call error code that can point the agents toward different
-usage patterns".
+"""Coded errors and hints (R01 §Error model): a standardized tool-call error
+code that can point an agent toward a different usage pattern.
 
 This is the *only* module that owns the vocabulary. Every `ToolError` a tool
 raises deliberately, and every degraded-success note a tool appends to

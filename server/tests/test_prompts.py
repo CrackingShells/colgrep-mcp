@@ -1,4 +1,4 @@
-"""Tests for `colgrep_mcp.prompts` (roadmap leaf `resources_prompts`, step 2)."""
+"""Tests for `colgrep_mcp.prompts`."""
 
 from __future__ import annotations
 
