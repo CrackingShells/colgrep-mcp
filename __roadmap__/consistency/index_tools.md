@@ -1,0 +1,29 @@
+# Index Tools: Shared Resolver, Errors and Notifications
+
+**Goal**: Bring `tools_index.py` onto the shared idioms so every path-taking tool resolves the same way `search` does (including client roots), every adapter failure is translated in one place, and every best-effort client notification goes through `logging_utils` — with zero client-visible change.
+**Pre-conditions**:
+- [ ] Working in worktree `/Users/me/worktrees/colgrep-mcp/task-index_tools` on branch `task/index_tools` (created by the lead from the campaign branch); this file exists there — if it does not, stop and report
+- [ ] `cd server && uv run pytest` passes before any change (199 passed, 1 skipped)
+- [ ] R01 §C1–C5 read; `server/colgrep_mcp/{server,paths,errors,logging_utils}.py` read (the helpers already exist)
+**Success Gates**:
+- ✅ [run] `cd server && uv run pytest` passes; `uv run ruff check` clean
+- ✅ [behavioral] the JSON of `Client.list_tools()` for the five index tools is identical before and after — diff pasted in the Step 1 commit body
+- ✅ [static] `tools_index.py` contains no `from_adapter_error(`, no `except Exception:` + `pass`, no `_READ_ONLY`, no `resolve_paths(` call (only `resolve_target_paths`/`default_root`)
+- ✅ [static] `index_status`, `index_build`, `index_clear` and `doctor` all consult client roots under the same condition `search` does (R01 §C2)
+**References**: [R01 §Contracts C1–C5, Key Flow](../../__reports__/consistency/00-architecture_v0.md) — the idioms and the lazy-roots rule; [R05 D2, D3, M2](../../__reports__/colgrep_mcp/02-architecture_v1.md) — heartbeat, project-root refusal, best-effort logging (behaviour to preserve)
+
+## Step 1: Resolve, translate and notify through the shared helpers
+**Goal**: Replace this module's private copies of three idioms with the shared ones.
+**Implementation Logic**:
+Dump `Client.list_tools()` to the scratchpad first (sorted, `model_dump_json(indent=2)`); it is the oracle. Then: (1) `_resolve_one(path, ctx)` becomes `async` and returns `(await resolve_target_paths(ctx, [path] if path else None))[0]`; every caller awaits it. (2) `doctor`: `roots = await client_roots(ctx) if settings.root is None else None` then `default_root(settings, roots)` — the reported `root_source` must now say `roots` when a client supplies one and no env root is set, which is what the README already promises. (3) Every `try: … except ColgrepError as exc: raise from_adapter_error(exc, path=…) from exc` becomes `async with translate_adapter_errors(path=…):` around the adapter call (six sites; `index_status`'s *second* call — `adapter.stats()` — deliberately swallows to `[]`, keep that as a plain `except ColgrepError: stats = []`). (4) The four `try: await ctx.report_progress/notify_resource_updated … except Exception: pass` blocks become `await safe_progress(ctx, …)` / `await safe_notify_resource_updated(ctx, "colgrep://indexes")`. (5) `_READ_ONLY` → `READ_ONLY_TOOL` from `server`. Keep the `index_build` cancellation `finally` block exactly as it is (F2). Re-dump `list_tools()`, diff must be empty; paste the command and exit status in the commit body. `test_tools_index.py` may be edited only where it monkeypatches or imports a private name this step changes (`_resolve_one` becoming async, `_READ_ONLY`); add one test that `doctor` reports `root_source == "roots"` when `COLGREP_MCP_ROOT` is unset and the client provides a root (see how `test_tools_search.py` or `test_paths.py` fakes roots, or use `Client(..., roots=[...])` if the SDK's in-memory client supports it — if neither is feasible in 15 minutes, record that as `BLOCKED` in the commit body instead).
+**Deliverables**: `server/colgrep_mcp/tools_index.py` (`async _resolve_one`; `doctor` with lazy `client_roots`; `translate_adapter_errors` at every adapter call; `safe_progress`/`safe_notify_resource_updated`; `READ_ONLY_TOOL` in `register`), `server/tests/test_tools_index.py` (`test_doctor_reports_client_root_when_env_root_unset` or a `BLOCKED` note)
+**Consistency Checks**: `cd server && uv run pytest -q tests/test_tools_index.py tests/test_errors.py tests/test_stdio.py` (expected: PASS); `cd server && ! grep -nE 'from_adapter_error\(|_READ_ONLY\b|except Exception:  # noqa: BLE001 - (progress|resource)' colgrep_mcp/tools_index.py` (expected: PASS); `cd server && uv run ruff check` (expected: PASS)
+**Commit**: `refactor(index): resolve paths, translate errors and notify through the shared helpers`
+
+## Step 2: Match stats without a syscall per project
+**Goal**: `index_status` calls `Path(info.project).resolve()` for every indexed project on the machine on every call; the strings already match in the common case.
+**Implementation Logic**:
+In `index_status`, resolve `status.project` **once** (`target = Path(status.project).resolve()`), then pick the first `info` whose `info.project == status.project` (string equality, no syscall) and only if none matches fall back to the first whose `Path(info.project).resolve() == target`. Same result set as today (string-equal paths resolve equal); the fallback keeps the symlink/trailing-slash cases. Add one test in `test_tools_index.py` with a stats entry whose path differs from the status project only by a trailing `/.` (or a symlink under `tmp_path`) and assert `units_indexed` is still filled — proving the fallback is reached.
+**Deliverables**: `server/colgrep_mcp/tools_index.py` (`_match_stats(status, stats) -> IndexInfo | None` or inline equivalent), `server/tests/test_tools_index.py` (`test_index_status_matches_stats_by_resolved_path_when_strings_differ`)
+**Consistency Checks**: `cd server && uv run pytest -q tests/test_tools_index.py` (expected: PASS); `cd server && uv run ruff check` (expected: PASS)
+**Commit**: `refactor(index): match index_status against stats by string before falling back to a resolved path`
