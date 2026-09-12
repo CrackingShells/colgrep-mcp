@@ -56,6 +56,9 @@ def test_versions_aligned():
     assert _load(".claude-plugin/plugin.json")["version"] == version
     assert _load("plugin.json")["version"] == version
     assert _load(".codex-plugin/plugin.json")["version"] == version
+    # The dev plugin is versioned with the product: its skills describe how to
+    # maintain *this* repository at *this* version, so one `cz bump` moves both.
+    assert _load("dev/.claude-plugin/plugin.json")["version"] == version
 
 
 def test_agent_plugin_fields_whitelist():

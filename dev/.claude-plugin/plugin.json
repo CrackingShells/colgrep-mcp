@@ -1,0 +1,15 @@
+{
+  "name": "colgrep-mcp-dev",
+  "displayName": "colgrep-mcp maintainer skills",
+  "version": "0.1.2",
+  "description": "The maintainer's dev environment for colgrep-mcp as skills: policy, campaign leadership, landing and release mechanics, stack traps. For agents maintaining this repository, not for end users of the colgrep tools.",
+  "author": {
+    "name": "Eliott Jacopin",
+    "email": "eliott.jacopin@riken.jp"
+  },
+  "homepage": "https://github.com/CrackingShells/colgrep-mcp",
+  "repository": "https://github.com/CrackingShells/colgrep-mcp",
+  "license": "AGPL-3.0-or-later",
+  "keywords": ["colgrep-mcp", "maintainer", "skills", "agents"],
+  "skills": "./skills/"
+}
