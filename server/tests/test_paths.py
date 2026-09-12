@@ -34,3 +34,18 @@ def test_resolve_missing_lists_paths(tmp_path):
 
 def test_resolve_empty_returns_root(tmp_path):
     assert resolve_paths(None, Settings(root=tmp_path), None) == [tmp_path.resolve()]
+
+
+# --- resolve_target_paths: when client roots are worth a round-trip ----------
+
+
+def test_roots_can_matter_only_without_env_root_and_with_something_relative(tmp_path):
+    from colgrep_mcp.paths import _roots_can_matter
+
+    # env root set: never (the plugin always sets COLGREP_MCP_ROOT).
+    assert _roots_can_matter(None, Settings(root=tmp_path)) is False
+    assert _roots_can_matter(["rel"], Settings(root=tmp_path)) is False
+    # no env root: only when a default root would actually be used.
+    assert _roots_can_matter(None, Settings()) is True
+    assert _roots_can_matter(["rel/path"], Settings()) is True
+    assert _roots_can_matter([str(tmp_path)], Settings()) is False

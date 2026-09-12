@@ -8,6 +8,7 @@ agents toward different usage patterns").
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from mcp import Client
@@ -320,3 +321,31 @@ async def test_errors_resource_lists_every_code(settings_env):
         assert HINTS[code] in text
         codes_in_text.add(code)
     assert codes_in_text == set(Code)
+
+
+# --- translate_adapter_errors: the one wrapper tools put around adapter calls --
+
+
+async def test_translate_adapter_errors_catches_the_base_class():
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from colgrep_mcp.adapter import ColgrepError
+    from colgrep_mcp.errors import translate_adapter_errors
+
+    # A bare ColgrepError (the adapter's own argument guards) must come out
+    # coded, not as an uncoded generic error.
+    with pytest.raises(ToolError) as e:
+        async with translate_adapter_errors():
+            raise ColgrepError("query must not start with '-'")
+    assert str(e.value).startswith(f"[{Code.COLGREP_FAILED}]")
+    assert str(e.value).endswith(f"Next: {HINTS[Code.COLGREP_FAILED]}")
+
+    with pytest.raises(ToolError) as e:
+        async with translate_adapter_errors(path=Path("/proj")):
+            raise ColgrepTimeout("colgrep timed out after 1s")
+    assert str(e.value).startswith(f"[{Code.COLGREP_TIMEOUT}]") and "(/proj)" in str(e.value)
+
+    # Non-adapter exceptions pass through untouched.
+    with pytest.raises(ValueError):
+        async with translate_adapter_errors():
+            raise ValueError("unrelated")

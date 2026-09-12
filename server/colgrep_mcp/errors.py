@@ -14,6 +14,8 @@ is always available at the `colgrep://errors` resource (see `resources.py`).
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from enum import StrEnum
 from pathlib import Path
 
@@ -117,3 +119,19 @@ def from_adapter_error(exc: ColgrepError, *, path: Path | None = None) -> ToolEr
         return tool_error(Code.COLGREP_FAILED, f"colgrep output could not be parsed: {exc}")
 
     return tool_error(Code.COLGREP_FAILED, str(exc))  # pragma: no cover - defensive, no other ColgrepError subclass
+
+
+@asynccontextmanager
+async def translate_adapter_errors(path: Path | None = None) -> AsyncIterator[None]:
+    """Re-raise any `ColgrepError` escaping the body as the coded `ToolError` from `from_adapter_error`.
+
+    The one place a tool wraps an adapter call. It catches the *base* class on
+    purpose: the adapter's own argument guards (a query starting with `-`, a
+    relative path) raise bare `ColgrepError`, and a tool that only caught the
+    four subclasses let those surface as the SDK's uncoded generic error
+    instead of `[COLGREP_FAILED] … Next: …`.
+    """
+    try:
+        yield
+    except ColgrepError as exc:
+        raise from_adapter_error(exc, path=path) from exc
