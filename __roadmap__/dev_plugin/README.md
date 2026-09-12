@@ -33,7 +33,7 @@ Everything the last three cycles learned is loadable as a skill from the reposit
 ```mermaid
 graph TD
     skill_policy[Skill: Maintainer Policy]:::done
-    skill_campaign_lead[Skill: Campaign Lead]:::inprogress
+    skill_campaign_lead[Skill: Campaign Lead]:::done
     skill_landing_release[Skill: Landing and Release]:::inprogress
     skill_stack_traps[Skill: Stack Traps]:::done
     search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::inprogress
@@ -50,7 +50,7 @@ graph TD
 | Node | Type | Status |
 |:-----|:-----|:-------|
 | `skill_policy.md` | 📄 Leaf Task | ✅ Done |
-| `skill_campaign_lead.md` | 📄 Leaf Task | 🔄 In Progress |
+| `skill_campaign_lead.md` | 📄 Leaf Task | ✅ Done |
 | `skill_landing_release.md` | 📄 Leaf Task | 🔄 In Progress |
 | `skill_stack_traps.md` | 📄 Leaf Task | ✅ Done |
 | `search_path.md` | 📄 Leaf Task | 🔄 In Progress |
