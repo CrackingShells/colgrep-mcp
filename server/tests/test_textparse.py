@@ -95,7 +95,15 @@ def test_parse_settings():
     [
         (
             "Indexed /private/tmp (subdir: corpus/click) (added: 155, changed: 1, deleted: 199, unchanged: 0)",
-            IndexSummary(root="/private/tmp", added=155, changed=1, deleted=199, unchanged=0, up_to_date=False, files=None),
+            IndexSummary(
+                root="/private/tmp",
+                added=155,
+                changed=1,
+                deleted=199,
+                unchanged=0,
+                up_to_date=False,
+                files=None,
+            ),
         ),
         (
             "Indexed /private/var/folders/x/colgrep_clear_test (added: 1, changed: 0, deleted: 0, unchanged: 0)",
@@ -111,7 +119,15 @@ def test_parse_settings():
         ),
         (
             "Index is up to date for /private/tmp (156 files)",
-            IndexSummary(root="/private/tmp", added=None, changed=None, deleted=None, unchanged=None, up_to_date=True, files=156),
+            IndexSummary(
+                root="/private/tmp",
+                added=None,
+                changed=None,
+                deleted=None,
+                unchanged=None,
+                up_to_date=True,
+                files=156,
+            ),
         ),
     ],
 )
@@ -134,7 +150,7 @@ def test_parse_index_summary_none_for_other_lines(line):
 
 def test_parse_index_summary_against_init_stderr_fixture():
     lines = _read("init_stderr.txt").splitlines()
-    summaries = [s for s in (parse_index_summary(l) for l in lines) if s is not None]
+    summaries = [s for s in (parse_index_summary(ln) for ln in lines) if s is not None]
     assert len(summaries) == 1
     summary = summaries[0]
     assert summary.root == "/private/tmp"
@@ -147,7 +163,7 @@ def test_parse_index_summary_against_init_stderr_fixture():
 
 def test_parse_index_summary_against_uptodate_stderr_fixture():
     lines = _read("init_uptodate_stderr.txt").splitlines()
-    summaries = [s for s in (parse_index_summary(l) for l in lines) if s is not None]
+    summaries = [s for s in (parse_index_summary(ln) for ln in lines) if s is not None]
     assert len(summaries) == 1
     summary = summaries[0]
     assert summary.root == "/private/tmp"

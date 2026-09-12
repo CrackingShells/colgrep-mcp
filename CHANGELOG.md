@@ -2,11 +2,12 @@
 
 All notable changes to colgrep-mcp are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow SemVer.
-`server/pyproject.toml` is the version source of truth; plugin manifests mirror it.
+`server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
+writes each new section below and mirrors the version into the plugin manifests.
 
-## [Unreleased]
+## Unreleased
 
-## [0.1.0] - 2026-09-12
+## v0.1.0 (2026-09-12)
 
 First release: colgrep as an MCP server, packaged as a Claude Code plugin, an Agent Plugins 1.0 plugin and a Codex plugin.
 
