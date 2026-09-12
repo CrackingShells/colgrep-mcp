@@ -18,28 +18,46 @@ The first `colgrep` run downloads the embedding model (a few hundred MB) and the
 
 ## Install
 
-Get the source:
+The repository is public, so every ecosystem can add it as a remote marketplace/plugin source directly from GitHub — no clone required. Cloning is still the right move if you want to try a change or develop the server; see [From a local clone](#from-a-local-clone).
+
+### Claude Code
+
+```bash
+claude plugin marketplace add CrackingShells/colgrep-mcp
+```
+
+```bash
+claude plugin install colgrep-mcp@colgrep-mcp
+```
+
+Add `--scope project` to the marketplace command to declare it in the repository's own `.claude/settings.json` instead of your user settings, so teammates who open this project pick it up too.
+
+### Codex
+
+```bash
+codex plugin marketplace add CrackingShells/colgrep-mcp
+```
+
+```bash
+codex plugin add colgrep-mcp@colgrep-mcp-marketplace
+```
+
+The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`. This path is documented, not exercised here — there is no Codex CLI on the machine this README was last verified from.
+
+### Agent Plugins 1.0 clients (Cursor, GitHub Copilot, VS Code, Kiro)
+
+The [Agent Plugins 1.0 spec](https://agent-plugins.org/specification) defines the plugin package (`plugin.json`, `mcp.json`) but explicitly leaves installation, distribution and marketplaces to each client — there is no spec-defined command for installing straight from a git URL. Check that client's own plugin or extension docs for how it adds a plugin from a repository; until then, point it at a local clone the way it expects a plugin directory (below).
+
+### From a local clone
 
 ```bash
 git clone https://github.com/CrackingShells/colgrep-mcp.git
 ```
 
-### Claude Code
-
-Try it without installing:
+Try Claude Code against it without installing:
 
 ```bash
 claude --plugin-dir /path/to/colgrep-mcp
-```
-
-Install from this repository acting as its own marketplace:
-
-```bash
-claude plugin marketplace add /path/to/colgrep-mcp
-```
-
-```bash
-claude plugin install colgrep-mcp@colgrep-mcp
 ```
 
 Or register only the MCP server, without the plugin's skill:
@@ -48,13 +66,7 @@ Or register only the MCP server, without the plugin's skill:
 claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server colgrep-mcp
 ```
 
-### Codex
-
-Add the marketplace at `.agents/plugins/marketplace.json` from this repository, then install the `colgrep-mcp` plugin. The Codex manifest lives in `.codex-plugin/plugin.json`.
-
-### Agent Plugins 1.0 clients (Cursor, Copilot, VS Code, Kiro, …)
-
-Point the client at this directory. `plugin.json` and `mcp.json` at the root follow the 1.0.0 schemas; the server is declared as a `stdio` server launched by `uv run --quiet --directory ${PLUGIN_ROOT}/server colgrep-mcp`.
+For an Agent Plugins 1.0 client, point it at the cloned directory: `plugin.json` and `mcp.json` at the root follow the 1.0.0 schemas, and the server is declared as a `stdio` server launched by `uv run --quiet --directory ${PLUGIN_ROOT}/server colgrep-mcp`.
 
 ### Any MCP client
 
