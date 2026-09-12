@@ -17,6 +17,7 @@ from colgrep_mcp import tools_index
 from colgrep_mcp.adapter import ColgrepAdapter
 from colgrep_mcp.config import Settings
 from colgrep_mcp.errors import HINTS, Code
+from colgrep_mcp.models import IndexInfo
 from colgrep_mcp.server import AppContext, build
 
 pytestmark = pytest.mark.anyio
@@ -112,6 +113,55 @@ async def test_list_indexes_count(settings_env):
     assert len(result.structured_content["indexes"]) == 2
     projects = {i["project"] for i in result.structured_content["indexes"]}
     assert projects == {"/tmp/fake-corpus", "/tmp/other"}
+
+
+async def test_list_indexes_single_project_block_format_unchanged(settings_env):
+    """R01 §C7: adding the `"<n> indexed projects on this machine"` header
+    must not touch the per-index block format (`project  model=…  units=…
+    searches=…`) that predates the budgeted renderer."""
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("list_indexes", {})
+
+    assert not result.is_error
+    lines = result.content[0].text.splitlines()
+    assert lines[0] == "2 indexed projects on this machine"
+    for info in result.structured_content["indexes"]:
+        expected = (
+            f"{info['project']}  model={info['model']}  units={info['units_indexed']}  searches={info['search_count']}"
+        )
+        assert expected in lines[1:]
+
+
+async def test_list_indexes_text_is_budgeted_and_structured_content_is_complete(settings_env, monkeypatch):
+    """R01 §C7: `list_indexes`' text is machine-global (24 kB observed on one
+    machine, KT-B) and must be capped like every other renderer
+    (R01 consistency §Token-budget invariant), while `structured_content`
+    keeps every index. Regression test: this fails against the pre-change
+    `_render_index_list` (no budget parameter, unbounded `"\\n".join(...)`)."""
+    fake_indexes = [
+        IndexInfo(
+            project=f"/very/long/synthetic/path/that/pads/out/the/rendered/block/length/project-{i:04d}",
+            model="lightonai/LateOn-Code-edge",
+            units_indexed=i,
+            search_count=i * 2,
+        )
+        for i in range(400)
+    ]
+
+    async def fake_stats(self):
+        return fake_indexes
+
+    monkeypatch.setattr(ColgrepAdapter, "stats", fake_stats)
+
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("list_indexes", {})
+
+    assert not result.is_error
+    text = result.content[0].text
+    settings = Settings.from_env()
+    assert len(text) <= settings.text_budget
+    assert "more indexes in structured_content]" in text.splitlines()[-1]
+    assert len(result.structured_content["indexes"]) == 400
 
 
 # --- doctor ---------------------------------------------------------------------
