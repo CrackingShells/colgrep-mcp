@@ -56,7 +56,7 @@ Each of these is a stdio MCP server; register whichever you prefer in the client
 uvx colgrep-mcp
 ```
 
-resolves and caches the latest release on first start, then reuses the cached environment. If you would rather not pay that per-start check, install once and run a plain executable:
+resolves and caches the latest release on first start, then reuses that cached environment on every later start — it does not upgrade by itself. `uvx colgrep-mcp@latest` re-resolves against PyPI on every start instead, so it always runs the newest release at the cost of a network round-trip per launch (and it fails offline). If you would rather not pay any per-start check, install once and run a plain executable, upgrading when you choose:
 
 ```bash
 uv tool install colgrep-mcp   # or: pipx install colgrep-mcp
@@ -65,6 +65,12 @@ uv tool install colgrep-mcp   # or: pipx install colgrep-mcp
 ```bash
 colgrep-mcp
 ```
+
+```bash
+uv tool upgrade colgrep-mcp   # later, on your own schedule
+```
+
+The plugin manifests use none of these: they pin `uvx colgrep-mcp==<plugin version>` so that upgrading the plugin is what upgrades the server, never a background resolution.
 
 For Claude Code without the plugin's skill: `claude mcp add colgrep -- uvx colgrep-mcp` (or `-- colgrep-mcp` after `uv tool install`). Windows is supported: no launch path needs a shell, and the test suite runs green on Windows in CI.
 
