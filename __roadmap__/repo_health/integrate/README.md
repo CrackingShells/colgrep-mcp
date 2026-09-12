@@ -18,9 +18,9 @@ Document, guard and review the depth-0 result before releasing it.
 ## Status
 ```mermaid
 graph TD
-    agent_docs[Agent Orientation Docs]:::planned
-    ci_workflow[CI Workflow]:::planned
-    review[Reviewer Pass]:::planned
+    agent_docs[Agent Orientation Docs]:::inprogress
+    ci_workflow[CI Workflow]:::inprogress
+    review[Reviewer Pass]:::inprogress
     release[Release]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -32,9 +32,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `agent_docs.md` | 📄 Leaf Task | ⬜ Planned |
-| `ci_workflow.md` | 📄 Leaf Task | ⬜ Planned |
-| `review.md` | 📄 Leaf Task | ⬜ Planned |
+| `agent_docs.md` | 📄 Leaf Task | 🔄 In Progress |
+| `ci_workflow.md` | 📄 Leaf Task | 🔄 In Progress |
+| `review.md` | 📄 Leaf Task | 🔄 In Progress |
 | `release/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log

@@ -28,9 +28,9 @@ Make the repository scaffold mechanical and cross-platform: one version source w
 ## Status
 ```mermaid
 graph TD
-    python_tooling[Python Tooling: Version Source, Commitizen, Ruff]:::inprogress
+    python_tooling[Python Tooling: Version Source, Commitizen, Ruff]:::done
     launcher[Cross-Platform Launch via uv]:::done
-    integrate[Integrate]:::planned
+    integrate[Integrate]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -41,9 +41,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `python_tooling.md` | 📄 Leaf Task | 🔄 In Progress |
+| `python_tooling.md` | 📄 Leaf Task | ✅ Done |
 | `launcher.md` | 📄 Leaf Task | ✅ Done |
-| `integrate/` | 📁 Directory | ⬜ Planned |
+| `integrate/` | 📁 Directory | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -52,4 +52,5 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `python_tooling.md` | `task/python_tooling` | 4 | cz check passes over all 79 commits; `cz bump --dry-run --increment PATCH` → 0.1.1; ruff 22 → 0 |
 | `launcher.md` | `task/launcher` | 3 | option (b): Claude Code MCP config moved to `.claude-plugin/mcp.json`; `claude --plugin-dir . mcp list` connected; project context lists nothing |
