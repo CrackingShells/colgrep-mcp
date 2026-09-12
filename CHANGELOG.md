@@ -5,6 +5,19 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.1.2 (2026-09-12)
+
+### Changed
+
+- **server**: ship tool descriptions dedented through one registration helper
+- **search**: skip file reads in find_files and read only the requested span in expand
+
+### Fixed
+
+- **server**: convert client root URIs to paths with url2pathname
+- **server**: scope the ctx-less app handle to its lifespan with a ContextVar
+- **resources**: keep a drive-rooted windows status path absolute
+
 ## v0.1.1 (2026-09-12)
 
 ### Fixed
