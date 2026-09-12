@@ -34,6 +34,7 @@ The same `R01` label is reused per campaign; the module docstring's topic
 | Id | Report |
 |:--|:--|
 | `R01` (colgrep_mcp) | `__reports__/colgrep_mcp/00-architecture_v0.md` |
+| `R02` | `__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md` |
 | `R03` | `__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md` |
 | `R05` (sections `D1`–`D11`, `M1`–`M5`) | `__reports__/colgrep_mcp/02-architecture_v1.md` |
 | `F1`–`F14` | `__reports__/colgrep_mcp/02-observation_code_review_v0.md` |
