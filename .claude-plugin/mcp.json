@@ -1,10 +1,9 @@
 {
   "mcpServers": {
     "colgrep": {
-      "command": "uv",
-      "args": ["run", "--quiet", "--directory", "${CLAUDE_PLUGIN_ROOT}/server", "colgrep-mcp"],
+      "command": "uvx",
+      "args": ["colgrep-mcp==0.2.0"],
       "env": {
-        "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/venv",
         "COLGREP_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"
       }
     }
