@@ -122,6 +122,7 @@ end-to-end driver (never against this repository, see Traps).
 
 ## Where to read more
 
+- Maintainer skills: `claude --plugin-dir ./dev` (or `claude plugin install colgrep-mcp-dev@colgrep-mcp`); the skill table replaces this file's prose as the skills land.
 - Architecture and measured behaviour: `__reports__/colgrep_mcp/` (0.1.0),
   `__reports__/repo_health/` (scaffold) and `__reports__/consistency/` (one idiom per concern).
 - The agent-facing guide to the tools themselves: `server/colgrep_mcp/guide.md`.
