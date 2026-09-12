@@ -32,12 +32,12 @@ Everything the last three cycles learned is loadable as a skill from the reposit
 ## Status
 ```mermaid
 graph TD
-    skill_policy[Skill: Maintainer Policy]:::planned
-    skill_campaign_lead[Skill: Campaign Lead]:::planned
-    skill_landing_release[Skill: Landing and Release]:::planned
-    skill_stack_traps[Skill: Stack Traps]:::planned
-    search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::planned
-    list_indexes_budget[list_indexes Text Budget]:::planned
+    skill_policy[Skill: Maintainer Policy]:::inprogress
+    skill_campaign_lead[Skill: Campaign Lead]:::inprogress
+    skill_landing_release[Skill: Landing and Release]:::inprogress
+    skill_stack_traps[Skill: Stack Traps]:::inprogress
+    search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::inprogress
+    list_indexes_budget[list_indexes Text Budget]:::inprogress
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -49,12 +49,12 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `skill_policy.md` | 📄 Leaf Task | ⬜ Planned |
-| `skill_campaign_lead.md` | 📄 Leaf Task | ⬜ Planned |
-| `skill_landing_release.md` | 📄 Leaf Task | ⬜ Planned |
-| `skill_stack_traps.md` | 📄 Leaf Task | ⬜ Planned |
-| `search_path.md` | 📄 Leaf Task | ⬜ Planned |
-| `list_indexes_budget.md` | 📄 Leaf Task | ⬜ Planned |
+| `skill_policy.md` | 📄 Leaf Task | 🔄 In Progress |
+| `skill_campaign_lead.md` | 📄 Leaf Task | 🔄 In Progress |
+| `skill_landing_release.md` | 📄 Leaf Task | 🔄 In Progress |
+| `skill_stack_traps.md` | 📄 Leaf Task | 🔄 In Progress |
+| `search_path.md` | 📄 Leaf Task | 🔄 In Progress |
+| `list_indexes_budget.md` | 📄 Leaf Task | 🔄 In Progress |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
