@@ -36,7 +36,7 @@ One idiom per concern across `server/colgrep_mcp/` — tool definition, path res
 graph TD
     search_tools[Search Tools: One Style, One Renderer, No Wasted Reads]:::inprogress
     index_tools[Index Tools: Shared Resolver, Errors and Notifications]:::inprogress
-    context_free_handlers[Resources and Prompts: Share the Lifespan Adapter]:::inprogress
+    context_free_handlers[Resources and Prompts: Share the Lifespan Adapter]:::done
     adapter_hygiene[Adapter and Locks: Per-Spawn Waste]:::done
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
@@ -51,7 +51,7 @@ graph TD
 |:-----|:-----|:-------|
 | `search_tools.md` | 📄 Leaf Task | 🔄 In Progress |
 | `index_tools.md` | 📄 Leaf Task | 🔄 In Progress |
-| `context_free_handlers.md` | 📄 Leaf Task | 🔄 In Progress |
+| `context_free_handlers.md` | 📄 Leaf Task | ✅ Done |
 | `adapter_hygiene.md` | 📄 Leaf Task | ✅ Done |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
@@ -63,3 +63,4 @@ graph TD
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
 | `adapter_hygiene.md` | `task/adapter_hygiene` | 1 | lead-implemented; 200 passed; merged 16:12 |
+| `context_free_handlers.md` | `task/context_free_handlers` | 2 | Sonnet, ~9 min; validate_call rejects lru_cache wrappers so caching sits one level down; 202 passed; merged 16:19 |
