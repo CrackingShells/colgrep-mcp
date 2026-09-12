@@ -11,6 +11,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 
 from mcp.server import MCPServer
@@ -49,20 +50,24 @@ class AppContext:
 #: The running server's `AppContext`, set for the lifespan's duration so
 #: handlers the SDK gives no request `Context` (static resources, the
 #: completion callback) still share the one adapter instead of building
-#: their own from the environment on every call.
-_app: AppContext | None = None
+#: their own from the environment on every call. A `ContextVar`, not a
+#: module global: every request task the SDK spawns descends from the task
+#: that entered the lifespan and so inherits its value, while two servers
+#: whose lifespans overlap in one process (the test suite's in-memory
+#: clients can do this) each see only their own (review OV1).
+_app_var: ContextVar[AppContext | None] = ContextVar("colgrep_mcp_app", default=None)
 
 
 @asynccontextmanager
 async def lifespan(server: MCPServer) -> AsyncIterator[AppContext]:
-    global _app
     settings = Settings.from_env()
     adapter = ColgrepAdapter(binary=settings.binary, timeout_s=settings.timeout_s)
-    _app = AppContext(settings=settings, adapter=adapter)
+    app = AppContext(settings=settings, adapter=adapter)
+    token = _app_var.set(app)
     try:
-        yield _app
+        yield app
     finally:
-        _app = None
+        _app_var.reset(token)
 
 
 mcp = MCPServer("colgrep", instructions=INSTRUCTIONS, version=__version__, lifespan=lifespan)
@@ -76,9 +81,10 @@ def get_app(ctx: Context | None = None) -> AppContext:
     """
     if ctx is not None:
         return ctx.request_context.lifespan_context
-    if _app is None:
+    app = _app_var.get()
+    if app is None:
         raise RuntimeError("colgrep-mcp server is not running: no lifespan context available")
-    return _app
+    return app
 
 
 def get_adapter(ctx: Context | None = None) -> ColgrepAdapter:
