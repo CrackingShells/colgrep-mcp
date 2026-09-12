@@ -13,7 +13,7 @@ Current configuration:
   hybrid:      true (default)
   alpha:       0.60 (default)
   max-depth:   1024 (default)
-  ignore:      .claude/worktrees, **/htn-creator-workspace/results
+  ignore:      .claude/worktrees, **/some-workspace/results
   force-incl:  (none)
 
 Use --k or --n to set values. Use 0 to reset to default.
