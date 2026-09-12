@@ -120,6 +120,8 @@ Without `COLGREP_MCP_ROOT` the server falls back to the client's first root, if 
 cd server && uv run pytest -q
 ```
 
+If you are a coding agent maintaining this repository, start with `AGENTS.md`: repo map, gate commands, conventions and known traps.
+
 Tests run against a fake `colgrep` (`server/tests/fake_colgrep.py`); set `COLGREP_MCP_REAL=1` to include the few that need the real binary. Architecture, measured behaviour and decisions live in `__reports__/colgrep_mcp/`; the execution plan in `__roadmap__/colgrep_mcp/`; commit conventions in `CONTRIBUTING.md`.
 
 `server/tests/e2e/run_e2e.py` is a separate, non-pytest script (no `test_` prefix, so `pytest` never collects it) that drives the assembled server over stdio against a **real** `colgrep` binary and a real repository, for measured end-to-end validation rather than fixture-driven unit tests:
