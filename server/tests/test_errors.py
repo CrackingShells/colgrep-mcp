@@ -1,8 +1,6 @@
 """Tests for `colgrep_mcp.errors`: the coded `[CODE] ... Next: ...` shape every
 deliberately-raised `ToolError`/`ResourceError` and every `SearchResult` note
-must carry (roadmap leaf `error_taxonomy`; R01 §Error model; PI request
-2026-09-12, mid-run: "standardized tool call error code that can point the
-agents toward different usage patterns").
+must carry (R01 §Error model).
 """
 
 from __future__ import annotations

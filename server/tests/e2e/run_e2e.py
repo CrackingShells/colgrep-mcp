@@ -1,4 +1,4 @@
-"""Scripted stdio session against the REAL colgrep binary (roadmap leaf `e2e_validation`).
+"""Scripted stdio session against the REAL colgrep binary.
 
 Not a pytest test module (no `test_` prefix, no `__init__.py` in this
 directory) -- pytest's default `testpaths = ["tests"]` only collects files
@@ -83,7 +83,7 @@ def _refuse_unsafe_corpus(corpus: Path) -> None:
 
 
 def build_call_plan(corpus: Path, top3_hit_ids: list[str] | None = None) -> list[CallSpec]:
-    """The fixed, ordered sequence of calls the roadmap leaf specifies.
+    """The fixed, ordered sequence of calls this script drives end to end.
 
     `top3_hit_ids` is only known once search (a) has actually run; for
     `--dry-run` (which never executes anything) it stays `None` and the

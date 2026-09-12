@@ -271,7 +271,7 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
 
 
 async def test_find_files_does_not_read_hit_files(settings_env, monkeypatch):
-    """R01 §C5 (Step 3): `find_files` never exposes `line`/`hit_id`, so `_do_search`
+    """R01 §C5: `find_files` never exposes `line`/`hit_id`, so `_do_search`
     must call it with `locate=False` and skip `_fill_file_cache` entirely — that
     used to cost up to 300 file reads (plus a `locate_unit` pass each) per call
     for output nothing downstream reads."""
@@ -393,7 +393,7 @@ async def test_fill_file_cache_reads_each_distinct_file_at_most_once(tmp_path, m
 
 async def test_expand_reads_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
     """F11, mirrored for `expand`. `expand` reads its span via `_read_span`'s
-    builtin `open` (Step 3), not `Path.read_text`, so the spy target follows."""
+    builtin `open`, not `Path.read_text`, so the spy target follows."""
     target = tmp_path / "code.py"
     target.write_text("x = 1\ny = 2\ndef f():\n    return 1\nz = 3\n")
     hit_id = f"{target}:3-4"

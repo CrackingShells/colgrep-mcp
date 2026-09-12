@@ -1,4 +1,10 @@
-"""MCPServer instance and registration entry point."""
+"""MCPServer instance and registration entry point.
+
+The only module holding the process-wide app handle: `get_app`/`get_adapter`/
+`get_settings` are the one way to reach the lifespan's single `Settings` and
+single `ColgrepAdapter`, and `READ_ONLY_TOOL` is defined once here for every
+read-only tool registration (R01 §C1).
+"""
 
 from __future__ import annotations
 
