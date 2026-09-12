@@ -18,6 +18,12 @@ The first `colgrep` run downloads the embedding model (a few hundred MB) and the
 
 ## Install
 
+Get the source:
+
+```bash
+git clone https://github.com/CrackingShells/colgrep-mcp.git
+```
+
 ### Claude Code
 
 Try it without installing:
