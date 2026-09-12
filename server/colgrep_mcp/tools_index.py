@@ -16,6 +16,7 @@ from mcp.server.mcpserver import Context
 from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability, TextContent, ToolAnnotations
 from pydantic import BaseModel, Field
 
+from . import tools_search
 from .adapter import ColgrepError, ColgrepNotFound
 from .errors import Code, tool_error, translate_adapter_errors
 from .locks import project_lock
@@ -75,11 +76,26 @@ def _render_status(status: IndexStatus) -> str:
     return "\n".join(lines)
 
 
-def _render_index_list(result: IndexList) -> str:
+def _index_block(info: IndexInfo) -> str:
+    return f"{info.project}  model={info.model}  units={info.units_indexed}  searches={info.search_count}"
+
+
+def _render_index_list(result: IndexList, budget: int) -> tuple[str, bool]:
+    """Render `result` through the one budgeted renderer (R01 §C7), capped at
+    `budget` chars like every other tool's text listing (R01 consistency
+    §Token-budget invariant); `list_indexes`' text is machine-global and was
+    observed at 24 kB unbounded on one machine (`KT-B`).
+
+    The empty-list sentence is a fixed string, not a zero-block render
+    through `_render_budgeted` (which would need a header even with nothing
+    to list) — kept byte-identical to the pre-budget rendering.
+    """
     if not result.indexes:
-        return "No indexed projects on this machine."
-    return "\n".join(
-        f"{i.project}  model={i.model}  units={i.units_indexed}  searches={i.search_count}" for i in result.indexes
+        return "No indexed projects on this machine.", False
+    header = f"{len(result.indexes)} indexed projects on this machine"
+    blocks = [_index_block(info) for info in result.indexes]
+    return tools_search._render_budgeted(
+        header, blocks, lambda remaining: f"[{remaining} more indexes in structured_content]", [], budget
     )
 
 
@@ -145,12 +161,21 @@ async def index_status(
 async def list_indexes(*, ctx: Context) -> CallToolResult:
     """List every project colgrep has indexed on this machine, with model and unit counts."""
     adapter = get_adapter(ctx)
+    settings = get_settings(ctx)
     async with translate_adapter_errors():
         infos: list[IndexInfo] = await adapter.stats()
 
     result = IndexList(indexes=infos)
+    text, capped = _render_index_list(result, settings.text_budget)
+    if capped:
+        await safe_log(
+            ctx,
+            "warning",
+            f"list_indexes text truncated to {settings.text_budget} chars; see structured_content for all indexes",
+        )
+
     return CallToolResult(
-        content=[TextContent(type="text", text=_render_index_list(result))],
+        content=[TextContent(type="text", text=text)],
         structured_content=result.model_dump(),
     )
 
@@ -227,9 +252,7 @@ async def index_build(
                     if task in done:
                         break
                     elapsed_s = time.monotonic() - start
-                    await safe_progress(
-                        ctx, elapsed_s, None, f"indexing {resolved} … {int(elapsed_s)}s"
-                    )
+                    await safe_progress(ctx, elapsed_s, None, f"indexing {resolved} … {int(elapsed_s)}s")
 
                 result = await task
         finally:
@@ -308,8 +331,7 @@ async def index_clear(
             # Surface the same coded refusal as "no elicitation capability".
             raise tool_error(
                 Code.CONFIRMATION_REQUIRED,
-                f"Refusing to delete the index for {resolved} without confirmation "
-                f"(elicitation failed: {exc}).",
+                f"Refusing to delete the index for {resolved} without confirmation (elicitation failed: {exc}).",
             ) from exc
 
         if res.action != "accept" or not res.data.confirm:

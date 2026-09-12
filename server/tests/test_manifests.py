@@ -56,16 +56,16 @@ def test_versions_aligned():
     assert _load(".claude-plugin/plugin.json")["version"] == version
     assert _load("plugin.json")["version"] == version
     assert _load(".codex-plugin/plugin.json")["version"] == version
+    # The dev plugin is versioned with the product: its skills describe how to
+    # maintain *this* repository at *this* version, so one `cz bump` moves both.
+    assert _load("dev/.claude-plugin/plugin.json")["version"] == version
 
 
 def test_agent_plugin_fields_whitelist():
     manifest = _load("plugin.json")
 
     assert set(manifest) <= AGENT_PLUGIN_PERMITTED_FIELDS
-    assert (
-        manifest["$schema"]
-        == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
-    )
+    assert manifest["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 
 
 def _launch_args(args: list[str]) -> None:
@@ -87,12 +87,8 @@ def test_mcp_configs_equivalent():
     agent_mcp = _load("mcp.json")
     agent_plugin = _load("plugin.json")
 
-    assert (
-        agent_mcp["$schema"] == "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
-    )
-    assert _schema_version(agent_mcp["$schema"]) == _schema_version(
-        agent_plugin["$schema"]
-    )
+    assert agent_mcp["$schema"] == "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
+    assert _schema_version(agent_mcp["$schema"]) == _schema_version(agent_plugin["$schema"])
 
     claude_server = claude_mcp["mcpServers"]["colgrep"]
     agent_server = agent_mcp["mcpServers"]["colgrep"]

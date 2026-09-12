@@ -21,6 +21,50 @@ from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
 from colgrep_mcp.tools_search import _fill_file_cache
 
+_FAKE_RAW_HIT = {
+    "unit": {
+        "name": "parse_config",
+        "qualified_name": "config.py::parse_config",
+        "file": "/tmp/fake-corpus/src/config.py",
+        "line": 1,
+        "end_line": 2,
+        "language": "python",
+        "unit_type": "function",
+        "signature": "def parse_config()",
+        "code": "def parse_config():\n    return {}\n",
+    },
+    "score": 1.0,
+}
+
+
+class _StderrInjectingAdapter:
+    """Stand-in for `get_adapter(ctx).with_stderr(...)` that emits synthetic
+    stderr lines before returning a canned raw-hit list, entirely in-process.
+
+    `fake_colgrep.py`'s `search` subcommand never writes to stderr at all
+    (only `init` does, see its module docstring) — real colgrep's `search`
+    auto-indexes and can emit the same cold-build chatter on stderr (R05 D2),
+    but the fake doesn't replicate that, and `fake_colgrep.py` is owned by no
+    one this cycle (report, don't edit). This stand-in exercises the
+    `on_stderr` wiring the way that real chatter would, without touching the
+    fake or the real subprocess pipeline.
+    """
+
+    def __init__(self, stderr_lines: list[str]) -> None:
+        self._stderr_lines = stderr_lines
+        self._on_stderr = None
+
+    def with_stderr(self, on_stderr):
+        self._on_stderr = on_stderr
+        return self
+
+    async def search(self, req: object) -> list[dict]:
+        for line in self._stderr_lines:
+            if self._on_stderr is not None:
+                await self._on_stderr(line)
+        return [_FAKE_RAW_HIT]
+
+
 pytestmark = pytest.mark.anyio
 
 
@@ -225,9 +269,7 @@ async def test_search_locks_every_resolved_path_not_only_the_first(settings_env,
     proj_b.mkdir()
 
     async with Client(build(), raise_exceptions=True) as c:
-        search_task = asyncio.ensure_future(
-            c.call_tool("search", {"query": "x", "paths": [str(proj_a), str(proj_b)]})
-        )
+        search_task = asyncio.ensure_future(c.call_tool("search", {"query": "x", "paths": [str(proj_a), str(proj_b)]}))
         await asyncio.sleep(0.05)  # let _do_search acquire its lock(s) and start the slow adapter call
 
         async def _acquire_and_release(path):
@@ -283,6 +325,27 @@ async def test_find_files_does_not_read_hit_files(settings_env, monkeypatch):
         return await real_fill_file_cache(*args, **kwargs)
 
     monkeypatch.setattr(tools_search, "_fill_file_cache", spy)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("find_files", {"query": "config parsing"})
+
+    assert r.is_error is False
+    assert calls == []
+
+
+async def test_find_files_never_builds_search_hits(settings_env, monkeypatch):
+    """R01 §C6: `find_files` folds raw hits straight into `FileHit`s; it must
+    never call `hit_from_raw` (which builds a discarded `SearchHit`/`hit_id`
+    and does a wasted `locate_unit` pass) at all — not once per hit, as the
+    pre-restructure `_do_search` did for every path including `locate=False`."""
+    calls: list[None] = []
+    real_hit_from_raw = tools_search.hit_from_raw
+
+    def spy(*args: object, **kwargs: object):
+        calls.append(None)
+        return real_hit_from_raw(*args, **kwargs)
+
+    monkeypatch.setattr(tools_search, "hit_from_raw", spy)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("find_files", {"query": "config parsing"})
@@ -573,3 +636,57 @@ async def test_search_text_budget_holds_for_a_2000_hit_fixture(settings_env, mon
     assert len(r.content[0].text) <= 3000
     assert "more hits in structured_content" in r.content[0].text
     assert any(n.startswith(f"[{Code.TEXT_TRUNCATED}]") for n in r.structured_content["notes"])
+
+
+# --- stderr notifications (R01 §C6) ----------------------------------------
+
+
+async def test_search_sends_at_most_one_log_notification(settings_env, monkeypatch):
+    """R01 §C6: a `search` call must cost the client at most one
+    `notifications/message` frame, never one per colgrep stderr line.
+    Three synthetic stderr lines (the cold-build banner shape `init` emits,
+    R05 D2) must still collapse to a single summary notification once
+    `index_updated` is true."""
+    fake_adapter = _StderrInjectingAdapter(
+        [
+            "\U0001f916 Model: lightonai/LateOn-Code-edge (CPU)",
+            "\U0001f4c2 Building index...",
+            "Indexed /tmp (added: 1, changed: 0, deleted: 0, unchanged: 0)",
+        ]
+    )
+    monkeypatch.setattr(tools_search, "get_adapter", lambda ctx=None: fake_adapter)
+
+    notifications: list[object] = []
+
+    async def logging_callback(params: object) -> None:
+        notifications.append(params)
+
+    # `notifications/message` is a deprecated-capability back channel, only
+    # negotiated by a legacy-mode session under the 2026-07-28 protocol (same
+    # reason `test_doctor_reports_client_root_when_env_root_unset` uses it
+    # for `roots/list`).
+    async with Client(build(), raise_exceptions=True, logging_callback=logging_callback, mode="legacy") as c:
+        r = await c.call_tool("search", {"query": "config parsing"})
+
+    assert r.is_error is False
+    assert r.structured_content["index_updated"] is True
+    assert len(notifications) <= 1
+
+
+async def test_search_sends_zero_log_notifications_when_index_already_current(settings_env, monkeypatch):
+    """R01 §C6: no stderr chatter at all (index already current) must cost
+    zero notifications, not a summary sent unconditionally."""
+    fake_adapter = _StderrInjectingAdapter([])
+    monkeypatch.setattr(tools_search, "get_adapter", lambda ctx=None: fake_adapter)
+
+    notifications: list[object] = []
+
+    async def logging_callback(params: object) -> None:
+        notifications.append(params)
+
+    async with Client(build(), raise_exceptions=True, logging_callback=logging_callback, mode="legacy") as c:
+        r = await c.call_tool("search", {"query": "config parsing"})
+
+    assert r.is_error is False
+    assert r.structured_content["index_updated"] is False
+    assert len(notifications) == 0
