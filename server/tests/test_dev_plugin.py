@@ -32,6 +32,10 @@ def _load(relpath: str) -> dict:
 
 
 def _skill_dirs() -> list[Path]:
+    # git does not track empty directories, so a checkout with no skill yet has
+    # no dev/skills/ at all; that is "zero skills", not an error.
+    if not DEV_SKILLS.is_dir():
+        return []
     return sorted(p for p in DEV_SKILLS.iterdir() if (p / "SKILL.md").is_file())
 
 
