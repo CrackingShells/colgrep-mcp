@@ -126,9 +126,7 @@ async def _read_file_off_loop(file: str) -> str:
         return ""
 
 
-async def _fill_file_cache(
-    raw_hits: list[RawHit], file_cache: dict[str, str], base_path: Path | None = None
-) -> None:
+async def _fill_file_cache(raw_hits: list[RawHit], file_cache: dict[str, str], base_path: Path | None = None) -> None:
     """Read every distinct hit file referenced by `raw_hits` into `file_cache`,
     at most once per file, concurrently and off the event loop (F11).
 

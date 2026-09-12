@@ -227,9 +227,7 @@ async def index_build(
                     if task in done:
                         break
                     elapsed_s = time.monotonic() - start
-                    await safe_progress(
-                        ctx, elapsed_s, None, f"indexing {resolved} … {int(elapsed_s)}s"
-                    )
+                    await safe_progress(ctx, elapsed_s, None, f"indexing {resolved} … {int(elapsed_s)}s")
 
                 result = await task
         finally:
@@ -308,8 +306,7 @@ async def index_clear(
             # Surface the same coded refusal as "no elicitation capability".
             raise tool_error(
                 Code.CONFIRMATION_REQUIRED,
-                f"Refusing to delete the index for {resolved} without confirmation "
-                f"(elicitation failed: {exc}).",
+                f"Refusing to delete the index for {resolved} without confirmation (elicitation failed: {exc}).",
             ) from exc
 
         if res.action != "accept" or not res.data.confirm:

@@ -225,9 +225,7 @@ async def test_search_locks_every_resolved_path_not_only_the_first(settings_env,
     proj_b.mkdir()
 
     async with Client(build(), raise_exceptions=True) as c:
-        search_task = asyncio.ensure_future(
-            c.call_tool("search", {"query": "x", "paths": [str(proj_a), str(proj_b)]})
-        )
+        search_task = asyncio.ensure_future(c.call_tool("search", {"query": "x", "paths": [str(proj_a), str(proj_b)]}))
         await asyncio.sleep(0.05)  # let _do_search acquire its lock(s) and start the slow adapter call
 
         async def _acquire_and_release(path):

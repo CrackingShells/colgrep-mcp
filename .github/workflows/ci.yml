@@ -27,6 +27,8 @@ jobs:
         run: uv sync --directory server
       - name: Lint
         run: uv run --directory server ruff check
+      - name: Format check (the sweep landed once; this keeps it from drifting back)
+        run: uv run --directory server ruff format --check
       - name: Test
         run: uv run --directory server pytest
 

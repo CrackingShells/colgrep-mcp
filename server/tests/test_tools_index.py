@@ -179,9 +179,7 @@ async def test_index_build_reports_final_progress(settings_env, tmp_path):
         calls.append((progress, total, message))
 
     async with Client(build(), raise_exceptions=True) as client:
-        result = await client.call_tool(
-            "index_build", {"path": str(tmp_path)}, progress_callback=on_progress
-        )
+        result = await client.call_tool("index_build", {"path": str(tmp_path)}, progress_callback=on_progress)
 
     assert not result.is_error
     assert len(calls) >= 1
@@ -201,9 +199,7 @@ async def test_index_build_heartbeat_streams_while_slow(settings_env, tmp_path, 
         calls.append((progress, total, message))
 
     async with Client(build(), raise_exceptions=True) as client:
-        result = await client.call_tool(
-            "index_build", {"path": str(tmp_path)}, progress_callback=on_progress
-        )
+        result = await client.call_tool("index_build", {"path": str(tmp_path)}, progress_callback=on_progress)
 
     assert not result.is_error
     assert len(calls) >= 2
