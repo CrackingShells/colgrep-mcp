@@ -36,7 +36,7 @@ graph TD
     skill_campaign_lead[Skill: Campaign Lead]:::done
     skill_landing_release[Skill: Landing and Release]:::done
     skill_stack_traps[Skill: Stack Traps]:::done
-    search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::inprogress
+    search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::done
     list_indexes_budget[list_indexes Text Budget]:::done
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
@@ -53,7 +53,7 @@ graph TD
 | `skill_campaign_lead.md` | 📄 Leaf Task | ✅ Done |
 | `skill_landing_release.md` | 📄 Leaf Task | ✅ Done |
 | `skill_stack_traps.md` | 📄 Leaf Task | ✅ Done |
-| `search_path.md` | 📄 Leaf Task | 🔄 In Progress |
+| `search_path.md` | 📄 Leaf Task | ✅ Done |
 | `list_indexes_budget.md` | 📄 Leaf Task | ✅ Done |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
