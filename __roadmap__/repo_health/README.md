@@ -29,7 +29,7 @@ Make the repository scaffold mechanical and cross-platform: one version source w
 ```mermaid
 graph TD
     python_tooling[Python Tooling: Version Source, Commitizen, Ruff]:::inprogress
-    launcher[Cross-Platform Launch via uv]:::inprogress
+    launcher[Cross-Platform Launch via uv]:::done
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -42,7 +42,7 @@ graph TD
 | Node | Type | Status |
 |:-----|:-----|:-------|
 | `python_tooling.md` | 📄 Leaf Task | 🔄 In Progress |
-| `launcher.md` | 📄 Leaf Task | 🔄 In Progress |
+| `launcher.md` | 📄 Leaf Task | ✅ Done |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
@@ -52,3 +52,4 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `launcher.md` | `task/launcher` | 3 | option (b): Claude Code MCP config moved to `.claude-plugin/mcp.json`; `claude --plugin-dir . mcp list` connected; project context lists nothing |
