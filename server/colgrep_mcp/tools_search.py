@@ -11,6 +11,7 @@ registered onto the shared server helpers by `register`.
 from __future__ import annotations
 
 import asyncio
+import itertools
 import re
 import time
 from collections.abc import Callable
@@ -301,8 +302,17 @@ async def _do_search(
     skip_index_update: bool,
     snippet_lines: int,
     include_code: bool,
+    locate: bool,
 ) -> SearchResult:
     """Shared body of `search` and `find_files`: resolve, lock, run, convert.
+
+    `locate=False` (used by `find_files`, which never exposes `line`/
+    `hit_id`) skips reading every hit file and re-deriving its true location
+    via `locate_unit` — pure waste when nothing downstream reads `line` or
+    `hit_id`. `hit_id` is still built, from colgrep's reported line/end_line
+    as-is, with `location_verified=False`; no `LOCATION_UNVERIFIED` note is
+    added in that case, since it would be an artefact of skipping rather
+    than a real degradation (R01 §C5).
 
     Raises `ToolError` (via `resolve_target_paths` for a bad path, via
     `translate_adapter_errors` for an adapter failure); never a bare adapter
@@ -354,7 +364,8 @@ async def _do_search(
     # against.
     base_path = resolved[0]
     file_cache: dict[str, str] = {}
-    await _fill_file_cache(raw_hits, file_cache, base_path=base_path)
+    if locate:
+        await _fill_file_cache(raw_hits, file_cache, base_path=base_path)
     hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path) for raw in raw_hits]
 
     notes: list[str] = []
@@ -366,7 +377,7 @@ async def _do_search(
         notes.append(
             note(Code.LIMIT_DEFAULT_APPLIED, "limit omitted without pattern: colgrep applies its own default of 15")
         )
-    if any(not hit.location_verified for hit in hits):
+    if locate and any(not hit.location_verified for hit in hits):
         # R05 D1: once per result, never once per hit, so a result with many
         # unverified hits doesn't drown other notes.
         notes.append(note(Code.LOCATION_UNVERIFIED, "some hits' line numbers are unverified"))
@@ -456,6 +467,7 @@ async def search(
         skip_index_update=skip_index_update,
         snippet_lines=snippet_lines,
         include_code=include_code,
+        locate=True,
     )
 
     text, capped = render_search_text(result, settings.text_budget)
@@ -523,6 +535,7 @@ async def find_files(
         skip_index_update=False,
         snippet_lines=0,
         include_code=False,
+        locate=False,
     )
     hits = result.hits
 
@@ -565,6 +578,34 @@ async def find_files(
     )
 
 
+def _strip_line_ending(line: str) -> str:
+    """Remove one trailing line terminator, exactly as `str.splitlines()` would per line."""
+    if line.endswith("\r\n"):
+        return line[:-2]
+    if line.endswith("\n") or line.endswith("\r"):
+        return line[:-1]
+    return line
+
+
+def _read_span(file: str, line: int, end_line: int) -> list[str]:
+    """Read only lines `[line, end_line]` (1-indexed, inclusive) of `file`.
+
+    `expand` returns at most `max_lines` of a hit whose file can be
+    arbitrarily large; reading the whole file with `read_text` +
+    `splitlines` (the old approach) does I/O proportional to the file's
+    size instead of the span actually requested. Opening the file and
+    `itertools.islice`-ing its line iterator reads (and decodes) only the
+    requested span. `errors="replace"` and the default text-mode encoding
+    match `Path.read_text(errors="replace")`; a `line` past EOF yields `[]`,
+    same as the old `lines[start_idx:end_idx]` slicing.
+    """
+    start_idx = max(line - 1, 0)
+    end_idx = max(end_line, start_idx)
+    with open(file, errors="replace") as f:
+        selected = list(itertools.islice(f, start_idx, end_idx))
+    return [_strip_line_ending(raw_line) for raw_line in selected]
+
+
 async def expand(
     hit_ids: Annotated[
         list[str], Field(description="hit_id values from a search/find_files result, e.g. '/repo/a.py:10-42'.")
@@ -601,7 +642,7 @@ async def expand(
         try:
             # Off the event loop (F11): a hit's file can be arbitrarily
             # large, and this handler otherwise never awaits.
-            text = await asyncio.to_thread(Path(file).read_text, errors="replace")
+            selected = await asyncio.to_thread(_read_span, file, line, end_line)
         except OSError as exc:
             units.append(
                 ExpandedUnit(
@@ -610,10 +651,6 @@ async def expand(
             )
             continue
 
-        lines = text.splitlines()
-        start_idx = max(line - 1, 0)
-        end_idx = min(end_line, len(lines))
-        selected = lines[start_idx:end_idx]
         was_truncated = len(selected) > max_lines
         if was_truncated:
             selected = selected[:max_lines]
