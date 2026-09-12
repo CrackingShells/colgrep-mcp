@@ -57,6 +57,7 @@ cd server && uv run cz check --rev-range main..HEAD   # every commit on the bran
 cd server && uv run cz bump --dry-run           # what the next release would be, from history alone
 claude plugin validate . && claude plugin validate ./dev   # both plugins and the marketplace
 claude --plugin-dir . mcp list                  # the server actually connects under the plugin loader
+claude --plugin-dir ./dev plugin details colgrep-mcp-dev   # the loader sees all four skills (~530 always-on tokens)
 ```
 
 Opt-in: `COLGREP_MCP_REAL=1 uv run pytest` adds the few tests that need the real
