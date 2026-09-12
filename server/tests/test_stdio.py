@@ -1,4 +1,4 @@
-"""Stdio round-trip test (R01 server assembly, Step 2).
+"""Stdio round-trip test (R01 server assembly).
 
 Everything else in the suite drives the server in-process via `Client(build())`
 (`InMemoryTransport`) — fast, but it never proves the console script itself

@@ -1,4 +1,5 @@
-"""Path resolution shared by every path-taking tool (R01 §Path resolution invariant).
+"""The only module that resolves a tool's target paths (R01 §Path resolution
+invariant, R01 §C2).
 
 Order: explicit argument → COLGREP_MCP_ROOT → first client root → server cwd.
 

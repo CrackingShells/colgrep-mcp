@@ -1,8 +1,7 @@
-"""Tests for the index management tools (R01 §Tools; R05 D2, D3; roadmap leaf `index_tools`).
-
-Step 1 covers the read-only tools (`index_status`, `list_indexes`, `doctor`).
-Step 2 extends this file with `index_build` (heartbeat progress) and
-`index_clear` (project-root refusal + elicitation-guarded confirmation).
+"""Tests for the index management tools (R01 §Tools; R05 D2, D3): the
+read-only tools (`index_status`, `list_indexes`, `doctor`), `index_build`
+(heartbeat progress) and `index_clear` (project-root refusal +
+elicitation-guarded confirmation).
 """
 
 from __future__ import annotations
