@@ -11,7 +11,12 @@ from colgrep_mcp.server import build
 
 
 def test_fake_colgrep_emits_json(fake_colgrep_bin):
-    out = subprocess.run([fake_colgrep_bin, "--json", "-k", "2", "config parsing", "."], capture_output=True, text=True, check=True)
+    out = subprocess.run(
+        [fake_colgrep_bin, "--json", "-k", "2", "config parsing", "."],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     hits = json.loads(out.stdout)
     assert len(hits) == 2
     assert {"unit", "score"} <= hits[0].keys()

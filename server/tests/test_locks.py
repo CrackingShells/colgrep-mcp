@@ -24,12 +24,15 @@ async def test_same_project_serialises(tmp_path: Path):
 
 @pytest.mark.anyio
 async def test_different_projects_overlap(tmp_path: Path):
-    (tmp_path / "x").mkdir(); (tmp_path / "y").mkdir()
-    started = asyncio.Event(); release = asyncio.Event()
+    (tmp_path / "x").mkdir()
+    (tmp_path / "y").mkdir()
+    started = asyncio.Event()
+    release = asyncio.Event()
 
     async def hold():
         async with project_lock(tmp_path / "x"):
-            started.set(); await release.wait()
+            started.set()
+            await release.wait()
 
     async def other():
         await started.wait()
@@ -38,4 +41,5 @@ async def test_different_projects_overlap(tmp_path: Path):
 
     t = asyncio.create_task(hold())
     assert await asyncio.wait_for(other(), 1) == "ran"
-    release.set(); await t
+    release.set()
+    await t

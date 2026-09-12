@@ -25,6 +25,7 @@ dev = [
     "anyio>=4",
     "inline-snapshot>=0.13",
     "commitizen>=4.18.0",
+    "ruff>=0.16.7",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -85,3 +86,12 @@ message = "Scope (mandatory, kebab-case, e.g. server, adapter, roadmap)"
 type = "input"
 name = "message"
 message = "Short imperative description (no trailing period)"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["."]
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

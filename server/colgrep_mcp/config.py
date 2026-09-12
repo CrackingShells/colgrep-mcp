@@ -21,7 +21,7 @@ class Settings:
     extra_env: dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
+    def from_env(cls, env: dict[str, str] | None = None) -> Settings:
         e = os.environ if env is None else env
         root_raw = e.get("COLGREP_MCP_ROOT")
         return cls(

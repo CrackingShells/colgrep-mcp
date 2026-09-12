@@ -159,7 +159,10 @@ def _search_header(result: SearchResult) -> str:
 
 
 def _hit_block(hit: SearchHit) -> str:
-    head = f"{hit.file}:{hit.line}-{hit.end_line}  score={hit.score:.2f}  {hit.unit_type} {hit.name} — {hit.signature or ''}"
+    head = (
+        f"{hit.file}:{hit.line}-{hit.end_line}  score={hit.score:.2f}  "
+        f"{hit.unit_type} {hit.name} — {hit.signature or ''}"
+    )
     if not hit.snippet:
         return head
     indented = "\n".join(f"  {line}" for line in hit.snippet.splitlines())
@@ -509,7 +512,9 @@ def register(mcp: MCPServer) -> None:
             result.truncated = True
             result.notes.append(note(Code.TEXT_TRUNCATED, "text listing was capped by the token budget"))
             await safe_log(
-                ctx, "warning", f"search text truncated to {settings.text_budget} chars; see structured_content for all hits"
+                ctx,
+                "warning",
+                f"search text truncated to {settings.text_budget} chars; see structured_content for all hits",
             )
 
         return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=result.model_dump())
@@ -606,7 +611,10 @@ def register(mcp: MCPServer) -> None:
                 f"find_files text truncated to {settings.text_budget} chars; see structured_content for all files",
             )
 
-        return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=file_result.model_dump())
+        return CallToolResult(
+            content=[TextContent(type="text", text=text)],
+            structured_content=file_result.model_dump(),
+        )
 
     @mcp.tool(
         title="Expand hits",
