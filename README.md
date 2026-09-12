@@ -145,4 +145,4 @@ All manifests launch the same argv directly, with no shell script in between: `u
 
 ## License
 
-MIT — see `LICENSE`.
+GNU Affero General Public License v3.0 or later — see `LICENSE`. Modified versions that are distributed, or run as a network service (for example the `streamable-http` transport offered to others), must be published under the same terms.
