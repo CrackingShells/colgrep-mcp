@@ -144,6 +144,7 @@ Without `COLGREP_MCP_ROOT` the server falls back to the client's first root, if 
 ## Troubleshooting
 
 - **The server does not start under a GUI client.** GUI-launched clients may start without your shell's `PATH`, so `uvx` (and `colgrep`) may not resolve by bare name. Name `uvx` by its absolute path in the client's MCP config (find it with `which uvx` on macOS/Linux or `where uvx` on Windows), and set `COLGREP_MCP_BINARY` to the absolute path of `colgrep` if it isn't found either.
+- **The plugin fails to connect right after an update.** `uv` caches PyPI's index page for a while, so a version published minutes ago can look nonexistent to it and the launch dies silently. Run `uvx --refresh colgrep-mcp==<version> --version` once (the version is in the plugin's `mcp.json`), then reconnect.
 - **The first start is slow, or fails offline.** `uvx colgrep-mcp==<version>` downloads the package and its dependencies once per version, then runs from cache. On a machine without network at start, `uv tool install colgrep-mcp` beforehand and launch the `colgrep-mcp` executable instead (see [Any MCP client](#any-mcp-client)).
 - **A search times out on a large repository.** Call `index_build` first; it streams progress and the following searches are fast. `index_status` says whether that is needed.
 - **`doctor` reports a problem.** Its `problems` list names what is missing and how to fix it.

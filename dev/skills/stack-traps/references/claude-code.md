@@ -35,7 +35,9 @@ either hardcode or make the field required.
 **Symptom**: `claude --plugin-dir . mcp list` shows `✔ Connected` while an
 edit you just made is not in the running server; or, right after a `cz
 bump`, the plugin fails to start with a uv resolution error naming a
-version.
+version; or, in the minutes *after* `publish.yml` went green, the plugin
+shows `✘ Failed to connect — CONNECTION_CLOSED` although
+`uvx --no-cache colgrep-mcp==<version> --version` works.
 
 **Cause**: every MCP manifest launches `uvx colgrep-mcp==<version>` from
 PyPI, pinned to the plugin's version; the plugin loader never runs the
@@ -44,7 +46,15 @@ commit and a successful `publish.yml` run it names a version PyPI does not
 have yet — by design, so that a plugin update can never reuse a stale
 cached environment (pypi_publication R01 §C6, D4).
 
-**What to do**: to exercise the tree, register it directly —
+The third symptom is uv's HTTP cache: it keeps PyPI's simple-index page for
+`colgrep-mcp` for as long as PyPI's cache headers allow, so a pin that was
+uploaded a moment ago is "no version of colgrep-mcp==X" to a warm cache
+(seen on the v0.3.1 release: the gate failed twice, then connected after a
+refresh). The plugin loader shows none of that text — only the closed pipe.
+
+**What to do**: after a release, warm the cache once with
+`uvx --refresh colgrep-mcp==<version> --version`, then re-run the gate. To
+exercise the tree, register it directly —
 `claude mcp add colgrep-dev -- uv run --quiet --directory ./server
 colgrep-mcp` — and read `claude --plugin-dir . mcp list` only as "the
 manifest is well-formed". After a bump, wait for `publish.yml` to go green
