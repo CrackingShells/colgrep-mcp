@@ -32,7 +32,7 @@ Everything the last three cycles learned is loadable as a skill from the reposit
 ## Status
 ```mermaid
 graph TD
-    skill_policy[Skill: Maintainer Policy]:::inprogress
+    skill_policy[Skill: Maintainer Policy]:::done
     skill_campaign_lead[Skill: Campaign Lead]:::inprogress
     skill_landing_release[Skill: Landing and Release]:::inprogress
     skill_stack_traps[Skill: Stack Traps]:::inprogress
@@ -49,7 +49,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `skill_policy.md` | 📄 Leaf Task | 🔄 In Progress |
+| `skill_policy.md` | 📄 Leaf Task | ✅ Done |
 | `skill_campaign_lead.md` | 📄 Leaf Task | 🔄 In Progress |
 | `skill_landing_release.md` | 📄 Leaf Task | 🔄 In Progress |
 | `skill_stack_traps.md` | 📄 Leaf Task | 🔄 In Progress |
