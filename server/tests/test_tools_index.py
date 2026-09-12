@@ -12,7 +12,7 @@ import json
 
 import pytest
 from mcp import Client
-from mcp.types import ElicitRequestParams, ElicitResult
+from mcp.types import ElicitRequestParams, ElicitResult, ListRootsResult, Root
 
 from colgrep_mcp import tools_index
 from colgrep_mcp.adapter import ColgrepAdapter
@@ -86,6 +86,22 @@ async def test_index_status_enriches_units_from_stats(settings_env, tmp_path, mo
     assert result.structured_content["search_count"] == 7
 
 
+async def test_index_status_matches_stats_by_resolved_path_when_strings_differ(settings_env, tmp_path, monkeypatch):
+    """`_match_stats` falls back to a resolved-path comparison only when the
+    plain string comparison misses; here `status.project` carries a trailing
+    `/.` the fake `--stats` output (always `/tmp/fake-corpus`) never has, so
+    a string-only match would miss the enrichment entirely."""
+    monkeypatch.setenv("FAKE_COLGREP_STATUS_PROJECT", "/tmp/fake-corpus/.")
+
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("index_status", {"path": str(tmp_path)})
+
+    assert not result.is_error
+    assert result.structured_content["project"] == "/tmp/fake-corpus/."
+    assert result.structured_content["units_indexed"] == 3
+    assert result.structured_content["search_count"] == 7
+
+
 # --- list_indexes ---------------------------------------------------------------
 
 
@@ -129,6 +145,29 @@ async def test_doctor_bogus_binary(monkeypatch, tmp_path):
     assert doc["colgrep_path"] is None
     assert doc["version"] is None
     assert any("not found" in p for p in doc["problems"])
+
+
+async def test_doctor_reports_client_root_when_env_root_unset(monkeypatch, fake_colgrep_bin, tmp_path):
+    """R01 §C2: `doctor` reports `default_root(settings, roots)` with the same
+    lazily fetched client roots the path-taking tools would use, so its
+    answer matches what a call without an explicit `path` will resolve to."""
+    monkeypatch.setenv("COLGREP_MCP_BINARY", fake_colgrep_bin)
+    monkeypatch.delenv("COLGREP_MCP_ROOT", raising=False)
+    monkeypatch.setenv("COLGREP_MCP_TIMEOUT", "30")
+
+    async def list_roots(context: object) -> ListRootsResult:
+        return ListRootsResult(roots=[Root(uri=f"file://{tmp_path}")])
+
+    # `roots/list` is a server-initiated back channel, which only
+    # `mode="legacy"` negotiates under the 2026-07-28 protocol (same reason
+    # `index_clear`'s elicitation tests below use it).
+    async with Client(build(), raise_exceptions=True, list_roots_callback=list_roots, mode="legacy") as client:
+        result = await client.call_tool("doctor", {})
+
+    assert not result.is_error
+    doc = result.structured_content
+    assert doc["root_source"] == "roots"
+    assert doc["default_root"] == str(tmp_path.resolve())
 
 
 # --- index_build ------------------------------------------------------------------

@@ -17,12 +17,12 @@ from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability,
 from pydantic import BaseModel, Field
 
 from .adapter import ColgrepError, ColgrepNotFound
-from .errors import Code, from_adapter_error, tool_error
+from .errors import Code, tool_error, translate_adapter_errors
 from .locks import project_lock
-from .logging_utils import safe_log
+from .logging_utils import safe_log, safe_notify_resource_updated, safe_progress
 from .models import Doctor, IndexBuildResult, IndexClearResult, IndexInfo, IndexList, IndexStatus
-from .paths import default_root, resolve_paths
-from .server import get_adapter, get_settings
+from .paths import client_roots, default_root, resolve_target_paths
+from .server import READ_ONLY_TOOL, get_adapter, get_settings
 
 #: Interval between indeterminate progress heartbeats during `index_build`
 #: (R05 D2: colgrep emits no per-file progress, only a final summary line).
@@ -36,10 +36,25 @@ class Confirm(BaseModel):
     confirm: bool
 
 
-def _resolve_one(path: str | None, ctx: Context) -> Path:
+async def _resolve_one(path: str | None, ctx: Context) -> Path:
     """Resolve a single optional path argument to one absolute, existing path."""
-    settings = get_settings(ctx)
-    return resolve_paths([path] if path else None, settings, None)[0]
+    return (await resolve_target_paths(ctx, [path] if path else None))[0]
+
+
+def _match_stats(status: IndexStatus, stats: list[IndexInfo]) -> IndexInfo | None:
+    """Find `status.project`'s entry in `stats` without a `Path.resolve()` syscall per candidate.
+
+    `status.project` and `info.project` are usually the same string colgrep
+    reported for the same project, so a plain string comparison matches the
+    common case with no filesystem access at all. Only when nothing matches
+    that way do we pay for resolving each `info.project` (symlinks, a
+    trailing `/.`, ...) against the one already-resolved `status.project`.
+    """
+    match = next((info for info in stats if info.project == status.project), None)
+    if match is not None:
+        return match
+    target = Path(status.project).resolve()
+    return next((info for info in stats if Path(info.project).resolve() == target), None)
 
 
 # --- rendering ---------------------------------------------------------------
@@ -105,22 +120,17 @@ async def index_status(
 ) -> CallToolResult:
     """Report whether a project is indexed by colgrep, and with what model/index."""
     adapter = get_adapter(ctx)
-    resolved = _resolve_one(path, ctx)
+    resolved = await _resolve_one(path, ctx)
 
-    try:
+    async with translate_adapter_errors(path=resolved):
         status = await adapter.status(resolved)
-    except ColgrepError as exc:
-        raise from_adapter_error(exc, path=resolved) from exc
 
     if status.indexed:
         try:
             stats = await adapter.stats()
         except ColgrepError:
             stats = []
-        match = next(
-            (info for info in stats if Path(info.project).resolve() == Path(status.project).resolve()),
-            None,
-        )
+        match = _match_stats(status, stats)
         if match is not None:
             status = status.model_copy(
                 update={"units_indexed": match.units_indexed, "search_count": match.search_count}
@@ -135,10 +145,8 @@ async def index_status(
 async def list_indexes(*, ctx: Context) -> CallToolResult:
     """List every project colgrep has indexed on this machine, with model and unit counts."""
     adapter = get_adapter(ctx)
-    try:
+    async with translate_adapter_errors():
         infos: list[IndexInfo] = await adapter.stats()
-    except ColgrepError as exc:
-        raise from_adapter_error(exc) from exc
 
     result = IndexList(indexes=infos)
     return CallToolResult(
@@ -154,7 +162,8 @@ async def doctor(*, ctx: Context) -> CallToolResult:
     problems: list[str] = []
 
     colgrep_path = shutil.which(settings.binary)
-    root, root_source = default_root(settings, roots=None)
+    roots = await client_roots(ctx) if settings.root is None else None
+    root, root_source = default_root(settings, roots)
 
     version: str | None = None
     try:
@@ -199,7 +208,7 @@ async def index_build(
 ) -> CallToolResult:
     """Build or refresh the colgrep index for a project, streaming heartbeat progress while it runs."""
     adapter = get_adapter(ctx)
-    resolved = _resolve_one(path, ctx)
+    resolved = await _resolve_one(path, ctx)
 
     async def _forward_stderr(line: str) -> None:
         await safe_log(ctx, "info", line)
@@ -212,21 +221,17 @@ async def index_build(
             streaming_adapter.init(resolved, force_cpu=force_cpu)
         )
         try:
-            while True:
-                done, _pending = await asyncio.wait({task}, timeout=HEARTBEAT_S)
-                if task in done:
-                    break
-                elapsed_s = time.monotonic() - start
-                try:
-                    await ctx.report_progress(
-                        elapsed_s, total=None, message=f"indexing {resolved} … {int(elapsed_s)}s"
+            async with translate_adapter_errors(path=resolved):
+                while True:
+                    done, _pending = await asyncio.wait({task}, timeout=HEARTBEAT_S)
+                    if task in done:
+                        break
+                    elapsed_s = time.monotonic() - start
+                    await safe_progress(
+                        ctx, elapsed_s, None, f"indexing {resolved} … {int(elapsed_s)}s"
                     )
-                except Exception:  # noqa: BLE001 - progress must never break the build
-                    pass
 
-            result = await task
-        except ColgrepError as exc:
-            raise from_adapter_error(exc, path=resolved) from exc
+                result = await task
         finally:
             # `asyncio.wait` (unlike `gather`) never propagates cancellation
             # to the task it's waiting on: if *this* coroutine is cancelled
@@ -242,15 +247,8 @@ async def index_build(
                     await task
 
     summary_line = _build_summary_line(result)
-    try:
-        await ctx.report_progress(1, total=1, message=summary_line)
-    except Exception:  # noqa: BLE001 - progress must never break the build
-        pass
-
-    try:
-        await ctx.notify_resource_updated("colgrep://indexes")
-    except Exception:  # noqa: BLE001 - resource-update notification is best-effort
-        pass
+    await safe_progress(ctx, 1, 1, summary_line)
+    await safe_notify_resource_updated(ctx, "colgrep://indexes")
 
     return CallToolResult(
         content=[TextContent(type="text", text=summary_line)],
@@ -272,12 +270,10 @@ async def index_clear(
 ) -> CallToolResult:
     """Delete a project's colgrep index. Destructive: asks for confirmation unless confirm=true."""
     adapter = get_adapter(ctx)
-    resolved = _resolve_one(path, ctx)
+    resolved = await _resolve_one(path, ctx)
 
-    try:
+    async with translate_adapter_errors(path=resolved):
         st = await adapter.status(resolved)
-    except ColgrepError as exc:
-        raise from_adapter_error(exc, path=resolved) from exc
 
     if st.indexed and Path(st.project).resolve() != resolved.resolve():
         raise tool_error(
@@ -324,16 +320,11 @@ async def index_clear(
             )
 
     async with project_lock(resolved):
-        try:
+        async with translate_adapter_errors(path=resolved):
             await adapter.clear(resolved)
-        except ColgrepError as exc:
-            raise from_adapter_error(exc, path=resolved) from exc
 
     result = IndexClearResult(project=str(resolved), cleared=True)
-    try:
-        await ctx.notify_resource_updated("colgrep://indexes")
-    except Exception:  # noqa: BLE001 - resource-update notification is best-effort
-        pass
+    await safe_notify_resource_updated(ctx, "colgrep://indexes")
 
     return CallToolResult(
         content=[TextContent(type="text", text=f"Cleared index for {resolved}")],
@@ -343,14 +334,12 @@ async def index_clear(
 
 # --- registration --------------------------------------------------------------
 
-_READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
-
 
 def register(mcp: MCPServer) -> None:
     """Attach this module's handlers to the server."""
-    mcp.tool(title="Index status", annotations=_READ_ONLY)(index_status)
-    mcp.tool(title="List indexes", annotations=_READ_ONLY)(list_indexes)
-    mcp.tool(title="Doctor", annotations=_READ_ONLY)(doctor)
+    mcp.tool(title="Index status", annotations=READ_ONLY_TOOL)(index_status)
+    mcp.tool(title="List indexes", annotations=READ_ONLY_TOOL)(list_indexes)
+    mcp.tool(title="Doctor", annotations=READ_ONLY_TOOL)(doctor)
     mcp.tool(
         title="Build or refresh index",
         annotations=ToolAnnotations(
