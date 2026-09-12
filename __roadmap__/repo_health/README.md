@@ -30,7 +30,7 @@ Make the repository scaffold mechanical and cross-platform: one version source w
 graph TD
     python_tooling[Python Tooling: Version Source, Commitizen, Ruff]:::done
     launcher[Cross-Platform Launch via uv]:::done
-    integrate[Integrate]:::inprogress
+    integrate[Integrate]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -43,7 +43,7 @@ graph TD
 |:-----|:-----|:-------|
 | `python_tooling.md` | 📄 Leaf Task | ✅ Done |
 | `launcher.md` | 📄 Leaf Task | ✅ Done |
-| `integrate/` | 📁 Directory | 🔄 In Progress |
+| `integrate/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
