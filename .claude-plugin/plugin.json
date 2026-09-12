@@ -7,8 +7,8 @@
     "name": "Eliott Jacopin",
     "email": "eliott.jacopin@riken.jp"
   },
-  "homepage": "https://github.com/eliottjacopin/colgrep-mcp",
-  "repository": "https://github.com/eliottjacopin/colgrep-mcp",
+  "homepage": "https://github.com/CrackingShells/colgrep-mcp",
+  "repository": "https://github.com/CrackingShells/colgrep-mcp",
   "license": "AGPL-3.0-or-later",
   "keywords": ["mcp", "colgrep", "semantic-search", "code-search", "agents"],
   "mcpServers": "./.claude-plugin/mcp.json",
