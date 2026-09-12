@@ -12,7 +12,7 @@ import json
 
 import pytest
 from mcp import Client
-from mcp.types import ElicitRequestParams, ElicitResult
+from mcp.types import ElicitRequestParams, ElicitResult, ListRootsResult, Root
 
 from colgrep_mcp import tools_index
 from colgrep_mcp.adapter import ColgrepAdapter
@@ -129,6 +129,29 @@ async def test_doctor_bogus_binary(monkeypatch, tmp_path):
     assert doc["colgrep_path"] is None
     assert doc["version"] is None
     assert any("not found" in p for p in doc["problems"])
+
+
+async def test_doctor_reports_client_root_when_env_root_unset(monkeypatch, fake_colgrep_bin, tmp_path):
+    """R01 §C2: `doctor` reports `default_root(settings, roots)` with the same
+    lazily fetched client roots the path-taking tools would use, so its
+    answer matches what a call without an explicit `path` will resolve to."""
+    monkeypatch.setenv("COLGREP_MCP_BINARY", fake_colgrep_bin)
+    monkeypatch.delenv("COLGREP_MCP_ROOT", raising=False)
+    monkeypatch.setenv("COLGREP_MCP_TIMEOUT", "30")
+
+    async def list_roots(context: object) -> ListRootsResult:
+        return ListRootsResult(roots=[Root(uri=f"file://{tmp_path}")])
+
+    # `roots/list` is a server-initiated back channel, which only
+    # `mode="legacy"` negotiates under the 2026-07-28 protocol (same reason
+    # `index_clear`'s elicitation tests below use it).
+    async with Client(build(), raise_exceptions=True, list_roots_callback=list_roots, mode="legacy") as client:
+        result = await client.call_tool("doctor", {})
+
+    assert not result.is_error
+    doc = result.structured_content
+    assert doc["root_source"] == "roots"
+    assert doc["default_root"] == str(tmp_path.resolve())
 
 
 # --- index_build ------------------------------------------------------------------
