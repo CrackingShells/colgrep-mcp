@@ -16,7 +16,7 @@ v0.2.0 on `main` with the knowledge-transfer report committed and every worktree
 ## Status
 ```mermaid
 graph TD
-    knowledge_transfer[Knowledge Transfer and Release]:::inprogress
+    knowledge_transfer[Knowledge Transfer and Release]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -27,7 +27,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `knowledge_transfer.md` | 📄 Leaf Task | 🔄 In Progress |
+| `knowledge_transfer.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -36,3 +36,4 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `knowledge_transfer.md` | `main` | 1 | lead; PR #5 merged 19:10 via gh pr merge --merge; cz bump -> v0.2.0 (MINOR from the feat(plugin) merge), tag pushed by name 19:10 |
