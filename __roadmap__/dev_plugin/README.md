@@ -38,7 +38,7 @@ graph TD
     skill_stack_traps[Skill: Stack Traps]:::done
     search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::done
     list_indexes_budget[list_indexes Text Budget]:::done
-    integrate[Integrate]:::inprogress
+    integrate[Integrate]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -55,7 +55,7 @@ graph TD
 | `skill_stack_traps.md` | 📄 Leaf Task | ✅ Done |
 | `search_path.md` | 📄 Leaf Task | ✅ Done |
 | `list_indexes_budget.md` | 📄 Leaf Task | ✅ Done |
-| `integrate/` | 📁 Directory | 🔄 In Progress |
+| `integrate/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

@@ -18,7 +18,7 @@ The merged result is reviewed for what the tests cannot prove, the surface files
 graph TD
     review[Read-Only Review]:::done
     surface[Surface: AGENTS.md, CLAUDE.md, CONTRIBUTING.md]:::done
-    close[Close]:::inprogress
+    close[Close]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -31,7 +31,7 @@ graph TD
 |:-----|:-----|:-------|
 | `review.md` | 📄 Leaf Task | ✅ Done |
 | `surface.md` | 📄 Leaf Task | ✅ Done |
-| `close/` | 📁 Directory | 🔄 In Progress |
+| `close/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
