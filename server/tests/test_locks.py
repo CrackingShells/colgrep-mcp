@@ -43,3 +43,17 @@ async def test_different_projects_overlap(tmp_path: Path):
     assert await asyncio.wait_for(other(), 1) == "ran"
     release.set()
     await t
+
+
+def test_lock_key_is_the_path_string(monkeypatch):
+    """Two `Path`s with the same string share one lock, and keying never touches the filesystem."""
+    from colgrep_mcp.locks import _lock_for
+
+    def _no_resolve(self, *args, **kwargs):  # pragma: no cover - fails the test if reached
+        raise AssertionError("_lock_for must not call Path.resolve()")
+
+    monkeypatch.setattr(Path, "resolve", _no_resolve)
+    a = _lock_for(Path("/definitely/not/an/existing/project"))
+    b = _lock_for(Path("/definitely/not/an/existing/project"))
+    assert a is b
+    assert _lock_for(Path("/definitely/not/an/existing/other")) is not a

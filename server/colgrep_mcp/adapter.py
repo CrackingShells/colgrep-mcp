@@ -73,6 +73,18 @@ class SearchRequest:
 RawHit = dict[str, Any]
 
 
+def _require_absolute(path: Path, what: str) -> None:
+    """Raise `ColgrepError` unless `path` is absolute.
+
+    Every colgrep subcommand the adapter drives is given an absolute path so
+    the result never depends on the server process's cwd (R01 §Adapter
+    contract). This is a real exception, not an `assert` (F14): it must
+    survive `python -O`.
+    """
+    if not path.is_absolute():
+        raise ColgrepError(f"{what}() requires an absolute path, got {path!r}")
+
+
 class ColgrepAdapter:
     """Async wrapper over the colgrep binary. Implemented in leaf `colgrep_adapter`.
 
@@ -91,10 +103,17 @@ class ColgrepAdapter:
         binary: str = "colgrep",
         timeout_s: float = 600.0,
         on_stderr: StderrCallback | None = None,
+        *,
+        env: dict[str, str] | None = None,
     ) -> None:
         self.binary = binary
         self.timeout_s = timeout_s
         self.on_stderr = on_stderr
+        # The child's environment, built once per adapter rather than once per
+        # spawn: the process environment does not change under the server's
+        # feet, and copying it for every `_run` was pure per-call waste.
+        # `NO_COLOR` backs up the `--color never` flag `_run` also passes.
+        self._env: dict[str, str] = {**os.environ, "NO_COLOR": "1"} if env is None else env
         # Set by `_run` after every spawn; for tests only (proving no zombie
         # process survives a `ColgrepTimeout`), never read by production code.
         self._last_proc: asyncio.subprocess.Process | None = None
@@ -106,7 +125,7 @@ class ColgrepAdapter:
         streams progress to a specific tool invocation's `ctx` without
         mutating the shared adapter instance.
         """
-        return ColgrepAdapter(binary=self.binary, timeout_s=self.timeout_s, on_stderr=on_stderr)
+        return ColgrepAdapter(binary=self.binary, timeout_s=self.timeout_s, on_stderr=on_stderr, env=self._env)
 
     def build_search_argv(self, req: SearchRequest) -> list[str]:
         """Pure argv builder for `colgrep search` (no subprocess, no `--color`).
@@ -166,7 +185,6 @@ class ColgrepAdapter:
         flags accept it there (verified against the real binary).
         """
         full_argv = [argv[0], "--color", "never", *argv[1:]] if argv else ["--color", "never"]
-        env = {**os.environ, "NO_COLOR": "1"}
 
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -176,7 +194,7 @@ class ColgrepAdapter:
                 stderr=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.DEVNULL,
                 cwd=str(cwd) if cwd is not None else None,
-                env=env,
+                env=self._env,
             )
         except (FileNotFoundError, PermissionError) as exc:
             raise ColgrepNotFound(self.binary) from exc
@@ -236,8 +254,7 @@ class ColgrepAdapter:
 
     async def search(self, req: SearchRequest) -> list[RawHit]:
         for p in req.paths:
-            if not p.is_absolute():
-                raise ColgrepError(f"search() requires absolute paths, got {p!r}")
+            _require_absolute(p, "search")
 
         argv = self.build_search_argv(req)
         stdout, _stderr, _rc = await self._run(argv, stream_stderr=True)
@@ -259,8 +276,7 @@ class ColgrepAdapter:
         return data
 
     async def status(self, path: Path) -> IndexStatus:
-        if not path.is_absolute():
-            raise ColgrepError(f"status() requires an absolute path, got {path!r}")
+        _require_absolute(path, "status")
         stdout, _stderr, _rc = await self._run(["status", str(path)])
         return parse_status(stdout, str(path))
 
@@ -273,8 +289,7 @@ class ColgrepAdapter:
         return parse_settings(stdout)
 
     async def init(self, path: Path, *, force_cpu: bool = False) -> IndexBuildResult:
-        if not path.is_absolute():
-            raise ColgrepError(f"init() requires an absolute path, got {path!r}")
+        _require_absolute(path, "init")
 
         argv = ["init", "-y", *(["--force-cpu"] if force_cpu else []), str(path)]
         start = time.monotonic()
@@ -283,11 +298,9 @@ class ColgrepAdapter:
 
         # R05 D2: no per-file progress on stderr, just a banner and exactly
         # one summary line (either shape) — take the first one found.
-        summary = next(
-            (s for s in (parse_index_summary(line) for line in stderr.splitlines()) if s is not None),
-            None,
-        )
-        log_tail = stderr.splitlines()[-20:]
+        lines = stderr.splitlines()
+        summary = next((s for s in (parse_index_summary(line) for line in lines) if s is not None), None)
+        log_tail = lines[-20:]
 
         return IndexBuildResult(
             project=summary.root if summary is not None else str(path),
@@ -302,6 +315,5 @@ class ColgrepAdapter:
         )
 
     async def clear(self, path: Path) -> None:
-        if not path.is_absolute():
-            raise ColgrepError(f"clear() requires an absolute path, got {path!r}")
+        _require_absolute(path, "clear")
         await self._run(["clear", str(path)])
