@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from mcp import Client
 from mcp.types import PromptReference, ResourceTemplateReference
@@ -121,3 +123,30 @@ async def test_stats_cache_is_reused_within_ttl(settings_env, monkeypatch):
         await client.complete(PromptReference(name="locate"), {"name": "path", "value": ""})
 
     assert call_count["n"] == 1
+
+
+async def test_completion_cache_refill_is_serialised(settings_env, monkeypatch):
+    """Two completions racing past a stale/empty cache must not both call
+    `stats()` — the second waiter re-checks the TTL once it holds the lock
+    and finds the first waiter's refill already fresh (F10)."""
+    import colgrep_mcp.adapter as adapter_module
+
+    call_count = {"n": 0}
+    real_stats = adapter_module.ColgrepAdapter.stats
+
+    async def slow_stats(self):
+        call_count["n"] += 1
+        await asyncio.sleep(0.05)
+        return await real_stats(self)
+
+    monkeypatch.setattr(adapter_module.ColgrepAdapter, "stats", slow_stats)
+
+    async with Client(build(), raise_exceptions=True) as client:
+        first, second = await asyncio.gather(
+            client.complete(PromptReference(name="explore"), {"name": "path", "value": ""}),
+            client.complete(PromptReference(name="locate"), {"name": "path", "value": ""}),
+        )
+
+    assert call_count["n"] == 1
+    assert set(first.completion.values) == {"/tmp/fake-corpus", "/tmp/other"}
+    assert set(second.completion.values) == {"/tmp/fake-corpus", "/tmp/other"}
