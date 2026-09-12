@@ -1,0 +1,103 @@
+# Publishes colgrep-mcp to PyPI when a release tag is pushed, through PyPI
+# trusted publishing (OIDC) — no token anywhere. The tag is the one `cz bump`
+# writes (`tag_format = "v$version"` in server/pyproject.toml) and pushing it
+# is already the release recipe's deliberate, manual last step (CONTRIBUTING.md
+# §Versioning and release), so the push *is* the publish decision. The
+# trusted publisher registered on PyPI must name exactly this file and the
+# `pypi` environment below (pypi_publication R01 §C3).
+name: publish
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+jobs:
+  build:
+    name: build sdist and wheel
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.guard.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # origin/main is needed for the ancestry check
+      - name: Refuse a tag that is not v<pyproject version> on a commit reachable from main
+        id: guard
+        # PyPI file names are burned forever, so the one way to ship a wrong
+        # version — a tag on the wrong commit or on a branch — must fail here,
+        # before anything is uploaded (R01 §C2).
+        run: |
+          version="$(python3 -c 'import tomllib; print(tomllib.load(open("server/pyproject.toml", "rb"))["project"]["version"])')"
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match server/pyproject.toml version ${version}"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "::error::tag commit ${GITHUB_SHA} is not reachable from main"
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: server/uv.lock
+      - name: Build
+        run: uv build server --out-dir dist
+      - name: Check the distribution metadata (also run on every PR by ci.yml)
+        run: uvx twine check --strict dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: publish to PyPI (trusted publishing)
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/colgrep-mcp/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write # the OIDC token PyPI exchanges for an upload; nothing else
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      # Attestations (PEP 740) are generated and uploaded by default.
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: GitHub release with the CHANGELOG section and the published files
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - name: Extract this version's section of CHANGELOG.md
+        # `cz bump --changelog` writes `## vX.Y.Z (YYYY-MM-DD)` headings
+        # (tests/test_changelog.py pins that shape); the notes are everything
+        # from this tag's heading to the next one.
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          python3 - <<'PY' > notes.md
+          import os, re
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          version = os.environ["VERSION"]
+          match = re.search(rf"^## v{re.escape(version)} \(.*?\)\n(.*?)(?=^## v|\Z)", text, re.M | re.S)
+          if not match:
+              raise SystemExit(f"CHANGELOG.md has no '## v{version} (...)' section")
+          print(match.group(1).strip())
+          PY
+          cat notes.md
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --verify-tag --title "${GITHUB_REF_NAME}" --notes-file notes.md
