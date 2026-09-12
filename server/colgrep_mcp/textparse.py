@@ -1,10 +1,11 @@
 """Pure text parsers for colgrep's non-JSON subcommands (`status`, `--stats`, `settings`,
-init/clear progress lines).
+init/clear progress lines), checked against fixtures captured in R03/R05
+(`tests/fixtures/colgrep/`).
 
-Implemented in leaf `colgrep_adapter` against fixtures captured in R03/R05
-(`tests/fixtures/colgrep/`). Every function here is a pure string -> data
-transform: no subprocess, no I/O, so parsing bugs are isolated from process
-bugs (adapter.py owns the subprocess).
+The only module that owns colgrep's non-JSON text formats: every function
+here is a pure string -> data transform, no subprocess and no I/O, so a
+parsing bug can never be mistaken for a process bug (`adapter.py` owns the
+subprocess).
 """
 
 from __future__ import annotations
