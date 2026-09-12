@@ -37,6 +37,12 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["colgrep_mcp"]
 
+[tool.hatch.build.targets.sdist]
+# The sdist ships the package, its metadata and the lock — never the test
+# tree: fixtures are verbatim colgrep dumps from a maintainer's machine, and
+# one of them reached PyPI in 0.3.0 (pypi_publication R01 follow-up).
+exclude = ["/tests"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
