@@ -17,7 +17,7 @@ The merged result is reviewed for what the tests cannot prove, the surface files
 ```mermaid
 graph TD
     review[Read-Only Review]:::planned
-    surface[Surface: AGENTS.md, CLAUDE.md, CONTRIBUTING.md]:::planned
+    surface[Surface: AGENTS.md, CLAUDE.md, CONTRIBUTING.md]:::done
     close[Close]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -30,7 +30,7 @@ graph TD
 | Node | Type | Status |
 |:-----|:-----|:-------|
 | `review.md` | 📄 Leaf Task | ⬜ Planned |
-| `surface.md` | 📄 Leaf Task | ⬜ Planned |
+| `surface.md` | 📄 Leaf Task | ✅ Done |
 | `close/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
