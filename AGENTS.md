@@ -25,6 +25,22 @@ plugin; all three launch the same server with `uv run`.
 | `__roadmap__/<campaign>/` | BFS roadmaps; status tables are written only by `dirtree-rdm` (`managing-roadmaps` skill) | leads |
 | `.github/workflows/ci.yml` | ruff, pytest on three OSes, `cz check` on pull requests | when gates change |
 
+## Report ids in docstrings
+
+Docstrings cite report ids as pointers to measured evidence, not narration.
+The same `R01` label is reused per campaign; the module docstring's topic
+(what it's citing evidence *for*) disambiguates which one.
+
+| Id | Report |
+|:--|:--|
+| `R01` (colgrep_mcp) | `__reports__/colgrep_mcp/00-architecture_v0.md` |
+| `R02` | `__reports__/colgrep_mcp/01-findings_mcp_feature_matrix_v0.md` |
+| `R03` | `__reports__/colgrep_mcp/01-findings_colgrep_behaviour_v0.md` |
+| `R05` (sections `D1`–`D11`, `M1`–`M5`) | `__reports__/colgrep_mcp/02-architecture_v1.md` |
+| `F1`–`F14` | `__reports__/colgrep_mcp/02-observation_code_review_v0.md` |
+| `R01` (repo_health) | `__reports__/repo_health/00-architecture_v0.md` |
+| `R01` (consistency) | `__reports__/consistency/00-architecture_v0.md` |
+
 ## Gate commands
 
 All Python commands run from `server/`. Green is the norm; a red gate blocks a merge.
@@ -54,6 +70,19 @@ end-to-end driver (never against this repository, see Traps).
   on `main`. This rewrites pyproject, `uv.lock`, the three manifests and `CHANGELOG.md`,
   commits `release(colgrep-mcp): v<x.y.z>` and tags `v<x.y.z>`. Never edit a
   version number by hand.
+- Tools are module-level `async def <name>(..., *, ctx: Context) -> CallToolResult`,
+  registered onto the server via `server.register_tool(mcp, handler, *, title,
+  annotations)` — the one way to register a tool, since it dedents the
+  handler's docstring into the description the client sees. Read-only tools
+  pass `annotations=server.READ_ONLY_TOOL`.
+- Paths resolve through `paths.resolve_target_paths(ctx, paths)` only; no
+  tool calls `client_roots`/`resolve_paths` directly or re-implements the
+  env → roots → cwd fallback.
+- An adapter call is wrapped in `errors.translate_adapter_errors(path=...)`
+  only; no tool catches `Colgrep*` and builds a `ToolError` by hand.
+- A client notification goes through `logging_utils.safe_log` / `safe_progress`
+  / `safe_notify_resource_updated` only; no tool wraps a notification in its
+  own bare `try/except Exception: pass`.
 
 ## Coordinating a campaign
 
@@ -92,8 +121,8 @@ end-to-end driver (never against this repository, see Traps).
 
 ## Where to read more
 
-- Architecture and measured behaviour: `__reports__/colgrep_mcp/` (0.1.0) and
-  `__reports__/repo_health/` (scaffold).
+- Architecture and measured behaviour: `__reports__/colgrep_mcp/` (0.1.0),
+  `__reports__/repo_health/` (scaffold) and `__reports__/consistency/` (one idiom per concern).
 - The agent-facing guide to the tools themselves: `server/colgrep_mcp/guide.md`.
 - Retrospectives with next-cycle items: the latest `*knowledge_transfer*` report
   in each `__reports__/` topic.

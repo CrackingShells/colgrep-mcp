@@ -1,13 +1,12 @@
 """Tests for `colgrep_mcp.errors`: the coded `[CODE] ... Next: ...` shape every
 deliberately-raised `ToolError`/`ResourceError` and every `SearchResult` note
-must carry (roadmap leaf `error_taxonomy`; R01 §Error model; PI request
-2026-09-12, mid-run: "standardized tool call error code that can point the
-agents toward different usage patterns").
+must carry (R01 §Error model).
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from mcp import Client
@@ -320,3 +319,32 @@ async def test_errors_resource_lists_every_code(settings_env):
         assert HINTS[code] in text
         codes_in_text.add(code)
     assert codes_in_text == set(Code)
+
+
+# --- translate_adapter_errors: the one wrapper tools put around adapter calls --
+
+
+async def test_translate_adapter_errors_catches_the_base_class():
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from colgrep_mcp.adapter import ColgrepError
+    from colgrep_mcp.errors import translate_adapter_errors
+
+    # A bare ColgrepError (the adapter's own argument guards) must come out
+    # coded, not as an uncoded generic error.
+    with pytest.raises(ToolError) as e:
+        async with translate_adapter_errors():
+            raise ColgrepError("query must not start with '-'")
+    assert str(e.value).startswith(f"[{Code.COLGREP_FAILED}]")
+    assert str(e.value).endswith(f"Next: {HINTS[Code.COLGREP_FAILED]}")
+
+    with pytest.raises(ToolError) as e:
+        async with translate_adapter_errors(path=Path("/proj")):
+            raise ColgrepTimeout("colgrep timed out after 1s")
+    # `Path("/proj")` renders as `\proj` on Windows: compare against its own str().
+    assert str(e.value).startswith(f"[{Code.COLGREP_TIMEOUT}]") and f"({Path('/proj')})" in str(e.value)
+
+    # Non-adapter exceptions pass through untouched.
+    with pytest.raises(ValueError):
+        async with translate_adapter_errors():
+            raise ValueError("unrelated")

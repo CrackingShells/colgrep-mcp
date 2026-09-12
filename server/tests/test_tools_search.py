@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import builtins
 import json
 import threading
 from pathlib import Path
@@ -13,6 +14,7 @@ import pytest
 from fixture_paths import FAKE_CORPUS
 from mcp import Client
 
+from colgrep_mcp import tools_search
 from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.locks import project_lock
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
@@ -268,6 +270,27 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
     assert [f["file"] for f in files][0] == config_py
 
 
+async def test_find_files_does_not_read_hit_files(settings_env, monkeypatch):
+    """R01 §C5: `find_files` never exposes `line`/`hit_id`, so `_do_search`
+    must call it with `locate=False` and skip `_fill_file_cache` entirely — that
+    used to cost up to 300 file reads (plus a `locate_unit` pass each) per call
+    for output nothing downstream reads."""
+    calls: list[None] = []
+    real_fill_file_cache = tools_search._fill_file_cache
+
+    async def spy(*args: object, **kwargs: object) -> None:
+        calls.append(None)
+        return await real_fill_file_cache(*args, **kwargs)
+
+    monkeypatch.setattr(tools_search, "_fill_file_cache", spy)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("find_files", {"query": "config parsing"})
+
+    assert r.is_error is False
+    assert calls == []
+
+
 # --- off-loop file I/O (F11) --------------------------------------------
 
 
@@ -281,6 +304,19 @@ def _spy_on_read_text(monkeypatch) -> list[int]:
         return real_read_text(self, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", spy)
+    return thread_ids
+
+
+def _spy_on_open(monkeypatch) -> list[int]:
+    """Record the thread identity the builtin `open` (what `_read_span` uses) runs on."""
+    thread_ids: list[int] = []
+    real_open = builtins.open
+
+    def spy(*args: object, **kwargs: object):
+        thread_ids.append(threading.get_ident())
+        return real_open(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", spy)
     return thread_ids
 
 
@@ -356,13 +392,14 @@ async def test_fill_file_cache_reads_each_distinct_file_at_most_once(tmp_path, m
 
 
 async def test_expand_reads_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
-    """F11, mirrored for `expand`."""
+    """F11, mirrored for `expand`. `expand` reads its span via `_read_span`'s
+    builtin `open`, not `Path.read_text`, so the spy target follows."""
     target = tmp_path / "code.py"
     target.write_text("x = 1\ny = 2\ndef f():\n    return 1\nz = 3\n")
     hit_id = f"{target}:3-4"
 
     main_thread_id = threading.get_ident()
-    read_thread_ids = _spy_on_read_text(monkeypatch)
+    read_thread_ids = _spy_on_open(monkeypatch)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("expand", {"hit_ids": [hit_id]})

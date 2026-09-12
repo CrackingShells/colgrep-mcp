@@ -1,4 +1,4 @@
-"""Tests for `colgrep_mcp.resources` (roadmap leaf `resources_prompts`, step 1)."""
+"""Tests for `colgrep_mcp.resources`."""
 
 from __future__ import annotations
 
@@ -51,6 +51,29 @@ async def test_read_guide(settings_env):
         text = result.contents[0].text
         assert "colgrep" in text.lower()
         assert result.contents[0].mime_type == "text/markdown"
+
+
+async def test_guide_is_read_once(settings_env, monkeypatch):
+    """`guide()` is `functools.cache`d: the packaged file is read once per
+    process no matter how many times `colgrep://guide` is requested."""
+    from colgrep_mcp import resources as resources_module
+
+    resources_module._guide_text.cache_clear()
+    calls = {"n": 0}
+    real_read_text = Path.read_text
+
+    def counting_read_text(self, *args, **kwargs):
+        calls["n"] += 1
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", counting_read_text)
+
+    async with Client(build(), raise_exceptions=True) as client:
+        first = await client.read_resource("colgrep://guide")
+        second = await client.read_resource("colgrep://guide")
+
+    assert first.contents[0].text == second.contents[0].text
+    assert calls["n"] == 1
 
 
 async def test_read_settings(settings_env):
