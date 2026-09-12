@@ -12,31 +12,23 @@ from __future__ import annotations
 import asyncio
 import re
 import time
-import warnings
 from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Annotated
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
-from mcp.types import CallToolResult, TextContent, ToolAnnotations
+from mcp.types import CallToolResult, TextContent
 from pydantic import Field
 
-from .adapter import (
-    ColgrepFailed,
-    ColgrepNotFound,
-    ColgrepParseError,
-    ColgrepTimeout,
-    RawHit,
-    SearchRequest,
-)
-from .errors import Code, from_adapter_error, note, tool_error
+from .adapter import RawHit, SearchRequest
+from .errors import Code, note, tool_error, translate_adapter_errors
 from .locate import locate_unit
 from .locks import project_lock
 from .logging_utils import safe_log
 from .models import ExpandedUnit, ExpandResult, FileHit, FileResult, SearchHit, SearchResult
-from .paths import resolve_paths
-from .server import get_adapter, get_settings
+from .paths import resolve_target_paths
+from .server import READ_ONLY_TOOL, get_adapter, get_settings
 
 #: Strict `hit_id` shape (R01 §hit_id invariant): "<absolute file>:<line>-<end_line>".
 _HIT_ID_RE = re.compile(r"^(.+):(\d+)-(\d+)$")
@@ -295,28 +287,6 @@ def render_files_text(result: FileResult, budget: int) -> tuple[str, bool]:
     return text, capped
 
 
-async def _client_roots(ctx: Context) -> list[Path] | None:
-    """Best-effort client `roots` (R01 §Path resolution invariant, R05 M1).
-
-    `roots/list` is deprecated as of the 2026-07-28 protocol revision and may
-    raise `NoBackChannelError` (or just a deprecation warning) on a client
-    with no back-channel; either way this degrades to `None` rather than
-    fail the tool call, leaving `resolve_paths` to fall through to cwd.
-    """
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            result = await ctx.session.list_roots()
-    except Exception:
-        return None
-    if not result.roots:
-        return None
-    try:
-        return [Path(root.uri.path) for root in result.roots if root.uri.path]
-    except Exception:
-        return None
-
-
 async def _do_search(
     ctx: Context,
     *,
@@ -336,16 +306,14 @@ async def _do_search(
     skip_index_update: bool,
     snippet_lines: int,
     include_code: bool,
-) -> tuple[SearchResult, list[SearchHit]]:
+) -> SearchResult:
     """Shared body of `search` and `find_files`: resolve, lock, run, convert.
 
-    Raises `ToolError` (via `resolve_paths` for a bad path, via
-    `_translate_error` for an adapter failure); never a bare adapter
+    Raises `ToolError` (via `resolve_target_paths` for a bad path, via
+    `translate_adapter_errors` for an adapter failure); never a bare adapter
     exception.
     """
-    settings = get_settings(ctx)
-    roots = await _client_roots(ctx)
-    resolved = resolve_paths(paths, settings, roots)
+    resolved = await resolve_target_paths(ctx, paths)
 
     stderr_lines: list[str] = []
 
@@ -382,10 +350,8 @@ async def _do_search(
     async with AsyncExitStack() as stack:
         for p in distinct_paths:
             await stack.enter_async_context(project_lock(p))
-        try:
+        async with translate_adapter_errors(path=resolved[0]):
             raw_hits = await adapter.search(req)
-        except (ColgrepNotFound, ColgrepFailed, ColgrepTimeout, ColgrepParseError) as exc:
-            raise from_adapter_error(exc, path=resolved[0]) from exc
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
     # F13: `resolved[0]` is the "first search path" a relative `unit.file`
@@ -421,64 +387,54 @@ async def _do_search(
         index_updated=any("Building index" in line for line in stderr_lines),  # R05 D7
         notes=notes,
     )
-    return result, hits
+    return result
 
 
-def register(mcp: MCPServer) -> None:
-    """Attach `search`, `find_files` and `expand` to the server."""
-
-    @mcp.tool(
-        title="Search code",
-        annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
-    )
-    async def search(
-        ctx: Context,
-        query: Annotated[str, Field(description="Natural-language description of the behaviour you are looking for.")],
-        paths: Annotated[
-            list[str] | None, Field(description="Files/directories to search (default: the project root).")
-        ] = None,
-        pattern: Annotated[
-            str | None,
-            Field(description="Regex pre-filter (hybrid mode): only units whose text matches are ranked."),
-        ] = None,
-        fixed_string: Annotated[bool, Field(description="Treat `pattern` as a literal string, not a regex.")] = False,
-        whole_word: Annotated[bool, Field(description="Match `pattern` on whole words only.")] = False,
-        case_sensitive: Annotated[
-            bool, Field(description="Match `pattern` case-sensitively (default: case-insensitive).")
-        ] = False,
-        include: Annotated[
-            list[str] | None, Field(description="Only search files matching these glob patterns, e.g. '*.py'.")
-        ] = None,
-        exclude: Annotated[
-            list[str] | None, Field(description="Exclude files matching these glob patterns.")
-        ] = None,
-        exclude_dir: Annotated[
-            list[str] | None, Field(description="Exclude directories by name or glob, e.g. 'node_modules'.")
-        ] = None,
-        limit: Annotated[
-            int | None,
-            Field(
-                ge=1,
-                description="Max hits; pass null for exhaustive (exhaustive only works with `pattern` set).",
-            ),
-        ] = 15,
-        code_only: Annotated[bool, Field(description="Only search code files, skipping docs/config.")] = False,
-        semantic_only: Annotated[bool, Field(description="Disable keyword matching; pure semantic ranking.")] = False,
-        alpha: Annotated[
-            float | None,
-            Field(ge=0.0, le=1.0, description="Hybrid balance from 0.0 (keyword) to 1.0 (semantic); default 0.6."),
-        ] = None,
-        snippet_lines: Annotated[
-            int, Field(ge=0, description="Lines of code shown per hit in the text listing (default 6).")
-        ] = 6,
-        include_code: Annotated[
-            bool, Field(description="Include each hit's full source in structured_content.")
-        ] = False,
-        skip_index_update: Annotated[
-            bool, Field(description="Skip colgrep's automatic index refresh before searching.")
-        ] = False,
-    ) -> CallToolResult:
-        """Ranked semantic + hybrid search over code units (functions, classes, docs).
+async def search(
+    query: Annotated[str, Field(description="Natural-language description of the behaviour you are looking for.")],
+    paths: Annotated[
+        list[str] | None, Field(description="Files/directories to search (default: the project root).")
+    ] = None,
+    pattern: Annotated[
+        str | None,
+        Field(description="Regex pre-filter (hybrid mode): only units whose text matches are ranked."),
+    ] = None,
+    fixed_string: Annotated[bool, Field(description="Treat `pattern` as a literal string, not a regex.")] = False,
+    whole_word: Annotated[bool, Field(description="Match `pattern` on whole words only.")] = False,
+    case_sensitive: Annotated[
+        bool, Field(description="Match `pattern` case-sensitively (default: case-insensitive).")
+    ] = False,
+    include: Annotated[
+        list[str] | None, Field(description="Only search files matching these glob patterns, e.g. '*.py'.")
+    ] = None,
+    exclude: Annotated[list[str] | None, Field(description="Exclude files matching these glob patterns.")] = None,
+    exclude_dir: Annotated[
+        list[str] | None, Field(description="Exclude directories by name or glob, e.g. 'node_modules'.")
+    ] = None,
+    limit: Annotated[
+        int | None,
+        Field(
+            ge=1,
+            description="Max hits; pass null for exhaustive (exhaustive only works with `pattern` set).",
+        ),
+    ] = 15,
+    code_only: Annotated[bool, Field(description="Only search code files, skipping docs/config.")] = False,
+    semantic_only: Annotated[bool, Field(description="Disable keyword matching; pure semantic ranking.")] = False,
+    alpha: Annotated[
+        float | None,
+        Field(ge=0.0, le=1.0, description="Hybrid balance from 0.0 (keyword) to 1.0 (semantic); default 0.6."),
+    ] = None,
+    snippet_lines: Annotated[
+        int, Field(ge=0, description="Lines of code shown per hit in the text listing (default 6).")
+    ] = 6,
+    include_code: Annotated[bool, Field(description="Include each hit's full source in structured_content.")] = False,
+    skip_index_update: Annotated[
+        bool, Field(description="Skip colgrep's automatic index refresh before searching.")
+    ] = False,
+    *,
+    ctx: Context,
+) -> CallToolResult:
+    """Ranked semantic + hybrid search over code units (functions, classes, docs).
 
         Prefer this over shell grep for any question about what, where or how
         code does something. Pass `pattern` (a regex) to narrow via hybrid
@@ -486,211 +442,211 @@ def register(mcp: MCPServer) -> None:
         for an exhaustive listing. Each hit carries a `hit_id` — pass it to
         `expand` to read the full source instead of opening the whole file.
         """
-        settings = get_settings(ctx)
-        result, _hits = await _do_search(
+    settings = get_settings(ctx)
+    result = await _do_search(
+        ctx,
+        query=query,
+        paths=paths,
+        pattern=pattern,
+        fixed_string=fixed_string,
+        whole_word=whole_word,
+        case_sensitive=case_sensitive,
+        include=include,
+        exclude=exclude,
+        exclude_dir=exclude_dir,
+        limit=limit,
+        code_only=code_only,
+        semantic_only=semantic_only,
+        alpha=alpha,
+        skip_index_update=skip_index_update,
+        snippet_lines=snippet_lines,
+        include_code=include_code,
+    )
+
+    text, capped = render_search_text(result, settings.text_budget)
+    if capped:
+        result.truncated = True
+        result.notes.append(note(Code.TEXT_TRUNCATED, "text listing was capped by the token budget"))
+        await safe_log(
             ctx,
-            query=query,
-            paths=paths,
-            pattern=pattern,
-            fixed_string=fixed_string,
-            whole_word=whole_word,
-            case_sensitive=case_sensitive,
-            include=include,
-            exclude=exclude,
-            exclude_dir=exclude_dir,
-            limit=limit,
-            code_only=code_only,
-            semantic_only=semantic_only,
-            alpha=alpha,
-            skip_index_update=skip_index_update,
-            snippet_lines=snippet_lines,
-            include_code=include_code,
+            "warning",
+            f"search text truncated to {settings.text_budget} chars; see structured_content for all hits",
         )
 
-        text, capped = render_search_text(result, settings.text_budget)
-        if capped:
-            result.truncated = True
-            result.notes.append(note(Code.TEXT_TRUNCATED, "text listing was capped by the token budget"))
-            await safe_log(
-                ctx,
-                "warning",
-                f"search text truncated to {settings.text_budget} chars; see structured_content for all hits",
-            )
+    return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=result.model_dump())
 
-        return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=result.model_dump())
 
-    @mcp.tool(
-        title="Find files",
-        annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
-    )
-    async def find_files(
-        ctx: Context,
-        query: Annotated[str, Field(description="Natural-language description of the behaviour you are looking for.")],
-        paths: Annotated[
-            list[str] | None, Field(description="Files/directories to search (default: the project root).")
-        ] = None,
-        pattern: Annotated[
-            str | None,
-            Field(description="Regex pre-filter (hybrid mode): only units whose text matches are ranked."),
-        ] = None,
-        include: Annotated[
-            list[str] | None, Field(description="Only search files matching these glob patterns, e.g. '*.py'.")
-        ] = None,
-        exclude: Annotated[
-            list[str] | None, Field(description="Exclude files matching these glob patterns.")
-        ] = None,
-        exclude_dir: Annotated[
-            list[str] | None, Field(description="Exclude directories by name or glob, e.g. 'node_modules'.")
-        ] = None,
-        limit: Annotated[
-            int | None,
-            Field(
-                ge=1,
-                description="Max files; pass null for exhaustive (exhaustive only works with `pattern` set).",
-            ),
-        ] = 15,
-    ) -> CallToolResult:
-        """Which files are about a topic — ranked, deduplicated file list instead of individual hits.
+async def find_files(
+    query: Annotated[str, Field(description="Natural-language description of the behaviour you are looking for.")],
+    paths: Annotated[
+        list[str] | None, Field(description="Files/directories to search (default: the project root).")
+    ] = None,
+    pattern: Annotated[
+        str | None,
+        Field(description="Regex pre-filter (hybrid mode): only units whose text matches are ranked."),
+    ] = None,
+    include: Annotated[
+        list[str] | None, Field(description="Only search files matching these glob patterns, e.g. '*.py'.")
+    ] = None,
+    exclude: Annotated[list[str] | None, Field(description="Exclude files matching these glob patterns.")] = None,
+    exclude_dir: Annotated[
+        list[str] | None, Field(description="Exclude directories by name or glob, e.g. 'node_modules'.")
+    ] = None,
+    limit: Annotated[
+        int | None,
+        Field(
+            ge=1,
+            description="Max files; pass null for exhaustive (exhaustive only works with `pattern` set).",
+        ),
+    ] = 15,
+    *,
+    ctx: Context,
+) -> CallToolResult:
+    """Which files are about a topic — ranked, deduplicated file list instead of individual hits.
 
         Use before an edit to see everywhere a concept lives, or when a list
         of files is more useful than code snippets. `query` drives ranking;
         add `pattern` to narrow via hybrid search.
         """
-        settings = get_settings(ctx)
-        hit_limit = min(limit * 3, 300) if limit is not None else None
-        result, hits = await _do_search(
-            ctx,
-            query=query,
-            paths=paths,
-            pattern=pattern,
-            fixed_string=False,
-            whole_word=False,
-            case_sensitive=False,
-            include=include,
-            exclude=exclude,
-            exclude_dir=exclude_dir,
-            limit=hit_limit,
-            code_only=False,
-            semantic_only=False,
-            alpha=None,
-            skip_index_update=False,
-            snippet_lines=0,
-            include_code=False,
-        )
-
-        by_file: dict[str, FileHit] = {}
-        for hit in hits:
-            existing = by_file.get(hit.file)
-            if existing is None:
-                # Hits arrive best-score-first, so the first hit for a file sets its best_score.
-                by_file[hit.file] = FileHit(file=hit.file, best_score=hit.score, hits=1, top_units=[hit.name])
-            else:
-                existing.hits += 1
-                if len(existing.top_units) < 5:
-                    existing.top_units.append(hit.name)
-
-        all_files = list(by_file.values())
-        files = all_files[:limit] if limit is not None else all_files
-        was_limited = limit is not None and len(all_files) > limit
-
-        file_result = FileResult(
-            query=query,
-            pattern=pattern,
-            paths=result.paths,
-            files=files,
-            truncated=was_limited,
-            elapsed_ms=result.elapsed_ms,
-        )
-
-        text, capped = render_files_text(file_result, settings.text_budget)
-        if capped:
-            file_result.truncated = True
-            await safe_log(
-                ctx,
-                "warning",
-                f"find_files text truncated to {settings.text_budget} chars; see structured_content for all files",
-            )
-
-        return CallToolResult(
-            content=[TextContent(type="text", text=text)],
-            structured_content=file_result.model_dump(),
-        )
-
-    @mcp.tool(
-        title="Expand hits",
-        annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
+    settings = get_settings(ctx)
+    hit_limit = min(limit * 3, 300) if limit is not None else None
+    result = await _do_search(
+        ctx,
+        query=query,
+        paths=paths,
+        pattern=pattern,
+        fixed_string=False,
+        whole_word=False,
+        case_sensitive=False,
+        include=include,
+        exclude=exclude,
+        exclude_dir=exclude_dir,
+        limit=hit_limit,
+        code_only=False,
+        semantic_only=False,
+        alpha=None,
+        skip_index_update=False,
+        snippet_lines=0,
+        include_code=False,
     )
-    async def expand(
-        ctx: Context,
-        hit_ids: Annotated[
-            list[str], Field(description="hit_id values from a search/find_files result, e.g. '/repo/a.py:10-42'.")
-        ],
-        max_lines: Annotated[
-            int, Field(ge=1, description="Cap on lines of source read per hit (default 200).")
-        ] = 200,
-    ) -> CallToolResult:
-        """Read the full source of hits already returned by `search`/`find_files`.
+    hits = result.hits
+
+    by_file: dict[str, FileHit] = {}
+    for hit in hits:
+        existing = by_file.get(hit.file)
+        if existing is None:
+            # Hits arrive best-score-first, so the first hit for a file sets its best_score.
+            by_file[hit.file] = FileHit(file=hit.file, best_score=hit.score, hits=1, top_units=[hit.name])
+        else:
+            existing.hits += 1
+            if len(existing.top_units) < 5:
+                existing.top_units.append(hit.name)
+
+    all_files = list(by_file.values())
+    files = all_files[:limit] if limit is not None else all_files
+    was_limited = limit is not None and len(all_files) > limit
+
+    file_result = FileResult(
+        query=query,
+        pattern=pattern,
+        paths=result.paths,
+        files=files,
+        truncated=was_limited,
+        elapsed_ms=result.elapsed_ms,
+    )
+
+    text, capped = render_files_text(file_result, settings.text_budget)
+    if capped:
+        file_result.truncated = True
+        await safe_log(
+            ctx,
+            "warning",
+            f"find_files text truncated to {settings.text_budget} chars; see structured_content for all files",
+        )
+
+    return CallToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=file_result.model_dump(),
+    )
+
+
+async def expand(
+    hit_ids: Annotated[
+        list[str], Field(description="hit_id values from a search/find_files result, e.g. '/repo/a.py:10-42'.")
+    ],
+    max_lines: Annotated[int, Field(ge=1, description="Cap on lines of source read per hit (default 200).")] = 200,
+    *,
+    ctx: Context,
+) -> CallToolResult:
+    """Read the full source of hits already returned by `search`/`find_files`.
 
         Pass their `hit_id`s verbatim — no need to re-search. Each is read
         straight off disk at its located `[line, end_line]` span, so use this
         instead of opening a whole file to inspect the few hits that matter.
         """
-        # No adapter/lock involved: expand reads the filesystem directly, so
-        # `ctx` (required for MCPServer's context injection) goes unused here.
-        units: list[ExpandedUnit] = []
-        for hit_id in hit_ids:
-            match = _HIT_ID_RE.match(hit_id)
-            if not match:
-                units.append(
-                    ExpandedUnit(
-                        hit_id=hit_id,
-                        file="",
-                        line=0,
-                        end_line=0,
-                        error=str(tool_error(Code.BAD_HIT_ID, f"malformed hit_id: {hit_id!r}")),
-                    )
-                )
-                continue
-
-            file, line_s, end_s = match.group(1), match.group(2), match.group(3)
-            line, end_line = int(line_s), int(end_s)
-            try:
-                # Off the event loop (F11): a hit's file can be arbitrarily
-                # large, and this handler otherwise never awaits.
-                text = await asyncio.to_thread(Path(file).read_text, errors="replace")
-            except OSError as exc:
-                units.append(
-                    ExpandedUnit(
-                        hit_id=hit_id, file=file, line=line, end_line=end_line, error=f"could not read {file}: {exc}"
-                    )
-                )
-                continue
-
-            lines = text.splitlines()
-            start_idx = max(line - 1, 0)
-            end_idx = min(end_line, len(lines))
-            selected = lines[start_idx:end_idx]
-            was_truncated = len(selected) > max_lines
-            if was_truncated:
-                selected = selected[:max_lines]
-
+    # No adapter/lock involved: expand reads the filesystem directly, so
+    # `ctx` (required for MCPServer's context injection) goes unused here.
+    units: list[ExpandedUnit] = []
+    for hit_id in hit_ids:
+        match = _HIT_ID_RE.match(hit_id)
+        if not match:
             units.append(
                 ExpandedUnit(
                     hit_id=hit_id,
-                    file=file,
-                    line=line,
-                    end_line=end_line,
-                    code="\n".join(selected),
-                    truncated=was_truncated,
+                    file="",
+                    line=0,
+                    end_line=0,
+                    error=str(tool_error(Code.BAD_HIT_ID, f"malformed hit_id: {hit_id!r}")),
                 )
             )
+            continue
 
-        def _fence(unit: ExpandedUnit) -> str:
-            if unit.error:
-                return f"```{unit.hit_id}\nerror: {unit.error}\n```"
-            return f"```{unit.hit_id}\n{unit.code or ''}\n```"
+        file, line_s, end_s = match.group(1), match.group(2), match.group(3)
+        line, end_line = int(line_s), int(end_s)
+        try:
+            # Off the event loop (F11): a hit's file can be arbitrarily
+            # large, and this handler otherwise never awaits.
+            text = await asyncio.to_thread(Path(file).read_text, errors="replace")
+        except OSError as exc:
+            units.append(
+                ExpandedUnit(
+                    hit_id=hit_id, file=file, line=line, end_line=end_line, error=f"could not read {file}: {exc}"
+                )
+            )
+            continue
 
-        result = ExpandResult(units=units)
-        text = "\n\n".join(_fence(unit) for unit in units)
+        lines = text.splitlines()
+        start_idx = max(line - 1, 0)
+        end_idx = min(end_line, len(lines))
+        selected = lines[start_idx:end_idx]
+        was_truncated = len(selected) > max_lines
+        if was_truncated:
+            selected = selected[:max_lines]
 
-        return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=result.model_dump())
+        units.append(
+            ExpandedUnit(
+                hit_id=hit_id,
+                file=file,
+                line=line,
+                end_line=end_line,
+                code="\n".join(selected),
+                truncated=was_truncated,
+            )
+        )
+
+    def _fence(unit: ExpandedUnit) -> str:
+        if unit.error:
+            return f"```{unit.hit_id}\nerror: {unit.error}\n```"
+        return f"```{unit.hit_id}\n{unit.code or ''}\n```"
+
+    result = ExpandResult(units=units)
+    text = "\n\n".join(_fence(unit) for unit in units)
+
+    return CallToolResult(content=[TextContent(type="text", text=text)], structured_content=result.model_dump())
+
+
+def register(mcp: MCPServer) -> None:
+    """Attach `search`, `find_files` and `expand` to the server."""
+    mcp.tool(title="Search code", annotations=READ_ONLY_TOOL)(search)
+    mcp.tool(title="Find files", annotations=READ_ONLY_TOOL)(find_files)
+    mcp.tool(title="Expand hits", annotations=READ_ONLY_TOOL)(expand)
