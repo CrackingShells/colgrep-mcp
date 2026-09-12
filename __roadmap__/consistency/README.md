@@ -37,7 +37,7 @@ graph TD
     search_tools[Search Tools: One Style, One Renderer, No Wasted Reads]:::inprogress
     index_tools[Index Tools: Shared Resolver, Errors and Notifications]:::inprogress
     context_free_handlers[Resources and Prompts: Share the Lifespan Adapter]:::inprogress
-    adapter_hygiene[Adapter and Locks: Per-Spawn Waste]:::inprogress
+    adapter_hygiene[Adapter and Locks: Per-Spawn Waste]:::done
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -52,7 +52,7 @@ graph TD
 | `search_tools.md` | 📄 Leaf Task | 🔄 In Progress |
 | `index_tools.md` | 📄 Leaf Task | 🔄 In Progress |
 | `context_free_handlers.md` | 📄 Leaf Task | 🔄 In Progress |
-| `adapter_hygiene.md` | 📄 Leaf Task | 🔄 In Progress |
+| `adapter_hygiene.md` | 📄 Leaf Task | ✅ Done |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
@@ -62,3 +62,4 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `adapter_hygiene.md` | `task/adapter_hygiene` | 1 | lead-implemented; 200 passed; merged 16:12 |
