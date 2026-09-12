@@ -34,10 +34,10 @@ One idiom per concern across `server/colgrep_mcp/` — tool definition, path res
 ## Status
 ```mermaid
 graph TD
-    search_tools[Search Tools: One Style, One Renderer, No Wasted Reads]:::planned
-    index_tools[Index Tools: Shared Resolver, Errors and Notifications]:::planned
-    context_free_handlers[Resources and Prompts: Share the Lifespan Adapter]:::planned
-    adapter_hygiene[Adapter and Locks: Per-Spawn Waste]:::planned
+    search_tools[Search Tools: One Style, One Renderer, No Wasted Reads]:::inprogress
+    index_tools[Index Tools: Shared Resolver, Errors and Notifications]:::inprogress
+    context_free_handlers[Resources and Prompts: Share the Lifespan Adapter]:::inprogress
+    adapter_hygiene[Adapter and Locks: Per-Spawn Waste]:::inprogress
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -49,10 +49,10 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `search_tools.md` | 📄 Leaf Task | ⬜ Planned |
-| `index_tools.md` | 📄 Leaf Task | ⬜ Planned |
-| `context_free_handlers.md` | 📄 Leaf Task | ⬜ Planned |
-| `adapter_hygiene.md` | 📄 Leaf Task | ⬜ Planned |
+| `search_tools.md` | 📄 Leaf Task | 🔄 In Progress |
+| `index_tools.md` | 📄 Leaf Task | 🔄 In Progress |
+| `context_free_handlers.md` | 📄 Leaf Task | 🔄 In Progress |
+| `adapter_hygiene.md` | 📄 Leaf Task | 🔄 In Progress |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
