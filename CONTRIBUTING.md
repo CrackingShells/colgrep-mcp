@@ -54,8 +54,8 @@ tables — the tables are the enforcement, this prose is only a description of t
 `cz` command from `server/`, same as every other tool in this repo.
 
 `cz bump` (run from `server/`) is the only thing that rewrites a version: it bumps
-`pyproject.toml`, the three plugin manifests (`plugin.json`, `.claude-plugin/plugin.json`,
-`.codex-plugin/plugin.json`, via `version_files`), appends to `../CHANGELOG.md` under the
+`pyproject.toml`, `uv.lock` (re-locked by a `pre_bump_hooks` entry), the three plugin manifests
+(`plugin.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, via `version_files`), appends to `../CHANGELOG.md` under the
 matching *Keep a Changelog* heading (`feat`→Added, `fix`→Fixed, `perf`→Changed), and tags
 `v<version>`. It writes its own `release(colgrep-mcp): v<new_version>` commit — do not author
 that commit by hand.

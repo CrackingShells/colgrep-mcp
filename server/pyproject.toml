@@ -48,7 +48,16 @@ version_files = [
     "../plugin.json:\"version\"",
     "../.claude-plugin/plugin.json:\"version\"",
     "../.codex-plugin/plugin.json:\"version\"",
+    # uv.lock records this project's own version too. The pattern below never
+    # contains a version string, so commitizen rewrites nothing here, but it
+    # stages every listed file after the pre-bump hook has re-locked, which is
+    # what puts the refreshed lock into the release commit.
+    "uv.lock:^name = \"colgrep-mcp\"$",
 ]
+pre_bump_hooks = ["uv lock"]
+# commitizen's defaults, plus GitHub's machine-written root commit that joined
+# this history when the repository was created on github.com (2026-09-12).
+allowed_prefixes = ["Merge", "Revert", "Pull request", "fixup!", "squash!", "Initial commit"]
 
 [tool.commitizen.customize]
 schema = "type(scope): description  (scope mandatory; subject <= 100 chars, lowercase start, no trailing period)"

@@ -51,7 +51,7 @@ end-to-end driver (never against this repository, see Traps).
   leaf; rebase onto the target, re-run the gates, merge with `--no-ff`.
 - One roadmap step = one commit; the step's `**Commit**` field is the subject.
 - Releases: `cd server && uv run cz bump --changelog && uv run pytest`,
-  on `main`. This rewrites pyproject, the three manifests and `CHANGELOG.md`,
+  on `main`. This rewrites pyproject, `uv.lock`, the three manifests and `CHANGELOG.md`,
   commits `release(colgrep-mcp): v<x.y.z>` and tags `v<x.y.z>`. Never edit a
   version number by hand.
 
