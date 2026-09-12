@@ -36,3 +36,11 @@ def test_manifests_match_pyproject():
     for relpath in ("plugin.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
         manifest = json.loads((REPO_ROOT / relpath).read_text())
         assert manifest["version"] == version, f"{relpath} version mismatch"
+
+
+def test_uv_lock_records_the_pyproject_version():
+    """`cz bump` re-locks via `pre_bump_hooks` and stages uv.lock; a mismatch means a bump was done by hand."""
+    lock = tomllib.loads((SERVER_ROOT / "uv.lock").read_text())
+    ours = [pkg for pkg in lock["package"] if pkg["name"] == "colgrep-mcp"]
+    assert len(ours) == 1
+    assert ours[0]["version"] == _pyproject_version()
