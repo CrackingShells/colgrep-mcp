@@ -38,7 +38,7 @@ graph TD
     index_tools[Index Tools: Shared Resolver, Errors and Notifications]:::done
     context_free_handlers[Resources and Prompts: Share the Lifespan Adapter]:::done
     adapter_hygiene[Adapter and Locks: Per-Spawn Waste]:::done
-    integrate[Integrate]:::planned
+    integrate[Integrate]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -53,7 +53,7 @@ graph TD
 | `index_tools.md` | 📄 Leaf Task | ✅ Done |
 | `context_free_handlers.md` | 📄 Leaf Task | ✅ Done |
 | `adapter_hygiene.md` | 📄 Leaf Task | ✅ Done |
-| `integrate/` | 📁 Directory | ⬜ Planned |
+| `integrate/` | 📁 Directory | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

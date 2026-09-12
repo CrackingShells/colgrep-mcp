@@ -22,8 +22,8 @@ Docstrings that explain why with a legend for their report ids, and an observati
 ## Status
 ```mermaid
 graph TD
-    docstrings[Docstrings: Why, Not Roadmap Narration]:::planned
-    review[Read-Only Review]:::planned
+    docstrings[Docstrings: Why, Not Roadmap Narration]:::inprogress
+    review[Read-Only Review]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -34,8 +34,8 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `docstrings.md` | 📄 Leaf Task | ⬜ Planned |
-| `review.md` | 📄 Leaf Task | ⬜ Planned |
+| `docstrings.md` | 📄 Leaf Task | 🔄 In Progress |
+| `review.md` | 📄 Leaf Task | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
