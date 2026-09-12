@@ -5,6 +5,24 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.2.0 (2026-09-12)
+
+### Added
+
+- **plugin**: add the colgrep-mcp-dev skills plugin and land the consistency follow-ups (PR #5)
+
+### Changed
+
+- **search**: integrate the search_path leaf (FileHit fold, one summary notification)
+- **search**: send one summary log notification per search instead of one per stderr line
+- **search**: fold find_files raw hits straight into FileHit without building SearchHits
+
+### Fixed
+
+- **skill**: probe the merge subject with cz check before land_branch.sh merges
+- **index**: integrate the list_indexes text budget (leaf list_indexes_budget)
+- **index**: cap list_indexes text at the text budget like every other renderer
+
 ## v0.1.2 (2026-09-12)
 
 ### Changed
