@@ -51,8 +51,8 @@ skills for mechanics; this skill is the order of operations and the rules three 
   `Client.list_tools()`/`list_resources()`/`list_resource_templates()`/`list_prompts()` JSON on
   the base and the branch, diff empty. The MCP SDK ships docstrings verbatim, so even
   whitespace is client-visible (KT-C §Wins, OBS-C probe 1).
-- **A regression test counts only once it has failed against the old code** — say so in the
-  `fix` commit body (KT-C §Root Causes).
+- **Regression tests must have failed once** — the rule and its reasoning are `maintainer-policy`
+  §Regression tests earn their name; this skill only asks the lead to check the commit body says so.
 - **Windows CI is the only portability oracle here** — read its verdict, don't skim it,
   whenever a leaf is the first to exercise a previously-untested path, and name that path in
   the PR body (KT-C §Pain Points, CI).
