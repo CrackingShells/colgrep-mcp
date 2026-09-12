@@ -121,8 +121,8 @@ end-to-end driver (never against this repository, see Traps).
 
 ## Where to read more
 
-- Architecture and measured behaviour: `__reports__/colgrep_mcp/` (0.1.0) and
-  `__reports__/repo_health/` (scaffold).
+- Architecture and measured behaviour: `__reports__/colgrep_mcp/` (0.1.0),
+  `__reports__/repo_health/` (scaffold) and `__reports__/consistency/` (one idiom per concern).
 - The agent-facing guide to the tools themselves: `server/colgrep_mcp/guide.md`.
 - Retrospectives with next-cycle items: the latest `*knowledge_transfer*` report
   in each `__reports__/` topic.
