@@ -34,7 +34,7 @@ _SECTION_HEADING = "### Tools"
 
 
 def _readme_tool_names() -> set[str]:
-    """Tool names named by the README's `### Tools` table, by heading name only.
+    r"""Tool names named by the README's `### Tools` table, by heading name only.
 
     Scoped to that one section (up to the next `##`/`###` heading) so the
     Resources and Configuration tables below it — which use the same
