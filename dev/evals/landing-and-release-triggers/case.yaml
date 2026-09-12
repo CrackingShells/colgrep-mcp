@@ -1,0 +1,18 @@
+schema_version: "1.1"
+name: landing-and-release-triggers
+description: The skill loads on a realistic maintainer prompt that never names it.
+tags: [trigger]
+runs: 3
+execution:
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Skill]
+prompt: |
+  The task branch for the search_path leaf is green now — pytest and ruff both
+  pass. Rebase it onto the campaign branch, merge it in, and once that's done
+  go ahead and cut the patch release the way we normally do here.
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?landing-and-release"'

@@ -243,9 +243,7 @@ async def _run_prompt(client: Any, spec: CallSpec, step: int) -> CallRecord:
     start = time.monotonic()
     result = await client.get_prompt(spec.name, spec.args)
     wall_ms = int((time.monotonic() - start) * 1000)
-    text = "\n".join(
-        m.content.text for m in result.messages if getattr(m.content, "type", None) == "text"
-    )
+    text = "\n".join(m.content.text for m in result.messages if getattr(m.content, "type", None) == "text")
     return CallRecord(
         step=step,
         spec=spec,
@@ -405,9 +403,7 @@ async def _main_async(corpus: Path, label: str) -> int:
     if search_wall:
         sorted_wall = sorted(search_wall)
         mid = len(sorted_wall) // 2
-        median = (
-            sorted_wall[mid] if len(sorted_wall) % 2 else (sorted_wall[mid - 1] + sorted_wall[mid]) / 2
-        )
+        median = sorted_wall[mid] if len(sorted_wall) % 2 else (sorted_wall[mid - 1] + sorted_wall[mid]) / 2
         print(f"\nMedian search (a)-(e) wall time: {median} ms (n={len(sorted_wall)}: {sorted_wall})")
 
     false_count, total_hits = _location_verified_false_count(by_label)
@@ -416,16 +412,11 @@ async def _main_async(corpus: Path, label: str) -> int:
     n_events = len(progress_events)
     first_msg = progress_events[0][2] if progress_events else None
     last_msg = progress_events[-1][2] if progress_events else None
-    print(
-        f"index_build progress notifications observed: {n_events} "
-        f"(first={first_msg!r}, last={last_msg!r})"
-    )
+    print(f"index_build progress notifications observed: {n_events} (first={first_msg!r}, last={last_msg!r})")
 
     n_errors = sum(1 for r in records if r.is_error)
     expected_error_labels = {"index_clear_noconfirm"}
-    unexpected_errors = [
-        r for r in records if r.is_error and r.spec.label not in expected_error_labels
-    ]
+    unexpected_errors = [r for r in records if r.is_error and r.spec.label not in expected_error_labels]
     print(f"total is_error=True results: {n_errors} (expected: index_clear_noconfirm only)")
     if unexpected_errors:
         print("UNEXPECTED ERRORS:")

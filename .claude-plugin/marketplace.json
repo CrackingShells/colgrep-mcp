@@ -1,6 +1,6 @@
 {
   "name": "colgrep-mcp",
-  "description": "One-plugin marketplace for colgrep-mcp: semantic and hybrid code search as MCP tools.",
+  "description": "Marketplace for colgrep-mcp: the product plugin (semantic and hybrid code search as MCP tools) and the maintainer's dev plugin of skills.",
   "owner": {
     "name": "Eliott Jacopin",
     "email": "eliott.jacopin@riken.jp"
@@ -10,6 +10,11 @@
       "name": "colgrep-mcp",
       "source": "./",
       "description": "Semantic and hybrid code search for coding agents, exposed as MCP tools backed by colgrep."
+    },
+    {
+      "name": "colgrep-mcp-dev",
+      "source": "./dev",
+      "description": "Maintainer skills for this repository (policy, campaign leadership, landing and release, stack traps). Not for end users."
     }
   ]
 }

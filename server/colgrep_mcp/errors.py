@@ -110,9 +110,7 @@ def from_adapter_error(exc: ColgrepError, *, path: Path | None = None) -> ToolEr
             # colgrep's own stderr already spells out the closest existing
             # directory and its contents (R05 D6) — keep that verbatim.
             return tool_error(Code.PATH_NOT_FOUND, f"colgrep exited {exc.returncode}{where}: {tail}")
-        return tool_error(
-            Code.COLGREP_FAILED, f"colgrep exited {exc.returncode} running {' '.join(exc.argv)}: {tail}"
-        )
+        return tool_error(Code.COLGREP_FAILED, f"colgrep exited {exc.returncode} running {' '.join(exc.argv)}: {tail}")
 
     if isinstance(exc, ColgrepParseError):
         return tool_error(Code.COLGREP_FAILED, f"colgrep output could not be parsed: {exc}")

@@ -48,6 +48,7 @@ version_files = [
     "../plugin.json:\"version\"",
     "../.claude-plugin/plugin.json:\"version\"",
     "../.codex-plugin/plugin.json:\"version\"",
+    "../dev/.claude-plugin/plugin.json:\"version\"",
     # uv.lock records this project's own version too. The pattern below never
     # contains a version string, so commitizen rewrites nothing here, but it
     # stages every listed file after the pre-bump hook has re-locked, which is

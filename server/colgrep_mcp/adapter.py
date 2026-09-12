@@ -134,9 +134,7 @@ class ColgrepAdapter:
         subcommand-specific argv so it can be unit-tested on its own.
         """
         if req.query is not None and req.query.startswith("-"):
-            raise ColgrepError(
-                f"query must not start with '-' (would be parsed as a flag): {req.query!r}"
-            )
+            raise ColgrepError(f"query must not start with '-' (would be parsed as a flag): {req.query!r}")
 
         argv: list[str] = ["search", "--json", "-y"]
 
@@ -223,9 +221,7 @@ class ColgrepAdapter:
         except TimeoutError:
             proc.kill()
             await proc.wait()
-            raise ColgrepTimeout(
-                f"colgrep timed out after {self.timeout_s}s: {' '.join(full_argv)}"
-            ) from None
+            raise ColgrepTimeout(f"colgrep timed out after {self.timeout_s}s: {' '.join(full_argv)}") from None
         except BaseException:
             # Any other abnormal exit from `wait_for` — most importantly the
             # calling task itself being cancelled (`asyncio.CancelledError`,
