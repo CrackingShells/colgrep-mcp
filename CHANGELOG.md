@@ -5,6 +5,12 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.3.1 (2026-09-13)
+
+### Fixed
+
+- **repo**: replace local machine paths in fixtures, reports, roadmaps and skills with placeholders
+
 ## v0.3.0 (2026-09-13)
 
 ### Added
