@@ -11,14 +11,14 @@ One directory installs as a **Claude Code plugin**, an **[Agent Plugins 1.0](htt
 | Dependency | Why | Install |
 |:--|:--|:--|
 | `colgrep` ≥ 1.6 | does the indexing and ranking | `cargo install colgrep` or see the [next-plaid README](https://github.com/lightonai/next-plaid) |
-| `uv` | creates the server's Python environment on first launch | [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| `uv` | `uvx` fetches the server from PyPI and caches it on first launch | [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
 | Python ≥ 3.11 | fetched automatically by `uv` if missing | — |
 
 The first `colgrep` run downloads the embedding model (a few hundred MB) and the first index of a repository takes seconds to minutes depending on size. Everything after that is incremental.
 
 ## Install
 
-The repository is public, so every ecosystem can add it as a remote marketplace/plugin source directly from GitHub — no clone required. Cloning is still the right move if you want to try a change or develop the server; see [From a local clone](#from-a-local-clone).
+The server is the [`colgrep-mcp` package on PyPI](https://pypi.org/project/colgrep-mcp/); every plugin manifest launches it as `uvx colgrep-mcp==<version>`, pinned to the plugin's own version. The repository is public, so every ecosystem can add it as a remote marketplace/plugin source directly from GitHub — no clone required. Two other paths are first class: an installed executable with no per-start resolution ([Any MCP client](#any-mcp-client)), and a clone, for a tree you edit or a machine that must not fetch from PyPI at start ([From a local clone](#from-a-local-clone)).
 
 ### Claude Code
 
@@ -48,33 +48,45 @@ The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/pl
 
 The [Agent Plugins 1.0 spec](https://agent-plugins.org/specification) defines the plugin package (`plugin.json`, `mcp.json`) but explicitly leaves installation, distribution and marketplaces to each client — there is no spec-defined command for installing straight from a git URL. Check that client's own plugin or extension docs for how it adds a plugin from a repository; until then, point it at a local clone the way it expects a plugin directory (below).
 
+### Any MCP client
+
+Each of these is a stdio MCP server; register whichever you prefer in the client's MCP config with `COLGREP_MCP_ROOT` set to the project to search by default (see [Configuration](#configuration)).
+
+```bash
+uvx colgrep-mcp
+```
+
+resolves and caches the latest release on first start, then reuses the cached environment. If you would rather not pay that per-start check, install once and run a plain executable:
+
+```bash
+uv tool install colgrep-mcp   # or: pipx install colgrep-mcp
+```
+
+```bash
+colgrep-mcp
+```
+
+For Claude Code without the plugin's skill: `claude mcp add colgrep -- uvx colgrep-mcp` (or `-- colgrep-mcp` after `uv tool install`). Windows is supported: no launch path needs a shell, and the test suite runs green on Windows in CI.
+
 ### From a local clone
 
 ```bash
 git clone https://github.com/CrackingShells/colgrep-mcp.git
 ```
 
-Try Claude Code against it without installing:
+The clone is the tree you edit, and the way to run the server on a machine that must not fetch from PyPI at start. Install it once as an executable (re-run after `git pull`):
 
 ```bash
-claude --plugin-dir /path/to/colgrep-mcp
+uv tool install /path/to/colgrep-mcp/server
 ```
 
-Or register only the MCP server, without the plugin's skill:
+Or run the tree directly, picking up edits without reinstalling:
 
 ```bash
 claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server colgrep-mcp
 ```
 
-For an Agent Plugins 1.0 client, point it at the cloned directory: `plugin.json` and `mcp.json` at the root follow the 1.0.0 schemas, and the server is declared as a `stdio` server launched by `uv run --quiet --directory ${PLUGIN_ROOT}/server colgrep-mcp`.
-
-### Any MCP client
-
-```bash
-uv run --quiet --directory /path/to/colgrep-mcp/server colgrep-mcp
-```
-
-is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched by default. Windows is supported: the launch path needs no shell, and the test suite runs green on Windows in CI.
+`uvx --from /path/to/colgrep-mcp/server colgrep-mcp` is the one-off equivalent. Note that `claude --plugin-dir /path/to/colgrep-mcp` loads the clone's *skill* but launches the manifest's PyPI pin, not the clone's code — use one of the commands above to test a change.
 
 ## What the agent gets
 
@@ -120,13 +132,13 @@ is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched b
 | `COLGREP_MCP_TIMEOUT` | `600` | Seconds allowed per colgrep invocation |
 | `COLGREP_MCP_TEXT_BUDGET` | `12000` | Maximum characters of text content per tool result |
 | `COLGREP_MCP_LOG_LEVEL` | `INFO` | Server log level (stderr) |
-| `UV_PROJECT_ENVIRONMENT` | unset | Where `uv` keeps the server's virtualenv (plugins point it at their data directory) |
 
 Without `COLGREP_MCP_ROOT` the server falls back to the client's first root, if the client offers roots, then to its working directory.
 
 ## Troubleshooting
 
-- **The server does not start under a GUI client.** GUI-launched clients may start without your shell's `PATH`, so `uv` (and `colgrep`) may not resolve by bare name. Name `uv` by its absolute path in the client's MCP config (find it with `which uv` on macOS/Linux or `where uv` on Windows), and set `COLGREP_MCP_BINARY` to the absolute path of `colgrep` if it isn't found either.
+- **The server does not start under a GUI client.** GUI-launched clients may start without your shell's `PATH`, so `uvx` (and `colgrep`) may not resolve by bare name. Name `uvx` by its absolute path in the client's MCP config (find it with `which uvx` on macOS/Linux or `where uvx` on Windows), and set `COLGREP_MCP_BINARY` to the absolute path of `colgrep` if it isn't found either.
+- **The first start is slow, or fails offline.** `uvx colgrep-mcp==<version>` downloads the package and its dependencies once per version, then runs from cache. On a machine without network at start, `uv tool install colgrep-mcp` beforehand and launch the `colgrep-mcp` executable instead (see [Any MCP client](#any-mcp-client)).
 - **A search times out on a large repository.** Call `index_build` first; it streams progress and the following searches are fast. `index_status` says whether that is needed.
 - **`doctor` reports a problem.** Its `problems` list names what is missing and how to fix it.
 - **`index_clear` refuses.** colgrep folds a directory into the nearest already-indexed ancestor project. The tool tells you the project root it would clear; pass that root explicitly if that is really intended.
@@ -157,9 +169,9 @@ The repository root is simultaneously:
 
 - a [Claude Code](https://code.claude.com/docs/en/plugins-reference) plugin (`.claude-plugin/plugin.json`, `.claude-plugin/mcp.json`) and a one-plugin marketplace (`.claude-plugin/marketplace.json`);
 - an [Agent Plugins 1.0](https://agent-plugins.org/specification) plugin (`plugin.json`, `mcp.json`);
-- a Codex plugin (`.codex-plugin/plugin.json`) and marketplace (`.agents/plugins/marketplace.json`).
+- a Codex plugin (`.codex-plugin/plugin.json`, `.codex-plugin/mcp.json`) and marketplace (`.agents/plugins/marketplace.json`).
 
-All manifests launch the same argv directly, with no shell script in between: `uv run --quiet --directory <ROOT>/server colgrep-mcp`, where `<ROOT>` is the launching ecosystem's own root placeholder (`${CLAUDE_PLUGIN_ROOT}` for the Claude Code manifest at `.claude-plugin/mcp.json`, `${PLUGIN_ROOT}` for the Agent Plugins 1.0 `mcp.json`), placed in `args` only — plugin ecosystems forbid placeholder expansion in `command`, and a bare `uv` there resolves the same way in every context, including when this repository is opened as a plain project rather than loaded as a plugin. `uv` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). The launch path needs no shell, and CI runs the suite on Windows as well as macOS and Linux. Once `colgrep-mcp` is published to PyPI, every manifest's `args` collapses to a one-line `uvx colgrep-mcp`.
+Every MCP manifest launches the same argv, with no shell script and no root placeholder: `uvx colgrep-mcp==<version>`, where the pin is the plugin's own version — `cz bump` rewrites it with the manifests' `version` fields, so a plugin update always launches its matching server and never a stale cached one. The only placeholder left is `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in the Claude Code manifest's `env`, the one client documented to expand it. `uvx` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). CI runs the suite on Windows as well as macOS and Linux, builds the distribution and checks its metadata on every pull request; pushing a release tag runs `.github/workflows/publish.yml`, which uploads to PyPI through trusted publishing and creates the GitHub release.
 
 ## License
 

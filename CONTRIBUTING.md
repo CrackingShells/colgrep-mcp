@@ -41,6 +41,12 @@ uv run pytest
 git push origin main v<new_version>   # the tag is lightweight: --follow-tags does not push it
 ```
 
+Pushing the tag is the publish decision: `.github/workflows/publish.yml` builds the
+distribution, uploads it to PyPI through trusted publishing (no token; the publisher
+registered on PyPI names `publish.yml` and the `pypi` environment) and creates the
+GitHub release from the tag's `CHANGELOG.md` section. The `uvx colgrep-mcp==<version>`
+pin in the three MCP manifests is a `version_files` target, so the bump moves it too.
+
 ## Gates
 
 From `server/`: `uv run pytest`, `uv run ruff check`, `uv run ruff format --check`,
