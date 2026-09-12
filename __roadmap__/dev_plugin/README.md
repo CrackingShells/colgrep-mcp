@@ -37,7 +37,7 @@ graph TD
     skill_landing_release[Skill: Landing and Release]:::inprogress
     skill_stack_traps[Skill: Stack Traps]:::done
     search_path[Search Path: FileHit-Only find_files and Stderr Notifications]:::inprogress
-    list_indexes_budget[list_indexes Text Budget]:::inprogress
+    list_indexes_budget[list_indexes Text Budget]:::done
     integrate[Integrate]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -54,7 +54,7 @@ graph TD
 | `skill_landing_release.md` | 📄 Leaf Task | 🔄 In Progress |
 | `skill_stack_traps.md` | 📄 Leaf Task | ✅ Done |
 | `search_path.md` | 📄 Leaf Task | 🔄 In Progress |
-| `list_indexes_budget.md` | 📄 Leaf Task | 🔄 In Progress |
+| `list_indexes_budget.md` | 📄 Leaf Task | ✅ Done |
 | `integrate/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
