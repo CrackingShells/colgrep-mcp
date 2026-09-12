@@ -10,6 +10,7 @@ import threading
 from pathlib import Path
 
 import pytest
+from fixture_paths import FAKE_CORPUS
 from mcp import Client
 
 from colgrep_mcp.errors import HINTS, Code
@@ -253,12 +254,18 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
     files = r.structured_content["files"]
     by_file = {f["file"]: f for f in files}
 
-    assert by_file["/tmp/fake-corpus/src/config.py"]["hits"] == 2
-    assert by_file["/tmp/fake-corpus/src/config.py"]["best_score"] == pytest.approx(1.4321)
-    assert set(by_file["/tmp/fake-corpus/src/config.py"]["top_units"]) == {"parse_config", "Settings"}
-    assert by_file["/tmp/fake-corpus/README.md"]["hits"] == 1
+    # hits_small.json hard-codes its hit files under the "/tmp/fake-corpus"
+    # stand-in project; `fake_colgrep.py` swaps that for `FAKE_CORPUS` before
+    # printing (the literal is only genuinely absolute, and so left
+    # unrebased by `_resolve_hit_file`, on POSIX — see `fixture_paths.py`).
+    config_py = f"{FAKE_CORPUS}/src/config.py"
+    readme = f"{FAKE_CORPUS}/README.md"
+    assert by_file[config_py]["hits"] == 2
+    assert by_file[config_py]["best_score"] == pytest.approx(1.4321)
+    assert set(by_file[config_py]["top_units"]) == {"parse_config", "Settings"}
+    assert by_file[readme]["hits"] == 1
     # Score-descending: config.py's best hit outranks README's only hit.
-    assert [f["file"] for f in files][0] == "/tmp/fake-corpus/src/config.py"
+    assert [f["file"] for f in files][0] == config_py
 
 
 # --- off-loop file I/O (F11) --------------------------------------------
