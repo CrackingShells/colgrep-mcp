@@ -18,28 +18,46 @@ The first `colgrep` run downloads the embedding model (a few hundred MB) and the
 
 ## Install
 
-Get the source:
+The repository is public, so every ecosystem can add it as a remote marketplace/plugin source directly from GitHub — no clone required. Cloning is still the right move if you want to try a change or develop the server; see [From a local clone](#from-a-local-clone).
+
+### Claude Code
+
+```bash
+claude plugin marketplace add CrackingShells/colgrep-mcp
+```
+
+```bash
+claude plugin install colgrep-mcp@colgrep-mcp
+```
+
+Add `--scope project` to the marketplace command to declare it in the repository's own `.claude/settings.json` instead of your user settings, so teammates who open this project pick it up too.
+
+### Codex
+
+```bash
+codex plugin marketplace add CrackingShells/colgrep-mcp
+```
+
+```bash
+codex plugin add colgrep-mcp@colgrep-mcp-marketplace
+```
+
+The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`. These commands follow the Codex plugin documentation and have not yet been exercised end to end; a report of a working (or failing) install is welcome as an issue.
+
+### Agent Plugins 1.0 clients (Cursor, GitHub Copilot, VS Code, Kiro)
+
+The [Agent Plugins 1.0 spec](https://agent-plugins.org/specification) defines the plugin package (`plugin.json`, `mcp.json`) but explicitly leaves installation, distribution and marketplaces to each client — there is no spec-defined command for installing straight from a git URL. Check that client's own plugin or extension docs for how it adds a plugin from a repository; until then, point it at a local clone the way it expects a plugin directory (below).
+
+### From a local clone
 
 ```bash
 git clone https://github.com/CrackingShells/colgrep-mcp.git
 ```
 
-### Claude Code
-
-Try it without installing:
+Try Claude Code against it without installing:
 
 ```bash
 claude --plugin-dir /path/to/colgrep-mcp
-```
-
-Install from this repository acting as its own marketplace:
-
-```bash
-claude plugin marketplace add /path/to/colgrep-mcp
-```
-
-```bash
-claude plugin install colgrep-mcp@colgrep-mcp
 ```
 
 Or register only the MCP server, without the plugin's skill:
@@ -48,13 +66,7 @@ Or register only the MCP server, without the plugin's skill:
 claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server colgrep-mcp
 ```
 
-### Codex
-
-Add the marketplace at `.agents/plugins/marketplace.json` from this repository, then install the `colgrep-mcp` plugin. The Codex manifest lives in `.codex-plugin/plugin.json`.
-
-### Agent Plugins 1.0 clients (Cursor, Copilot, VS Code, Kiro, …)
-
-Point the client at this directory. `plugin.json` and `mcp.json` at the root follow the 1.0.0 schemas; the server is declared as a `stdio` server launched by `uv run --quiet --directory ${PLUGIN_ROOT}/server colgrep-mcp`.
+For an Agent Plugins 1.0 client, point it at the cloned directory: `plugin.json` and `mcp.json` at the root follow the 1.0.0 schemas, and the server is declared as a `stdio` server launched by `uv run --quiet --directory ${PLUGIN_ROOT}/server colgrep-mcp`.
 
 ### Any MCP client
 
@@ -62,7 +74,7 @@ Point the client at this directory. `plugin.json` and `mcp.json` at the root fol
 uv run --quiet --directory /path/to/colgrep-mcp/server colgrep-mcp
 ```
 
-is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched by default. Windows is supported by this launch path (`uv`, `colgrep` and Python all ship for it), though the server itself is untested there until CI says otherwise.
+is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched by default. Windows is supported: the launch path needs no shell, and the test suite runs green on Windows in CI.
 
 ## What the agent gets
 
@@ -147,7 +159,7 @@ The repository root is simultaneously:
 - an [Agent Plugins 1.0](https://agent-plugins.org/specification) plugin (`plugin.json`, `mcp.json`);
 - a Codex plugin (`.codex-plugin/plugin.json`) and marketplace (`.agents/plugins/marketplace.json`).
 
-All manifests launch the same argv directly, with no shell script in between: `uv run --quiet --directory <ROOT>/server colgrep-mcp`, where `<ROOT>` is the launching ecosystem's own root placeholder (`${CLAUDE_PLUGIN_ROOT}` for the Claude Code manifest at `.claude-plugin/mcp.json`, `${PLUGIN_ROOT}` for the Agent Plugins 1.0 `mcp.json`), placed in `args` only — plugin ecosystems forbid placeholder expansion in `command`, and a bare `uv` there resolves the same way in every context, including when this repository is opened as a plain project rather than loaded as a plugin. `uv` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). The launch path needs no shell, so Windows is expected to work, but the server is untested there until CI runs on it. Once `colgrep-mcp` is published to PyPI, every manifest's `args` collapses to a one-line `uvx colgrep-mcp`.
+All manifests launch the same argv directly, with no shell script in between: `uv run --quiet --directory <ROOT>/server colgrep-mcp`, where `<ROOT>` is the launching ecosystem's own root placeholder (`${CLAUDE_PLUGIN_ROOT}` for the Claude Code manifest at `.claude-plugin/mcp.json`, `${PLUGIN_ROOT}` for the Agent Plugins 1.0 `mcp.json`), placed in `args` only — plugin ecosystems forbid placeholder expansion in `command`, and a bare `uv` there resolves the same way in every context, including when this repository is opened as a plain project rather than loaded as a plugin. `uv` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). The launch path needs no shell, and CI runs the suite on Windows as well as macOS and Linux. Once `colgrep-mcp` is published to PyPI, every manifest's `args` collapses to a one-line `uvx colgrep-mcp`.
 
 ## License
 
