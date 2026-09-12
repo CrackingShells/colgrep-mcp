@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
+from fixture_paths import FAKE_CORPUS, FAKE_NEVER_INDEXED
 from mcp import Client
 
 from colgrep_mcp.errors import HINTS, Code
@@ -13,10 +15,21 @@ from colgrep_mcp.server import build
 
 pytestmark = pytest.mark.anyio
 
+# `FAKE_CORPUS`/`FAKE_NEVER_INDEXED` are already absolute (POSIX: "/tmp/...",
+# Windows: "C:/tmp/..."); the "bare" forms below are what a client would put
+# in the URI's `{+path}` segment for the "no leading slash" tests, i.e. the
+# same literal with any leading `/` stripped off (a no-op on Windows, which
+# never had one).
+_CORPUS_BARE = FAKE_CORPUS.lstrip("/")
+_NEVER_INDEXED_BARE = FAKE_NEVER_INDEXED.lstrip("/")
+
 
 def test_normalize_status_path_accepts_with_and_without_leading_slash():
-    assert str(_normalize_status_path("tmp/proj")) == "/tmp/proj"
-    assert str(_normalize_status_path("/tmp/proj")) == "/tmp/proj"
+    # Compare `Path` objects, not `str()` renderings: `str(Path("/tmp/proj"))`
+    # is already OS-native (`\tmp\proj` on Windows), so a POSIX-only string
+    # literal isn't the right expectation on every OS.
+    assert _normalize_status_path("tmp/proj") == Path("/tmp/proj")
+    assert _normalize_status_path("/tmp/proj") == Path("/tmp/proj")
 
 
 async def test_list_resources_and_templates(settings_env):
@@ -57,28 +70,30 @@ async def test_read_indexes(settings_env):
 
 
 async def test_read_status_without_leading_slash(settings_env):
+    expected = str(_normalize_status_path(_CORPUS_BARE))
     async with Client(build(), raise_exceptions=True) as client:
-        result = await client.read_resource("colgrep://status/tmp/fake-corpus")
+        result = await client.read_resource(f"colgrep://status/{_CORPUS_BARE}")
         data = json.loads(result.contents[0].text)
-        assert data["project"] == "/tmp/fake-corpus"
+        assert data["project"] == expected
         assert data["indexed"] is True
-        assert data["requested_path"] == "/tmp/fake-corpus"
+        assert data["requested_path"] == expected
 
 
 async def test_read_status_with_leading_slash(settings_env):
+    expected = str(_normalize_status_path(_CORPUS_BARE))
     async with Client(build(), raise_exceptions=True) as client:
         # {+path} keeps the inner slash, so a leading '/' arrives as a second
         # slash right after "status/"; the handler must accept both forms.
-        result = await client.read_resource("colgrep://status//tmp/fake-corpus")
+        result = await client.read_resource(f"colgrep://status//{_CORPUS_BARE}")
         data = json.loads(result.contents[0].text)
-        assert data["project"] == "/tmp/fake-corpus"
+        assert data["project"] == expected
         assert data["indexed"] is True
 
 
 async def test_status_not_indexed(settings_env, monkeypatch):
     monkeypatch.setenv("FAKE_COLGREP_INDEXED", "0")
     async with Client(build(), raise_exceptions=True) as client:
-        result = await client.read_resource("colgrep://status/tmp/never-indexed")
+        result = await client.read_resource(f"colgrep://status/{_NEVER_INDEXED_BARE}")
         data = json.loads(result.contents[0].text)
         assert data["indexed"] is False
 

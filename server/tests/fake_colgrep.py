@@ -28,11 +28,27 @@ import sys
 import time
 from pathlib import Path
 
+from fixture_paths import FAKE_CORPUS
+
 HERE = Path(__file__).resolve().parent
 MODEL = "lightonai/LateOn-Code-edge"
 
 
 def main(argv):
+    # Force UTF-8 with bare `\n` line endings regardless of platform. Python's
+    # default text-mode stdout/stderr on Windows (a) encodes with the
+    # console/legacy codepage, which cannot represent the emoji this script
+    # prints (`clear`/`init`) and crashes with `UnicodeEncodeError`, and (b)
+    # translates every `\n` this script writes into `\r\n`, which the
+    # adapter's stats-block regex (`_STATS_BLOCK_RE`, an exact `\d+\n` match)
+    # cannot parse. The real colgrep binary is a native executable that never
+    # does either translation, on any OS, so this just makes the stand-in
+    # match the real thing instead of leaking a Python/Windows console quirk
+    # into the adapter's contract. POSIX stdio is already UTF-8/`\n`, so this
+    # is a no-op there.
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
+
     if os.environ.get("FAKE_COLGREP_ARGV_FILE"):
         Path(os.environ["FAKE_COLGREP_ARGV_FILE"]).write_text(json.dumps(argv))
 
@@ -94,7 +110,14 @@ def main(argv):
         return 0
 
     fixture = Path(os.environ.get("FAKE_COLGREP_HITS", HERE / "fixtures" / "hits_small.json"))
-    hits = json.loads(fixture.read_text())
+    # Fixture JSON hard-codes hit files under the POSIX-style "/tmp/fake-corpus"
+    # stand-in project; on POSIX that is already absolute, so
+    # `_resolve_hit_file` leaves it untouched, but the same literal is never
+    # absolute under `PureWindowsPath` (no drive letter), so it gets silently
+    # rebased under the search root instead. Swap in `FAKE_CORPUS`, which is
+    # the same literal on POSIX (no-op replace) and a drive-rooted equivalent
+    # on Windows (genuinely absolute there too).
+    hits = json.loads(fixture.read_text().replace("/tmp/fake-corpus", FAKE_CORPUS))
     if "-k" in args:
         k = int(args[args.index("-k") + 1])
         hits = hits[:k]
