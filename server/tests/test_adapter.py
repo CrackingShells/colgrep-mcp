@@ -1,7 +1,6 @@
-"""Tests for ColgrepAdapter (R01 §Adapter contract, R05 deltas).
-
-Step 2 covers `_run`, `build_search_argv` and `version`. Step 3 extends this
-file with `search`/`status`/`stats`/`settings`/`init`/`clear`.
+"""Tests for ColgrepAdapter (R01 §Adapter contract, R05 deltas): `_run`,
+`build_search_argv`, `version`, `search`, `status`, `stats`, `settings`,
+`init`, `clear`.
 """
 
 from __future__ import annotations

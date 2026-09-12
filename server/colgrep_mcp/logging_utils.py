@@ -1,4 +1,5 @@
-"""Best-effort client notifications: log messages, progress, resource-updated.
+"""The only module a tool notifies the client through (R01 §C4): log messages,
+progress, resource-updated.
 
 Every function here has the same contract: try to tell the client, and if the
 client (or the transport, or the SDK's deprecation of the capability) refuses,

@@ -86,7 +86,7 @@ def _require_absolute(path: Path, what: str) -> None:
 
 
 class ColgrepAdapter:
-    """Async wrapper over the colgrep binary. Implemented in leaf `colgrep_adapter`.
+    """Async wrapper over the colgrep binary — the only class that spawns one.
 
     Everything that talks to the binary funnels through `_run`: one
     `asyncio.create_subprocess_exec` call (never a shell), stdin closed,

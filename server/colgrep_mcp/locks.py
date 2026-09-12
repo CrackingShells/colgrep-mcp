@@ -1,4 +1,4 @@
-"""Per-project asyncio locks (R01 §Concurrency invariant).
+"""The only module owning per-project asyncio locks (R01 §Concurrency invariant).
 
 Callers pass the resolved absolute path `paths.resolve_paths` returns (every
 current caller does: `_do_search`, `index_build`, `index_clear`). The lock
