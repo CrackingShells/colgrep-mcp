@@ -18,8 +18,8 @@ Document, guard and review the depth-0 result before releasing it.
 ## Status
 ```mermaid
 graph TD
-    agent_docs[Agent Orientation Docs]:::inprogress
-    ci_workflow[CI Workflow]:::inprogress
+    agent_docs[Agent Orientation Docs]:::done
+    ci_workflow[CI Workflow]:::done
     review[Reviewer Pass]:::inprogress
     release[Release]:::planned
     classDef done       fill:#166534,color:#bbf7d0
@@ -32,8 +32,8 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `agent_docs.md` | 📄 Leaf Task | 🔄 In Progress |
-| `ci_workflow.md` | 📄 Leaf Task | 🔄 In Progress |
+| `agent_docs.md` | 📄 Leaf Task | ✅ Done |
+| `ci_workflow.md` | 📄 Leaf Task | ✅ Done |
 | `review.md` | 📄 Leaf Task | 🔄 In Progress |
 | `release/` | 📁 Directory | ⬜ Planned |
 
@@ -44,3 +44,5 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `agent_docs.md` | campaign branch (lead, direct) | 1 | every listed gate command verified to exit 0 on 2026-09-12 12:05 |
+| `ci_workflow.md` | campaign branch (lead, direct) | 1 | actionlint clean; inert until a remote exists |
