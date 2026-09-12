@@ -5,7 +5,12 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
-## Unreleased
+## v0.1.1 (2026-09-12)
+
+### Fixed
+
+- **repo**: apply the confirmed reviewer findings before the 0.1.1 release
+- **plugin**: launch the server with uv run from every manifest so it works without a POSIX shell
 
 ## v0.1.0 (2026-09-12)
 
