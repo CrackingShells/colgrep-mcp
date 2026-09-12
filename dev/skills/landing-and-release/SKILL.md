@@ -92,12 +92,24 @@ git push origin main v<x.y.z>   # the tag is lightweight; --follow-tags skips it
 ```
 
 `cz bump` rewrites `pyproject.toml`, `uv.lock` (pre-bump hook), the four
-version-tracked manifests, and `CHANGELOG.md`, and writes its own
+version-tracked manifests, the `uvx colgrep-mcp==<version>` pin in the three
+MCP manifests, and `CHANGELOG.md`, and writes its own
 `release(colgrep-mcp): v<x.y.z>` commit — never author that commit or edit a
 version by hand; a version-drift test failing means a file was hand-edited,
 not that the environment is stale. (`AGENTS.md` §Traps, `OBS-H` Check 4,
 `CONTRIBUTING.md`, `MEM`.) `scripts/release.sh` enforces the checkout/branch
 check and runs the recipe up to (never including) the push.
+
+The tag push is the publish decision: `.github/workflows/publish.yml` fires
+on it, refuses unless the tag is `v<pyproject version>` on a commit reachable
+from `main`, builds, uploads to PyPI through trusted publishing (the `pypi`
+GitHub environment; no token exists anywhere) and creates the GitHub release
+from the tag's `CHANGELOG.md` section (pypi_publication R01 §C1–C4). If the
+upload fails, nothing is burned: fix the cause (usually the trusted-publisher
+registration on PyPI) and re-run the workflow from the Actions tab — never
+re-tag. Until the upload succeeds the manifests pin a version PyPI does not
+have, so the plugin is unlaunchable; that is the signal, not a bug to patch
+around.
 
 Commitizen has sharp edges around this recipe: see
 `references/commitizen-gotchas.md` before treating `cz bump --dry-run` or a
