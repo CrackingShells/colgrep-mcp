@@ -66,6 +66,7 @@ The release recipe is:
 cd server
 uv run cz bump --changelog
 uv run pytest   # uv run re-syncs the editable install, so __version__ already reports the new version
+git push origin main v<new_version>   # the tag is lightweight: --follow-tags does not push it
 ```
 
 ### Checks
