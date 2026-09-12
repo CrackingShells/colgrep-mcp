@@ -86,6 +86,22 @@ async def test_index_status_enriches_units_from_stats(settings_env, tmp_path, mo
     assert result.structured_content["search_count"] == 7
 
 
+async def test_index_status_matches_stats_by_resolved_path_when_strings_differ(settings_env, tmp_path, monkeypatch):
+    """`_match_stats` falls back to a resolved-path comparison only when the
+    plain string comparison misses; here `status.project` carries a trailing
+    `/.` the fake `--stats` output (always `/tmp/fake-corpus`) never has, so
+    a string-only match would miss the enrichment entirely."""
+    monkeypatch.setenv("FAKE_COLGREP_STATUS_PROJECT", "/tmp/fake-corpus/.")
+
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("index_status", {"path": str(tmp_path)})
+
+    assert not result.is_error
+    assert result.structured_content["project"] == "/tmp/fake-corpus/."
+    assert result.structured_content["units_indexed"] == 3
+    assert result.structured_content["search_count"] == 7
+
+
 # --- list_indexes ---------------------------------------------------------------
 
 
