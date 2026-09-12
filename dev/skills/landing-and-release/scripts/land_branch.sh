@@ -49,6 +49,9 @@ if ! git rev-parse --verify "${target_branch}" >/dev/null 2>&1; then
     exit 1
 fi
 
+echo "step: probe the merge message with cz check --message (merge commits are commits too)"
+(cd "${repo_root}/server" && uv run cz check --message "${merge_message}")
+
 echo "step: check the working tree is clean"
 if [[ -n "$(git status --porcelain)" ]]; then
     echo "error: working tree is not clean; commit or set changes aside first (never bare 'git stash')" >&2
