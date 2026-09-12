@@ -186,7 +186,12 @@ def _extract_metrics(spec: CallSpec, text: str, structured: Any) -> tuple[int | 
     return hits, truncated, notes
 
 
-async def _run_tool(client: Any, spec: CallSpec, step: int, progress_sink: list[tuple[float, float | None, str | None]] | None = None) -> CallRecord:
+async def _run_tool(
+    client: Any,
+    spec: CallSpec,
+    step: int,
+    progress_sink: list[tuple[float, float | None, str | None]] | None = None,
+) -> CallRecord:
     progress_callback = None
     if progress_sink is not None:
 
