@@ -28,6 +28,14 @@ pytestmark = pytest.mark.anyio
 
 # --- build_search_argv (pure, no subprocess) --------------------------------
 
+# `build_search_argv` renders each `SearchRequest.paths` entry with plain
+# `str()`, which is OS-native (`str(Path("/tmp/proj"))` is `\tmp\proj` on
+# Windows, not `/tmp/proj`) — compare against the same `str(Path(...))` the
+# adapter itself produces rather than a POSIX-only literal, so the assertion
+# expresses "the path comes through unchanged" on every OS.
+_PROJ = str(Path("/tmp/proj"))
+_A, _B = str(Path("/a")), str(Path("/b"))
+
 
 def _base_request(**overrides) -> SearchRequest:
     defaults = dict(query="x", paths=[Path("/tmp/proj")])
@@ -40,7 +48,7 @@ def test_argv_base_shape():
     argv = adapter.build_search_argv(_base_request())
 
     assert argv[:3] == ["search", "--json", "-y"]
-    assert argv[-2:] == ["x", "/tmp/proj"]
+    assert argv[-2:] == ["x", _PROJ]
 
 
 @pytest.mark.parametrize(
@@ -130,15 +138,15 @@ def test_argv_query_omitted_when_none_and_pattern_set():
 
     assert "def parse_args" in argv  # the pattern value itself
     # No bare positional query token beyond the pattern's own value and the path.
-    assert argv[-1] == "/tmp/proj"
-    assert argv.count("/tmp/proj") == 1
+    assert argv[-1] == _PROJ
+    assert argv.count(_PROJ) == 1
 
 
 def test_argv_multiple_paths_appended_in_order():
     adapter = ColgrepAdapter()
     req = _base_request(paths=[Path("/a"), Path("/b")])
     argv = adapter.build_search_argv(req)
-    assert argv[-2:] == ["/a", "/b"]
+    assert argv[-2:] == [_A, _B]
 
 
 def test_argv_full_flag_order_smoke():
@@ -147,7 +155,7 @@ def test_argv_full_flag_order_smoke():
     req = _base_request(query="x", pattern="y", include=["*.py"], limit=None)
     argv = adapter.build_search_argv(req)
 
-    assert argv == ["search", "--json", "-y", "-e", "y", "--include", "*.py", "x", "/tmp/proj"]
+    assert argv == ["search", "--json", "-y", "-e", "y", "--include", "*.py", "x", _PROJ]
 
 
 def test_argv_rejects_query_starting_with_dash():
