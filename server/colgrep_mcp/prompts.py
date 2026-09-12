@@ -109,7 +109,7 @@ def locate(target: str, path: str | None = None) -> str:
         "rely on limit=None with no pattern — that only gets colgrep's default of 15.\n"
         "3. For a file-level answer instead of unit-level hits, also run "
         f'find_files(query="uses of {target}", pattern="{target}"{paths_kw}).\n'
-        f"4. expand(hit_ids=[...]) on the hits that actually define or use \"{target}\".\n\n"
+        f'4. expand(hit_ids=[...]) on the hits that actually define or use "{target}".\n\n'
         "Output contract: cite file:line from hits whose location_verified is true. If a "
         "hit you must cite has location_verified false, say so next to that citation."
     )

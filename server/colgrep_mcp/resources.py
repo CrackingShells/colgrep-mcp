@@ -150,9 +150,7 @@ def register(mcp: MCPServer) -> None:
     mcp.resource(
         "colgrep://status/{+path}",
         mime_type="application/json",
-        security=ResourceSecurity(
-            reject_path_traversal=True, reject_absolute_paths=False, reject_null_bytes=True
-        ),
+        security=ResourceSecurity(reject_path_traversal=True, reject_absolute_paths=False, reject_null_bytes=True),
     )(status_resource)
     mcp.resource("colgrep://errors", mime_type="text/markdown", title="colgrep-mcp error and hint codes")(
         errors_resource

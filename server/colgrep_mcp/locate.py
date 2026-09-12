@@ -91,6 +91,4 @@ def _full_matches(candidates: list[int], file_lines: list[str], code_lines: list
         return [line.rstrip() for line in lines]
 
     target = _norm(code_lines)
-    return [
-        c for c in candidates if _norm(file_lines[c - 1 : c - 1 + len(code_lines)]) == target
-    ]
+    return [c for c in candidates if _norm(file_lines[c - 1 : c - 1 + len(code_lines)]) == target]

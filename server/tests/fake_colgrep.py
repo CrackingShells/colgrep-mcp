@@ -22,6 +22,7 @@ Environment knobs:
                           path — simulates colgrep folding a path into an
                           already-registered ancestor project (R05 D3)
 """
+
 import json
 import os
 import sys
