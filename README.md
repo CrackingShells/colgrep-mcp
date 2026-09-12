@@ -42,7 +42,7 @@ codex plugin marketplace add CrackingShells/colgrep-mcp
 codex plugin add colgrep-mcp@colgrep-mcp-marketplace
 ```
 
-The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`. This path is documented, not exercised here — there is no Codex CLI on the machine this README was last verified from.
+The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`. These commands follow the Codex plugin documentation and have not yet been exercised end to end; a report of a working (or failing) install is welcome as an issue.
 
 ### Agent Plugins 1.0 clients (Cursor, GitHub Copilot, VS Code, Kiro)
 
@@ -74,7 +74,7 @@ For an Agent Plugins 1.0 client, point it at the cloned directory: `plugin.json`
 uv run --quiet --directory /path/to/colgrep-mcp/server colgrep-mcp
 ```
 
-is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched by default. Windows is supported by this launch path (`uv`, `colgrep` and Python all ship for it), though the server itself is untested there until CI says otherwise.
+is a stdio MCP server. Set `COLGREP_MCP_ROOT` to the project you want searched by default. Windows is supported: the launch path needs no shell, and the test suite runs green on Windows in CI.
 
 ## What the agent gets
 
@@ -159,7 +159,7 @@ The repository root is simultaneously:
 - an [Agent Plugins 1.0](https://agent-plugins.org/specification) plugin (`plugin.json`, `mcp.json`);
 - a Codex plugin (`.codex-plugin/plugin.json`) and marketplace (`.agents/plugins/marketplace.json`).
 
-All manifests launch the same argv directly, with no shell script in between: `uv run --quiet --directory <ROOT>/server colgrep-mcp`, where `<ROOT>` is the launching ecosystem's own root placeholder (`${CLAUDE_PLUGIN_ROOT}` for the Claude Code manifest at `.claude-plugin/mcp.json`, `${PLUGIN_ROOT}` for the Agent Plugins 1.0 `mcp.json`), placed in `args` only — plugin ecosystems forbid placeholder expansion in `command`, and a bare `uv` there resolves the same way in every context, including when this repository is opened as a plain project rather than loaded as a plugin. `uv` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). The launch path needs no shell, so Windows is expected to work, but the server is untested there until CI runs on it. Once `colgrep-mcp` is published to PyPI, every manifest's `args` collapses to a one-line `uvx colgrep-mcp`.
+All manifests launch the same argv directly, with no shell script in between: `uv run --quiet --directory <ROOT>/server colgrep-mcp`, where `<ROOT>` is the launching ecosystem's own root placeholder (`${CLAUDE_PLUGIN_ROOT}` for the Claude Code manifest at `.claude-plugin/mcp.json`, `${PLUGIN_ROOT}` for the Agent Plugins 1.0 `mcp.json`), placed in `args` only — plugin ecosystems forbid placeholder expansion in `command`, and a bare `uv` there resolves the same way in every context, including when this repository is opened as a plain project rather than loaded as a plugin. `uv` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). The launch path needs no shell, and CI runs the suite on Windows as well as macOS and Linux. Once `colgrep-mcp` is published to PyPI, every manifest's `args` collapses to a one-line `uvx colgrep-mcp`.
 
 ## License
 
