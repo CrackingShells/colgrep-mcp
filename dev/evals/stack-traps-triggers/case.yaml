@@ -1,0 +1,21 @@
+schema_version: "1.1"
+name: stack-traps-triggers
+description: The skill loads on a realistic maintainer prompt that never names it.
+tags: [trigger]
+runs: 3
+execution:
+  max_turns: 6
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Skill]
+prompt: |
+  I just opened this repo fresh in Claude Code (not through the plugin loader,
+  just a plain project open) and the MCP panel shows a second, pending
+  "colgrep" entry alongside the one the plugin already gives me, and when I
+  poke at it I get a spawn ENOENT mentioning ${CLAUDE_PLUGIN_ROOT}. Nothing in
+  the working tree looks different from yesterday. What's going on and what
+  should I check?
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?stack-traps"'
