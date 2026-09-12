@@ -23,7 +23,7 @@ Docstrings that explain why with a legend for their report ids, and an observati
 ```mermaid
 graph TD
     docstrings[Docstrings: Why, Not Roadmap Narration]:::done
-    review[Read-Only Review]:::inprogress
+    review[Read-Only Review]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -35,7 +35,7 @@ graph TD
 | Node | Type | Status |
 |:-----|:-----|:-------|
 | `docstrings.md` | 📄 Leaf Task | ✅ Done |
-| `review.md` | 📄 Leaf Task | 🔄 In Progress |
+| `review.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -45,3 +45,4 @@ graph TD
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
 | `docstrings.md` | `task/docstrings` | 2 | Sonnet, ~6 min; 17 files, prose-only diff verified by lead; flagged missing `R02` legend row (added by lead); merged 16:34 |
+| `review.md` | `task/review` | 1 | Sonnet, ~12 min; schema diff whitespace-only as intended; perf claims reproduced (76x, 115x); one confirmed risk OV1 (overlapping lifespans) → lead fix commit; merged 16:41 |
