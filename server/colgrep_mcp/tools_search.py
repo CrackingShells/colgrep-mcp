@@ -1,10 +1,11 @@
 """Tool module `tools_search`: `search`, `find_files`, `expand` (R01 §Tools).
 
-Step 1 provides the pure helpers the three tool handlers compose: converting
-a raw colgrep hit into a `SearchHit` (re-locating its true source lines per
-R05 D1), and rendering `SearchResult`/`FileResult` into the compact,
-token-budgeted text shown to the model (R01 §Token-budget invariant). Step 2
-registers the three tools themselves on top of those helpers.
+Pure helpers convert a raw colgrep hit into a `SearchHit` (re-locating its
+true source lines per R05 D1) and render `SearchResult`/`FileResult` into
+the compact, token-budgeted text shown to the model (R01 §Token-budget
+invariant) through one shared backtracking loop, `_render_budgeted`. The
+three tools are module-level handlers on top of those helpers (R01 §C5),
+registered onto the shared server helpers by `register`.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import re
 import time
+from collections.abc import Callable
 from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Annotated
@@ -161,67 +163,70 @@ def _hit_block(hit: SearchHit) -> str:
     return f"{head}\n{indented}"
 
 
-def render_search_text(result: SearchResult, budget: int) -> tuple[str, bool]:
-    """Render `result` as the compact text shown to the model, capped at `budget` chars.
+def _render_budgeted(
+    header: str,
+    blocks: list[str],
+    more_note: Callable[[int], str],
+    trailing_notes: list[str],
+    budget: int,
+) -> tuple[str, bool]:
+    """Render `header` plus as many `blocks` as fit in `budget` chars, then any `trailing_notes`.
 
-    Header line, then one block per hit (`file:line-end  score  unit_type
-    name — signature`, snippet indented two spaces), stopping before any hit
-    whose block would push the text past `budget`. When hits were dropped, a
-    `[K more hits ...]` continuation note is appended — and the cap is a hard
-    one (R01 §Token-budget invariant: "capped at N characters"), so if the
-    note itself would overflow `budget` a previously-emitted hit is dropped
-    to make room for it, repeatedly if needed, rather than let the note push
-    the text past the limit. Trailing `result.notes` (e.g. R05 D5's
-    exhaustive-search caveat) are always appended last, so a zero-hit result
-    still renders them — but the cap stays hard even then: if `budget` is
-    too small to fit even the header (plus the mandatory note, plus
-    `result.notes`) with nothing left to drop, the joined text is
-    hard-truncated to `budget` characters as the last resort, rather than
-    ever returning more than requested.
+    Shared backtracking loop behind `render_search_text` and
+    `render_files_text` (R01 §Token-budget invariant: "capped at N
+    characters"): append `header`, then each block in order, stopping before
+    any block that would push the text past `budget`. When blocks were
+    dropped, a `more_note(remaining)` continuation note is appended — and the
+    cap is hard, so if the note itself would overflow `budget` a
+    previously-appended block is dropped to make room for it, repeatedly if
+    needed, rather than let the note push the text past the limit.
+    `trailing_notes` are always appended last, so an empty `blocks` still
+    renders them — but the cap stays hard even then: if `budget` is too small
+    to fit even the header (plus the mandatory note, plus `trailing_notes`)
+    with nothing left to drop, the joined text is hard-truncated to `budget`
+    characters as the last resort, rather than ever returning more than
+    requested.
 
-    Returns `(text, was_capped)`; `was_capped` reflects only this rendering
-    step, not `result.truncated` (which may already be true upstream).
+    Returns `(text, was_capped)`.
     """
-    header = _search_header(result)
-    blocks = [header]
+    out = [header]
     text_len = len(header)
     capped = False
     emitted = 0
 
-    for hit in result.hits:
-        block = _hit_block(hit)
+    for block in blocks:
         candidate_len = text_len + 1 + len(block)
         if candidate_len > budget:
             capped = True
             break
-        blocks.append(block)
+        out.append(block)
         text_len = candidate_len
         emitted += 1
 
-    remaining = len(result.hits) - emitted
+    remaining = len(blocks) - emitted
     if capped and remaining > 0:
         # Bounded by construction: each non-appending iteration drops one
-        # previously-emitted hit, so this runs at most `emitted + 1` times
-        # (one drop per already-emitted hit, plus the final appending pass)
-        # before either fitting or running out of hits to drop.
+        # previously-emitted block, so this runs at most `emitted + 1` times
+        # (one drop per already-emitted block, plus the final appending pass)
+        # before either fitting or running out of blocks to drop.
         for _ in range(emitted + 1):
-            note = f"[{remaining} more hits in structured_content; call expand(hit_ids=[...]) for code]"
+            note = more_note(remaining)
             candidate_len = text_len + 1 + len(note)
             if candidate_len <= budget or emitted == 0:
-                blocks.append(note)
+                out.append(note)
                 text_len = candidate_len
                 break
-            dropped = blocks.pop()
+            dropped = out.pop()
             text_len -= len(dropped) + 1
             emitted -= 1
             remaining += 1
 
-    text = "\n".join(blocks)
-    for note in result.notes:
+    text = "\n".join(out)
+    for note in trailing_notes:
         text = f"{text}\n{note}"
 
     # Hard cap (R01 §Token-budget invariant): the backtracking above can
-    # still leave `header (+ note) (+ result.notes)` longer than `budget`
+    # still leave `header (+ note) (+ trailing_notes)` longer than `budget`
     # when `budget` is smaller than that unavoidable minimum — hard-truncate
     # as the last resort rather than ever exceed what was requested.
     if len(text) > budget:
@@ -229,6 +234,28 @@ def render_search_text(result: SearchResult, budget: int) -> tuple[str, bool]:
         capped = True
 
     return text, capped
+
+
+def render_search_text(result: SearchResult, budget: int) -> tuple[str, bool]:
+    """Render `result` as the compact text shown to the model, capped at `budget` chars.
+
+    Header line, then one block per hit (`file:line-end  score  unit_type
+    name — signature`, snippet indented two spaces). When hits were dropped
+    to fit, a `[K more hits ...]` continuation note is appended, and trailing
+    `result.notes` (e.g. R05 D5's exhaustive-search caveat) are always
+    appended last — see `_render_budgeted` for the shared backtracking and
+    hard-cap behaviour.
+
+    Returns `(text, was_capped)`; `was_capped` reflects only this rendering
+    step, not `result.truncated` (which may already be true upstream).
+    """
+    return _render_budgeted(
+        _search_header(result),
+        [_hit_block(hit) for hit in result.hits],
+        lambda remaining: f"[{remaining} more hits in structured_content; call expand(hit_ids=[...]) for code]",
+        result.notes,
+        budget,
+    )
 
 
 def _files_header(result: FileResult) -> str:
@@ -246,45 +273,13 @@ def _file_block(file_hit: FileHit) -> str:
 
 def render_files_text(result: FileResult, budget: int) -> tuple[str, bool]:
     """`find_files` counterpart of `render_search_text`: one line per file, same hard-budget rule."""
-    header = _files_header(result)
-    blocks = [header]
-    text_len = len(header)
-    capped = False
-    emitted = 0
-
-    for file_hit in result.files:
-        block = _file_block(file_hit)
-        candidate_len = text_len + 1 + len(block)
-        if candidate_len > budget:
-            capped = True
-            break
-        blocks.append(block)
-        text_len = candidate_len
-        emitted += 1
-
-    remaining = len(result.files) - emitted
-    if capped and remaining > 0:
-        # Bounded by construction: same reasoning as `render_search_text`.
-        for _ in range(emitted + 1):
-            note = f"[{remaining} more files in structured_content]"
-            candidate_len = text_len + 1 + len(note)
-            if candidate_len <= budget or emitted == 0:
-                blocks.append(note)
-                text_len = candidate_len
-                break
-            dropped = blocks.pop()
-            text_len -= len(dropped) + 1
-            emitted -= 1
-            remaining += 1
-
-    text = "\n".join(blocks)
-
-    # Hard cap — see `render_search_text`'s matching comment.
-    if len(text) > budget:
-        text = text[:budget]
-        capped = True
-
-    return text, capped
+    return _render_budgeted(
+        _files_header(result),
+        [_file_block(file_hit) for file_hit in result.files],
+        lambda remaining: f"[{remaining} more files in structured_content]",
+        [],
+        budget,
+    )
 
 
 async def _do_search(
