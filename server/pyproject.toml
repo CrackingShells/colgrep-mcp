@@ -16,6 +16,12 @@ dependencies = [
     "pydantic>=2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/CrackingShells/colgrep-mcp"
+Repository = "https://github.com/CrackingShells/colgrep-mcp"
+Changelog = "https://github.com/CrackingShells/colgrep-mcp/blob/main/CHANGELOG.md"
+Issues = "https://github.com/CrackingShells/colgrep-mcp/issues"
+
 [project.scripts]
 colgrep-mcp = "colgrep_mcp.__main__:main"
 
