@@ -58,6 +58,15 @@ skills for mechanics; this skill is the order of operations and the rules three 
   the PR body (KT-C §Pain Points, CI).
 - **A subagent that says it is "watching CI in the background" has already ended its turn.**
   Make it block on `gh run watch --exit-status`, or read the run yourself (lead memory).
+- **A drift test that relates two artefacts owned by different leaves is red until both land.**
+  Order the roadmap so the *naming* side lands first (e.g. the `AGENTS.md` skill table before
+  the skill leaves it names), or every merge in between is red on a test nobody owns; the
+  `dev_plugin` campaign had to land its surface leaf ahead of BFS order for this (dev_plugin
+  KT §Pain Points). Also: git does not track empty directories, so a scaffolded-but-empty
+  directory never reaches a task worktree — a test that lists it must treat "absent" as "empty".
+- **Merge commits are commits too.** Probe every merge subject with `cz check --message` and run
+  `cz check --rev-range main..HEAD` on the campaign branch before pushing; per-task-branch ranges
+  never contain the lead's own merges (PR #4 of `dev_plugin` failed CI on one).
 - **Note the clock at the start; time-box the cycle.** The three prior cycles closed between
   50 minutes and 4 hours (KT-C, KT-H).
 

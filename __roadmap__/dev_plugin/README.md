@@ -64,3 +64,9 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `skill_policy.md` | `task/skill_policy` | 2 | Sonnet, ~4 min (dispatched 18:37, done 18:40); SKILL.md 121 lines; merged 18:41 |
+| `skill_stack_traps.md` | `task/skill_stack_traps` | 2 | Sonnet, ~5 min; symptom index + 4 layer references; merged 18:42 |
+| `skill_campaign_lead.md` | `task/skill_campaign_lead` | 3 | Sonnet, ~6 min; dispatch prompt reproduced as the template; merged 18:43 |
+| `list_indexes_budget.md` | `task/list_indexes_budget` | 1 | Sonnet, ~6 min; 400 indexes 55034 -> 11931 chars; list_tools diff empty; merged 18:44 |
+| `skill_landing_release.md` | `task/skill_landing_release` | 3 | Sonnet, ~7 min; probe_cz_check.sh passes; merged 18:44 |
+| `search_path.md` | `task/search_path` | 2 | Sonnet, ~15 min; find_files fold 0.69 -> 0.13 ms, notifications 3 -> 1 frames (synthetic); fixture gap in fake_colgrep search stderr; merged 18:52, re-merged 18:57 on claude/dev-plugin-cycle4 after a 111-char merge subject failed cz check in CI |

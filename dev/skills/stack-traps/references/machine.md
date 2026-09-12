@@ -69,3 +69,20 @@ $(git rev-parse main)` — and remove the worktree (`git worktree remove
 worktree trick, not a substitute for the lead's own
 `git worktree add <path> -b task/<leaf> <campaign-branch>` for a leaf
 implementer, which names a real branch on purpose.
+
+## Auto-mode permission classifier blocks compound history rewrites {#classifier}
+
+**Symptom**: a Bash command chaining `git checkout --detach … && git merge … && git cherry-pick …
+&& git branch -f … && git push --force-with-lease` is refused with "Blocked by classifier",
+as was `git push … HEAD:main` and `cz bump` from a detached `/private/tmp` worktree in the
+consistency session (`MEM`).
+
+**Cause**: the auto-mode classifier judges the whole command; anything that rewrites a
+checked-out branch or force-pushes reads as destructive, and a scratch worktree under a temp
+directory makes it worse.
+
+**What to do**: never rewrite history in place. Create a fresh branch (`git worktree add -b
+<new-branch> <dir> <good-commit>`), rebuild it with single-purpose commands (`git merge`,
+`git cherry-pick <sha>…`, one per call), push it normally, open a new PR and close the old one
+with a pointer — the `dev_plugin` campaign's PR #4 → #5 is the precedent. Do releases from the
+main checkout (`landing-and-release`).
