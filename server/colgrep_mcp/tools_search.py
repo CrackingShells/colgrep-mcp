@@ -17,7 +17,7 @@ import time
 from collections.abc import Callable
 from contextlib import AsyncExitStack
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, NamedTuple
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
@@ -281,7 +281,17 @@ def render_files_text(result: FileResult, budget: int) -> tuple[str, bool]:
     )
 
 
-async def _do_search(
+class _RawSearchOutcome(NamedTuple):
+    """What resolving, locking and running the adapter produces, before either
+    caller converts `raw_hits` into its own result shape (R01 §C6)."""
+
+    raw_hits: list[RawHit]
+    resolved: list[Path]
+    elapsed_ms: int
+    index_updated: bool  # R05 D7, derived from stderr chatter
+
+
+async def _run_adapter_search(
     ctx: Context,
     *,
     query: str,
@@ -298,19 +308,12 @@ async def _do_search(
     semantic_only: bool,
     alpha: float | None,
     skip_index_update: bool,
-    snippet_lines: int,
-    include_code: bool,
-    locate: bool,
-) -> SearchResult:
-    """Shared body of `search` and `find_files`: resolve, lock, run, convert.
+) -> _RawSearchOutcome:
+    """Shared body of `search` and `find_files`: resolve, lock, run.
 
-    `locate=False` (used by `find_files`, which never exposes `line`/
-    `hit_id`) skips reading every hit file and re-deriving its true location
-    via `locate_unit` — pure waste when nothing downstream reads `line` or
-    `hit_id`. `hit_id` is still built, from colgrep's reported line/end_line
-    as-is, with `location_verified=False`; no `LOCATION_UNVERIFIED` note is
-    added in that case, since it would be an artefact of skipping rather
-    than a real degradation (R01 §C5).
+    Raw-hit conversion (into `SearchHit`s or straight into `FileHit`s) is the
+    caller's job — a step parameterised by what each tool actually needs
+    (R01 §C6), so this stops short of it.
 
     Raises `ToolError` (via `resolve_target_paths` for a bad path, via
     `translate_adapter_errors` for an adapter failure); never a bare adapter
@@ -357,14 +360,97 @@ async def _do_search(
             raw_hits = await adapter.search(req)
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
+    return _RawSearchOutcome(
+        raw_hits=raw_hits,
+        resolved=resolved,
+        elapsed_ms=elapsed_ms,
+        index_updated=any("Building index" in line for line in stderr_lines),
+    )
+
+
+def _file_hits_from_raw(raw_hits: list[RawHit], base_path: Path | None) -> list[FileHit]:
+    """Fold raw colgrep hits straight into `FileHit`s, one per distinct file.
+
+    `find_files` never exposes `line`/`hit_id`, so building a `SearchHit` per
+    hit via `hit_from_raw` — its `locate_unit` re-derivation and (skipped-but-
+    still-costed) file-cache lookup included — is pure waste: work
+    proportional to raw hits instead of the files actually returned (R01
+    §C6). The file key gets the same absolute-path normalisation `hit_id`
+    would have used (`_resolve_hit_file`, F13) so two hits that differ only
+    in relative-vs-absolute spelling still land in the same `FileHit`; no
+    `SearchHit`, `hit_id` string, snippet or `locate_unit` call is built.
+    Hits arrive best-score-first (R05), so the first hit seen for a file sets
+    `best_score`; `top_units` is capped at 5, same as the previous fold.
+    """
+    by_file: dict[str, FileHit] = {}
+    for raw in raw_hits:
+        unit = raw.get("unit") or {}
+        file = _resolve_hit_file(unit.get("file") or "", base_path)
+        score = float(raw.get("score") or 0.0)
+        name = unit.get("name") or ""
+        existing = by_file.get(file)
+        if existing is None:
+            by_file[file] = FileHit(file=file, best_score=score, hits=1, top_units=[name])
+        else:
+            existing.hits += 1
+            if len(existing.top_units) < 5:
+                existing.top_units.append(name)
+    return list(by_file.values())
+
+
+async def _do_search(
+    ctx: Context,
+    *,
+    query: str,
+    paths: list[str] | None,
+    pattern: str | None,
+    fixed_string: bool,
+    whole_word: bool,
+    case_sensitive: bool,
+    include: list[str] | None,
+    exclude: list[str] | None,
+    exclude_dir: list[str] | None,
+    limit: int | None,
+    code_only: bool,
+    semantic_only: bool,
+    alpha: float | None,
+    skip_index_update: bool,
+    snippet_lines: int,
+    include_code: bool,
+) -> SearchResult:
+    """`search`'s body: run the adapter, then convert every raw hit into a
+    `SearchHit` (locate, snippet, `hit_id`) via `hit_from_raw`.
+
+    `find_files` no longer routes through here (R01 §C6): it calls
+    `_run_adapter_search` directly and folds raw hits straight into
+    `FileHit`s, since it never exposes `line`/`hit_id` and building a
+    `SearchHit` per hit for output that gets discarded was pure waste.
+    """
+    outcome = await _run_adapter_search(
+        ctx,
+        query=query,
+        paths=paths,
+        pattern=pattern,
+        fixed_string=fixed_string,
+        whole_word=whole_word,
+        case_sensitive=case_sensitive,
+        include=include,
+        exclude=exclude,
+        exclude_dir=exclude_dir,
+        limit=limit,
+        code_only=code_only,
+        semantic_only=semantic_only,
+        alpha=alpha,
+        skip_index_update=skip_index_update,
+    )
+
     # F13: `resolved[0]` is the "first search path" a relative `unit.file`
     # (not expected from colgrep, but not guaranteed absent either) resolves
     # against.
-    base_path = resolved[0]
+    base_path = outcome.resolved[0]
     file_cache: dict[str, str] = {}
-    if locate:
-        await _fill_file_cache(raw_hits, file_cache, base_path=base_path)
-    hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path) for raw in raw_hits]
+    await _fill_file_cache(outcome.raw_hits, file_cache, base_path=base_path)
+    hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path) for raw in outcome.raw_hits]
 
     notes: list[str] = []
     if not hits:
@@ -375,7 +461,7 @@ async def _do_search(
         notes.append(
             note(Code.LIMIT_DEFAULT_APPLIED, "limit omitted without pattern: colgrep applies its own default of 15")
         )
-    if locate and any(not hit.location_verified for hit in hits):
+    if any(not hit.location_verified for hit in hits):
         # R05 D1: once per result, never once per hit, so a result with many
         # unverified hits doesn't drown other notes.
         notes.append(note(Code.LOCATION_UNVERIFIED, "some hits' line numbers are unverified"))
@@ -383,12 +469,12 @@ async def _do_search(
     result = SearchResult(
         query=query,
         pattern=pattern,
-        paths=[str(p) for p in resolved],
+        paths=[str(p) for p in outcome.resolved],
         hits=hits,
         total=len(hits),
         truncated=False,
-        elapsed_ms=elapsed_ms,
-        index_updated=any("Building index" in line for line in stderr_lines),  # R05 D7
+        elapsed_ms=outcome.elapsed_ms,
+        index_updated=outcome.index_updated,
         notes=notes,
     )
     return result
@@ -465,7 +551,6 @@ async def search(
         skip_index_update=skip_index_update,
         snippet_lines=snippet_lines,
         include_code=include_code,
-        locate=True,
     )
 
     text, capped = render_search_text(result, settings.text_budget)
@@ -515,7 +600,7 @@ async def find_files(
     """
     settings = get_settings(ctx)
     hit_limit = min(limit * 3, 300) if limit is not None else None
-    result = await _do_search(
+    outcome = await _run_adapter_search(
         ctx,
         query=query,
         paths=paths,
@@ -531,34 +616,23 @@ async def find_files(
         semantic_only=False,
         alpha=None,
         skip_index_update=False,
-        snippet_lines=0,
-        include_code=False,
-        locate=False,
     )
-    hits = result.hits
 
-    by_file: dict[str, FileHit] = {}
-    for hit in hits:
-        existing = by_file.get(hit.file)
-        if existing is None:
-            # Hits arrive best-score-first, so the first hit for a file sets its best_score.
-            by_file[hit.file] = FileHit(file=hit.file, best_score=hit.score, hits=1, top_units=[hit.name])
-        else:
-            existing.hits += 1
-            if len(existing.top_units) < 5:
-                existing.top_units.append(hit.name)
+    # F13: `resolved[0]` is the "first search path" a relative `unit.file`
+    # (not expected from colgrep, but not guaranteed absent either) resolves
+    # against — same base `_file_hits_from_raw`'s file-key normalisation uses.
+    all_files = _file_hits_from_raw(outcome.raw_hits, outcome.resolved[0])
 
-    all_files = list(by_file.values())
     files = all_files[:limit] if limit is not None else all_files
     was_limited = limit is not None and len(all_files) > limit
 
     file_result = FileResult(
         query=query,
         pattern=pattern,
-        paths=result.paths,
+        paths=[str(p) for p in outcome.resolved],
         files=files,
         truncated=was_limited,
-        elapsed_ms=result.elapsed_ms,
+        elapsed_ms=outcome.elapsed_ms,
     )
 
     text, capped = render_files_text(file_result, settings.text_budget)
