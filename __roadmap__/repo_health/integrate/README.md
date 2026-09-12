@@ -20,8 +20,8 @@ Document, guard and review the depth-0 result before releasing it.
 graph TD
     agent_docs[Agent Orientation Docs]:::done
     ci_workflow[CI Workflow]:::done
-    review[Reviewer Pass]:::inprogress
-    release[Release]:::planned
+    review[Reviewer Pass]:::done
+    release[Release]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -34,8 +34,8 @@ graph TD
 |:-----|:-----|:-------|
 | `agent_docs.md` | 📄 Leaf Task | ✅ Done |
 | `ci_workflow.md` | 📄 Leaf Task | ✅ Done |
-| `review.md` | 📄 Leaf Task | 🔄 In Progress |
-| `release/` | 📁 Directory | ⬜ Planned |
+| `review.md` | 📄 Leaf Task | ✅ Done |
+| `release/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -46,3 +46,4 @@ graph TD
 |:-----|:-------|:--------|:------|
 | `agent_docs.md` | campaign branch (lead, direct) | 1 | every listed gate command verified to exit 0 on 2026-09-12 12:05 |
 | `ci_workflow.md` | campaign branch (lead, direct) | 1 | actionlint clean; inert until a remote exists |
+| `review.md` | `task/review` | 1 | 6 findings: 2 confirmed machinery defects fixed in release step 1, 1 asymmetry deferred, 3 low/no-action |

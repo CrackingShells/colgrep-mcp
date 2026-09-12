@@ -18,7 +18,7 @@ Land the campaign on `main` and release 0.1.1 through commitizen.
 ## Status
 ```mermaid
 graph TD
-    cleanup_and_release[Branch Cleanup, Retrospective and Release]:::planned
+    cleanup_and_release[Branch Cleanup, Retrospective and Release]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -29,7 +29,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `cleanup_and_release.md` | 📄 Leaf Task | ⬜ Planned |
+| `cleanup_and_release.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -38,3 +38,4 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `cleanup_and_release.md` | campaign branch (lead, direct) | 3 (+1 `release(colgrep-mcp): v0.1.1` written by cz bump on main) | 27 merged 0.1.0 branches deleted at 11:51; CHANGELOG heading fix + drift test added between steps 1 and 2 |
