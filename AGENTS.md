@@ -67,9 +67,10 @@ end-to-end driver (never against this repository, see Traps).
   leaf; rebase onto the target, re-run the gates, merge with `--no-ff`.
 - One roadmap step = one commit; the step's `**Commit**` field is the subject.
 - Releases: `cd server && uv run cz bump --changelog && uv run pytest`,
-  on `main`. This rewrites pyproject, `uv.lock`, the three manifests and `CHANGELOG.md`,
-  commits `release(colgrep-mcp): v<x.y.z>` and tags `v<x.y.z>`. Never edit a
-  version number by hand.
+  on `main`, then `git push origin main v<x.y.z>`. The bump rewrites pyproject,
+  `uv.lock`, the three manifests and `CHANGELOG.md`, commits
+  `release(colgrep-mcp): v<x.y.z>` and creates a *lightweight* tag, which
+  `--follow-tags` does not push — name the tag. Never edit a version by hand.
 - Tools are module-level `async def <name>(..., *, ctx: Context) -> CallToolResult`,
   registered onto the server via `server.register_tool(mcp, handler, *, title,
   annotations)` — the one way to register a tool, since it dedents the
