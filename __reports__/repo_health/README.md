@@ -13,5 +13,8 @@
 ## Round 03
 - `03-findings_ci_matrix_v0.md` — first six CI runs on GitHub: Windows 73 → 19 → 0 failures, causes per layer (one real server fix in `resources.py`), `setup-uv` tag pinning, PR-vs-rebase note (latest)
 
+## Round 04
+- `04-findings_remote_install_v0.md` — remote install from GitHub per plugin ecosystem: Claude Code marketplace add + install verified end-to-end, Codex's equivalent documented but not exercised (no Codex CLI here), Agent Plugins 1.0 has no spec-defined mechanism at all (latest)
+
 ## Status
 Campaign opened and closed 2026-09-12 (≈50 min): two Sonnet implementers on file-disjoint leaves, one Sonnet reviewer, lead did the glue. Released as v0.1.1 through the commitizen machinery the campaign introduced. Same afternoon: relicensed to AGPL-3.0-or-later, pushed to `CrackingShells/colgrep-mcp`, CI green on ubuntu/macos/windows after PR #1.
