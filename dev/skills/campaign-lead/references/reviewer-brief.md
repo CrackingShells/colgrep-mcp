@@ -30,3 +30,10 @@ A reviewer's dispatch prompt must contain all five of the following.
 The reviewer is read-only: it edits nothing but its own report file. If it needs its own
 worktree checked out from `main` while `main` is checked out elsewhere, see the `stack-traps`
 skill for the detach-and-remove pattern — don't restate it here.
+
+## Size validator probes to the margin
+
+When the brief says "break the guard and confirm the test fails", state the delta relative to the
+artefact's *current* margin, not as a fixed number: "add 10 lines" to an 89-line file under a
+130-line cap never crosses the cap, and the probe passes without exercising anything (dev_plugin
+review F2). Ask for "enough to exceed the cap" and have the reviewer report the size used.

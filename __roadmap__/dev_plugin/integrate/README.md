@@ -16,9 +16,9 @@ The merged result is reviewed for what the tests cannot prove, the surface files
 ## Status
 ```mermaid
 graph TD
-    review[Read-Only Review]:::inprogress
+    review[Read-Only Review]:::done
     surface[Surface: AGENTS.md, CLAUDE.md, CONTRIBUTING.md]:::done
-    close[Close]:::planned
+    close[Close]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -29,9 +29,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `review.md` | 📄 Leaf Task | 🔄 In Progress |
+| `review.md` | 📄 Leaf Task | ✅ Done |
 | `surface.md` | 📄 Leaf Task | ✅ Done |
-| `close/` | 📁 Directory | ⬜ Planned |
+| `close/` | 📁 Directory | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
@@ -40,3 +40,5 @@ graph TD
 ## Progress
 | Node | Branch | Commits | Notes |
 |:-----|:-------|:--------|:------|
+| `surface.md` | campaign branch | 2 | lead, landed 18:41 before the skill merges (drift-test ordering); loader gate added 18:45 |
+| `review.md` | `task/review` | 1 | Sonnet, ~13 min (18:52 -> 19:05); 2 low findings (F1 duplicate bullet, F2 probe sizing), schema diff empty, perf 5.6x reproduced |

@@ -19,7 +19,7 @@ Everything the last three cycles learned is loadable as a skill from the reposit
 - ✅ [static] `dev/skills/` holds `maintainer-policy`, `campaign-lead`, `landing-and-release`, `stack-traps`, each with a `SKILL.md` ≤ 150 lines and a `dev/evals/<name>-triggers/case.yaml`; every R01 §C4 bullet is in exactly one skill
 - ✅ [static] `AGENTS.md` ≤ 130 lines and names every skill; `CONTRIBUTING.md` under 60 lines; `test_dev_plugin.py` green
 - ✅ [behavioral] `Client.list_tools()` JSON identical between `main` and the campaign branch; the only client-visible deltas are the two R01 §C8 lists
-- ✅ [static] `__reports__/dev_plugin/` holds the architecture, the stderr findings, the review observation and a knowledge-transfer report; released as v0.1.3 from the main checkout
+- ✅ [static] `__reports__/dev_plugin/` holds the architecture, the stderr findings, the review observation and a knowledge-transfer report; released as v0.2.0 from the main checkout
 
 ## Gotchas
 - File ownership is disjoint by construction (R01 §Roadmap Recommendation): a leaf edits only its own files and *reports* anything else in its final message, never edits it. `__reports__/dev_plugin/README.md` is touched at depth 0 only by `search_path`.
