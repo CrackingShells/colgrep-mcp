@@ -1,0 +1,47 @@
+# Gate commands for every push and pull request, on the three operating
+# systems the launcher claims to support. Releases are NOT cut here: they
+# are cut locally with `cd server && uv run cz bump` (see CONTRIBUTING.md),
+# because this repository has no release automation consumer yet.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ruff + pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: server/uv.lock
+      - name: Sync the server environment (Python from server/.python-version)
+        run: uv sync --directory server
+      - name: Lint
+        run: uv run --directory server ruff check
+      - name: Test
+        run: uv run --directory server pytest
+
+  commits:
+    name: commit messages (cz check)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: server/uv.lock
+      - run: uv sync --directory server
+      - name: Check every commit in the PR against the CONTRIBUTING vocabulary
+        run: uv run --directory server cz check --rev-range origin/${{ github.base_ref }}..HEAD
