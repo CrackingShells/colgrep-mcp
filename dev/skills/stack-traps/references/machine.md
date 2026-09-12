@@ -86,3 +86,20 @@ directory makes it worse.
 `git cherry-pick <sha>…`, one per call), push it normally, open a new PR and close the old one
 with a pointer — the `dev_plugin` campaign's PR #4 → #5 is the precedent. Do releases from the
 main checkout (`landing-and-release`).
+
+## `uv run` says "Failed to spawn: `cz`" although `uv sync` audits every package {#stale-venv}
+
+**Symptom**: in a checkout, `uv run cz …` (or `pytest`, `ruff`) fails with
+`Failed to spawn: \`cz\`` / `No such file or directory`, while `uv sync`
+reports every package present and `.venv/bin/cz` exists.
+
+**Cause**: the venv was created before the repository moved on disk. Every
+launcher in `.venv/bin/` has an absolute shebang
+(`#!/old/path/server/.venv/bin/python3`), `uv sync` audits installed
+packages rather than shebangs, so nothing rewrites them; the kernel's "bad
+interpreter" surfaces as uv's "Failed to spawn". Bit the v0.3.0 release
+(main checkout moved from `~/colgrep-mcp`).
+
+**What to do**: `rm -rf server/.venv && uv sync --directory server`. Never
+hand-edit the shebangs and never "fix" it by pointing the release at another
+checkout — `release.sh` must still run from the main one.

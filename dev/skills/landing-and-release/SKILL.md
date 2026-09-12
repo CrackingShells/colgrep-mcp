@@ -82,7 +82,7 @@ Why: `cz bump` mutates version-tracked files across the tree and pushes a
 tag; running it anywhere but the one checkout that is actually `main` risks
 bumping a version nobody merges, or a push a sandboxed permission classifier
 silently blocks. Only from the main checkout
-(`~/colgrep-mcp`), never a scratch or detached worktree:
+(`~/colgrep-mcp`; `release.sh` reads it from `git worktree list`), never a scratch or detached worktree:
 
 ```bash
 cd server

@@ -30,6 +30,7 @@ section, don't re-derive the trap from scratch.
 | a Bash command is blocked, including inside a heredoc that only mentions the search pattern | machine | `references/machine.md#shell-hook` |
 | CI is red only on windows-latest, or only a `setup-uv` step fails | machine | `references/machine.md#windows-ci` |
 | `git worktree add` on `main` fails because it's checked out elsewhere | machine | `references/machine.md#worktree-main` |
+| `uv run cz` (or pytest, ruff) fails with "Failed to spawn" while `uv sync` audits every package | machine | `references/machine.md#stale-venv` |
 
 ## How to use this
 

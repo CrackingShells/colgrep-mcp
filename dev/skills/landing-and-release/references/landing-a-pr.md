@@ -25,7 +25,12 @@ causes the failure mode below. (`MEM`.)
    ```
    `--merge` (not squash, not rebase) preserves the per-roadmap-step commits;
    the `(PR #N)` suffix on the subject is what makes the merge commit
-   traceable back to the PR from `git log` alone.
+   traceable back to the PR from `git log` alone. Pass `--body "<why>"` as
+   well: with `--subject` alone GitHub copies the PR *title* into the merge
+   commit's body, and if that title is itself a `feat(...)`/`fix(...)` line
+   commitizen parses it as a second entry — v0.3.0's changelog lists the
+   PR #6 subject twice for exactly this reason. Probe the subject first with
+   `cz check --message` (the merge commit is a commit too).
 
 ## Why not a local rebase-then-merge here
 
