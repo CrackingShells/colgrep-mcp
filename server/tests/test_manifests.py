@@ -1,9 +1,18 @@
 """Consistency guards across the plugin packaging manifests.
 
-Four JSON files at the repo root (plus one under `.claude-plugin/` and one
-under `.codex-plugin/`) describe the same server to three different plugin
-ecosystems (Claude Code, Agent Plugins 1.0, Codex). Nothing enforces that
-they stay in sync on a version bump or a manifest edit except these tests.
+`plugin.json` and `mcp.json` at the repo root, `.claude-plugin/plugin.json`
+plus `.claude-plugin/mcp.json`, and `.codex-plugin/plugin.json` describe the
+same server to three different plugin ecosystems (Claude Code, Agent
+Plugins 1.0, Codex). Nothing enforces that they stay in sync on a version
+bump or a manifest edit except these tests.
+
+The Claude Code manifest lives at `.claude-plugin/mcp.json`, not at a
+root-level `.mcp.json`: Claude Code's project-scope MCP auto-discovery only
+ever looks for a root `.mcp.json`, and this repository is itself sometimes
+opened as a plain project rather than loaded as a plugin. A root `.mcp.json`
+using `${CLAUDE_PLUGIN_ROOT}` broke exactly that way (spawn ENOENT, see
+__reports__/repo_health/00-findings_launch_placeholders_v0.md); relocating
+the file makes it invisible to project-scope auto-discovery.
 """
 
 from __future__ import annotations
@@ -59,8 +68,22 @@ def test_agent_plugin_fields_whitelist():
     )
 
 
+def _launch_args(args: list[str]) -> None:
+    """Every manifest launches with the same cross-platform argv shape.
+
+    `uv run --quiet --directory <ROOT-placeholder>/server colgrep-mcp`, with
+    the ecosystem's own root placeholder only in `args` — never in
+    `command`, per the Agent Plugins 1.0 spec (`command` forbids placeholder
+    expansion) and to keep a bare, always-resolvable executable name for
+    every context Claude Code's `.mcp.json` can be loaded from.
+    """
+    assert args[:2] == ["run", "--quiet"]
+    assert args[-3:] == ["--directory", args[-2], "colgrep-mcp"]
+    assert args[-2].endswith("/server")
+
+
 def test_mcp_configs_equivalent():
-    claude_mcp = _load(".mcp.json")
+    claude_mcp = _load(".claude-plugin/mcp.json")
     agent_mcp = _load("mcp.json")
     agent_plugin = _load("plugin.json")
 
@@ -75,13 +98,21 @@ def test_mcp_configs_equivalent():
     agent_server = agent_mcp["mcpServers"]["colgrep"]
 
     assert agent_server["type"] == "stdio"
-    # Both ecosystems launch the same script; only the root placeholder differs
-    # (Agent Plugins forbids placeholders in `command`, so it uses a ./ path).
-    assert claude_server["command"] == "${CLAUDE_PLUGIN_ROOT}/scripts/launch.sh"
-    assert agent_server["command"] == "./scripts/launch.sh"
-    assert claude_server["args"] == agent_server["args"]
-    launcher = REPO_ROOT / "scripts" / "launch.sh"
-    assert launcher.exists() and launcher.stat().st_mode & 0o111, "launch.sh must be executable"
+
+    # `command` must be a bare executable name in every ecosystem: no
+    # placeholder, ever (Agent Plugins 1.0 spec §7.2.1 forbids it outright;
+    # Claude Code's plugin-substitution mechanism is undocumented for the
+    # `${VAR:-default}` fallback that would make a placeholder safe there too).
+    assert claude_server["command"] == "uv"
+    assert agent_server["command"] == "uv"
+    assert "$" not in claude_server["command"]
+    assert "$" not in agent_server["command"]
+
+    _launch_args(claude_server["args"])
+    _launch_args(agent_server["args"])
+    # Only the ecosystem's own root placeholder differs.
+    assert claude_server["args"][-2] == "${CLAUDE_PLUGIN_ROOT}/server"
+    assert agent_server["args"][-2] == "${PLUGIN_ROOT}/server"
 
     for key in agent_server.get("env", {}):
         assert key not in FORBIDDEN_MCP_ENV_KEYS

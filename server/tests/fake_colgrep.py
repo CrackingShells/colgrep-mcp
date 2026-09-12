@@ -54,7 +54,10 @@ def main(argv):
     sub = args[0] if args else ""
     if sub == "settings":
         print("Current configuration:\n")
-        print(f"  model:       {MODEL} (default)\n  precision:   int8 (build default)\n  k:           25 (default)\n  n:           6 (default)")
+        print(
+            f"  model:       {MODEL} (default)\n  precision:   int8 (build default)\n"
+            "  k:           25 (default)\n  n:           6 (default)"
+        )
         return 0
     if sub == "status":
         path = next((a for a in args[1:] if not a.startswith("-")), ".")
@@ -62,7 +65,11 @@ def main(argv):
             print(f"No index found for {path} [{MODEL}]\nRun `colgrep <query>` to create one.")
         else:
             project = os.environ.get("FAKE_COLGREP_STATUS_PROJECT", path)
-            print(f"Project: {project}\nModel:   {MODEL}\nIndex:   /tmp/fake-indices/fake-corpus-deadbeef\n\nRun any search to update the index, or `colgrep clear` to rebuild from scratch.")
+            print(
+                f"Project: {project}\nModel:   {MODEL}\n"
+                "Index:   /tmp/fake-indices/fake-corpus-deadbeef\n\n"
+                "Run any search to update the index, or `colgrep clear` to rebuild from scratch."
+            )
         return 0
     if sub == "init":
         path = next((a for a in args[1:] if not a.startswith("-")), ".")

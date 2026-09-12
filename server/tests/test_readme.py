@@ -51,7 +51,9 @@ def _readme_tool_names() -> set[str]:
 
 async def test_tools_table_matches_server():
     readme_names = _readme_tool_names()
-    assert readme_names, f"no tool rows parsed under {_SECTION_HEADING!r} -- did the README section move or get renamed?"
+    assert readme_names, (
+        f"no tool rows parsed under {_SECTION_HEADING!r} -- did the README section move or get renamed?"
+    )
 
     async with Client(build(), raise_exceptions=True) as client:
         live_names = {tool.name for tool in (await client.list_tools()).tools}

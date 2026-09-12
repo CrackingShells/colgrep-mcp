@@ -99,7 +99,7 @@ class ColgrepAdapter:
         # process survives a `ColgrepTimeout`), never read by production code.
         self._last_proc: asyncio.subprocess.Process | None = None
 
-    def with_stderr(self, on_stderr: StderrCallback | None) -> "ColgrepAdapter":
+    def with_stderr(self, on_stderr: StderrCallback | None) -> ColgrepAdapter:
         """A shallow copy sharing `binary`/`timeout_s` but a different `on_stderr`.
 
         Used by the server-assembly layer to get a per-call adapter that
