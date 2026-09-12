@@ -341,7 +341,8 @@ async def test_translate_adapter_errors_catches_the_base_class():
     with pytest.raises(ToolError) as e:
         async with translate_adapter_errors(path=Path("/proj")):
             raise ColgrepTimeout("colgrep timed out after 1s")
-    assert str(e.value).startswith(f"[{Code.COLGREP_TIMEOUT}]") and "(/proj)" in str(e.value)
+    # `Path("/proj")` renders as `\proj` on Windows: compare against its own str().
+    assert str(e.value).startswith(f"[{Code.COLGREP_TIMEOUT}]") and f"({Path('/proj')})" in str(e.value)
 
     # Non-adapter exceptions pass through untouched.
     with pytest.raises(ValueError):
