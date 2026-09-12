@@ -8,47 +8,58 @@ with `skills/colgrep-search/SKILL.md`.
 
 The single `@mcp.completion()` handler on the server is registered here
 (`complete_path`) and answers for both the `colgrep://status/{+path}`
-template's `path` variable and each prompt's `path` argument. Like the two
-static resources in `resources.py`, it has no request `Context` to reuse the
-lifespan's adapter (the SDK does not thread one into a completion callback:
-`func(ref, argument, context)` carries only the completion `context`, never a
-request `Context`) — it builds a short-lived one from `Settings.from_env()`
-and caches the resulting project list for 30s so repeated keystrokes stay cheap.
+template's `path` variable and each prompt's `path` argument. It has no
+request `Context` to fetch the lifespan's adapter through the usual route
+(the SDK does not thread one into a completion callback: `func(ref, argument,
+context)` carries only the completion `context`, never a request `Context`)
+— it reaches the same adapter through `server.get_app()`'s module-global
+handle instead (`get_adapter()`, no `ctx`), and caches the resulting project
+list for 30s behind a lock so two completions racing past a stale cache don't
+both spawn `colgrep --stats`.
 """
 
 from __future__ import annotations
 
+import asyncio
 import time
 
 from mcp.server import MCPServer
 from mcp.types import Completion, CompletionArgument, CompletionContext, PromptReference, ResourceTemplateReference
 
-from .adapter import ColgrepAdapter, ColgrepError
-from .config import Settings
+from .adapter import ColgrepError
 from .models import IndexInfo
+from .server import get_adapter
 
 _STATUS_TEMPLATE_URI = "colgrep://status/{+path}"
 _PATH_PROMPTS = {"explore", "locate", "impact"}
 _STATS_CACHE_TTL_S = 30.0
 
 _stats_cache: tuple[float, list[IndexInfo]] | None = None
+#: Serialises a stale-cache refill: two completions racing past the TTL
+#: check must not both spawn `colgrep --stats` (F10).
+_stats_lock = asyncio.Lock()
 
 
-def _standalone_adapter() -> ColgrepAdapter:
-    """Build an adapter from the environment; mirrors `resources._standalone_adapter`."""
-    settings = Settings.from_env()
-    return ColgrepAdapter(binary=settings.binary, timeout_s=settings.timeout_s)
+def _stats_cache_is_fresh() -> bool:
+    return _stats_cache is not None and time.monotonic() - _stats_cache[0] < _STATS_CACHE_TTL_S
 
 
 async def _cached_project_paths() -> list[str]:
-    """`adapter.stats()` project paths, refreshed at most once per 30s."""
+    """`adapter.stats()` project paths, refreshed at most once per 30s.
+
+    Double-checked under `_stats_lock`: a waiter that blocked on a stale
+    cache re-checks the TTL once it holds the lock, since another completion
+    may have already refilled it while it waited.
+    """
     global _stats_cache
-    now = time.monotonic()
-    if _stats_cache is not None and now - _stats_cache[0] < _STATS_CACHE_TTL_S:
+    if _stats_cache_is_fresh():
         return [info.project for info in _stats_cache[1]]
-    infos = await _standalone_adapter().stats()
-    _stats_cache = (now, infos)
-    return [info.project for info in infos]
+    async with _stats_lock:
+        if _stats_cache_is_fresh():
+            return [info.project for info in _stats_cache[1]]
+        infos = await get_adapter().stats()
+        _stats_cache = (time.monotonic(), infos)
+        return [info.project for info in infos]
 
 
 def _scope_clause(path: str | None) -> str:
