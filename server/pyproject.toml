@@ -24,6 +24,7 @@ dev = [
     "pytest>=8",
     "anyio>=4",
     "inline-snapshot>=0.13",
+    "commitizen>=4.18.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -33,3 +34,54 @@ packages = ["colgrep_mcp"]
 testpaths = ["tests"]
 addopts = "-q"
 markers = ["real_colgrep: exercises the real colgrep binary (read-only calls only); skipped unless COLGREP_MCP_REAL=1."]
+
+[tool.commitizen]
+name = "cz_customize"
+version_provider = "pep621"
+tag_format = "v$version"
+bump_message = "release(colgrep-mcp): v$new_version"
+update_changelog_on_bump = true
+changelog_incremental = true
+changelog_file = "../CHANGELOG.md"
+version_files = [
+    "../plugin.json:\"version\"",
+    "../.claude-plugin/plugin.json:\"version\"",
+    "../.codex-plugin/plugin.json:\"version\"",
+]
+
+[tool.commitizen.customize]
+schema = "type(scope): description"
+schema_pattern = "^(feat|fix|refactor|perf|test|docs|build|chore|release)\\([a-z][a-z0-9-]*\\)!?: .+"
+example = "fix(server): guard against empty query strings"
+bump_pattern = "^(BREAKING[\\-\\ ]CHANGE|feat|fix|perf)(\\(.+\\))?(!)?"
+bump_map = { "^.+!$" = "MAJOR", "^BREAKING[\\-\\ ]CHANGE" = "MAJOR", "^feat" = "MINOR", "^fix" = "PATCH", "^perf" = "PATCH" }
+change_type_order = ["BREAKING CHANGE", "feat", "fix", "perf"]
+commit_parser = "^(?P<change_type>feat|fix|refactor|perf|test|docs|build|chore|release)\\((?P<scope>[a-z][a-z0-9-]*)\\)(?P<breaking>!)?:\\s(?P<message>.*)?"
+changelog_pattern = "^(feat|fix|perf|BREAKING CHANGE)(\\(.+\\))?(!)?"
+change_type_map = { feat = "Added", fix = "Fixed", perf = "Changed" }
+message_template = "{{change_type}}({{scope}}): {{message}}"
+
+[[tool.commitizen.customize.questions]]
+type = "list"
+name = "change_type"
+message = "Select the type of change you are committing"
+choices = [
+    { value = "feat", name = "feat: new server capability visible to an MCP client, or new plugin surface" },
+    { value = "fix", name = "fix: corrects behaviour that contradicts the architecture report or a test" },
+    { value = "refactor", name = "refactor: restructures without changing observable behaviour" },
+    { value = "perf", name = "perf: latency / token-cost improvement with a measured before/after" },
+    { value = "test", name = "test: adds or changes tests only" },
+    { value = "docs", name = "docs: reports, roadmap, README, SKILL.md prose, docstrings" },
+    { value = "build", name = "build: pyproject, uv lock, packaging, plugin manifests" },
+    { value = "chore", name = "chore: repo housekeeping that fits nowhere else" },
+]
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "scope"
+message = "Scope (mandatory, kebab-case, e.g. server, adapter, roadmap)"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "message"
+message = "Short imperative description (no trailing period)"
