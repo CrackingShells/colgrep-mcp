@@ -87,7 +87,13 @@ bump_pattern = "^((BREAKING[\\-\\ ]CHANGE|feat|fix|refactor|perf|test|docs|build
 bump_map = { "^.+!$" = "MAJOR", "^BREAKING[\\-\\ ]CHANGE" = "MAJOR", "^feat" = "MINOR", "^fix" = "PATCH", "^perf" = "PATCH" }
 change_type_order = ["BREAKING CHANGE", "feat", "fix", "perf"]
 commit_parser = "^(?P<change_type>feat|fix|refactor|perf|test|docs|build|chore|release)\\((?P<scope>[a-z][a-z0-9-]*)\\)(?P<breaking>!)?:\\s(?P<message>.*)?"
-changelog_pattern = "^(feat|fix|perf|BREAKING CHANGE)(\\(.+\\))?(!)?"
+# A merge commit's subject repeats the PR's `feat`/`fix` subject with a
+# `(PR #N)` suffix (landing-and-release §Landing a PR), so without the lookahead
+# every release listed that entry twice (v0.3.0, v0.4.0). commitizen applies
+# this with `re.match` to the whole message, subject and body
+# (`changelog.generate_tree_from_commits`), so the lookahead stops at the first
+# newline rather than at `$`.
+changelog_pattern = "^(?!.*\\(PR #\\d+\\)(\\n|$))(feat|fix|perf|BREAKING CHANGE)(\\(.+\\))?(!)?"
 change_type_map = { feat = "Added", fix = "Fixed", perf = "Changed" }
 message_template = "{{change_type}}({{scope}}): {{message}}"
 

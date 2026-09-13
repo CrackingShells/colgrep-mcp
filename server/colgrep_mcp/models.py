@@ -88,10 +88,26 @@ class IndexInfo(BaseModel):
     model: str
     units_indexed: int
     search_count: int
+    # Store-derived fields (index_housekeeping R01 §C4); all `None` when the
+    # store root could not be derived or the project is absent from the store.
+    path_exists: bool | None = Field(default=None, description="Whether `project` still exists on disk.")
+    size_bytes: int | None = Field(default=None, description="Bytes under the index directory.")
+    last_modified: str | None = Field(default=None, description="ISO 8601 UTC time of the last search or update.")
+    shadowed_by: str | None = Field(
+        default=None, description="An indexed, existing ancestor project that double-indexes this one's units."
+    )
+    stale: str | None = Field(
+        default=None,
+        description="`orphaned` (path gone), `machine_state` (temp, cache or hidden tree) or `shadowed`; "
+        "`None` for a live project. `cold` needs parameters and is reported by `index_prune` only.",
+    )
 
 
 class IndexList(BaseModel):
     indexes: list[IndexInfo]
+    store_root: str | None = Field(default=None, description="The index store directory, when it could be derived.")
+    total_bytes: int | None = Field(default=None, description="Bytes under the whole store.")
+    total: int | None = Field(default=None, description="Indexed projects before any `stale_only` filter.")
 
 
 class IndexBuildResult(BaseModel):
@@ -111,6 +127,26 @@ class IndexClearResult(BaseModel):
     cleared: bool
 
 
+class PruneCandidate(BaseModel):
+    project: str
+    index_dir: str
+    kind: str = Field(description="`orphaned`, `machine_state`, `shadowed` or `cold` (index_housekeeping R01 §C3).")
+    size_bytes: int
+    last_modified: str
+    search_count: int | None = None
+    shadowed_by: str | None = None
+
+
+class PruneResult(BaseModel):
+    dry_run: bool
+    store_root: str
+    candidates: list[PruneCandidate]
+    total_bytes: int = Field(description="Bytes under every candidate's index directory.")
+    pruned: list[str] = Field(default_factory=list, description="Projects whose index directory was removed.")
+    failed: list[str] = Field(default_factory=list, description="`<project>: <reason>` per candidate left in place.")
+    freed_bytes: int = 0
+
+
 class Doctor(BaseModel):
     colgrep_path: str | None
     version: str | None
@@ -119,3 +155,8 @@ class Doctor(BaseModel):
     root_source: str
     ok: bool
     problems: list[str] = Field(default_factory=list)
+    hints: list[str] = Field(
+        default_factory=list,
+        description="`[CODE] ...` advice that does not make the environment not-ok, e.g. a stale index store "
+        "(index_housekeeping R01 §C6).",
+    )

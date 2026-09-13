@@ -30,6 +30,7 @@ async def test_list_prompts_arguments(settings_env):
             "explore": {"question": True, "path": False},
             "locate": {"target": True, "path": False},
             "impact": {"change": True, "path": False},
+            "housekeeping": {"days": False},
         }
 
 
@@ -150,3 +151,22 @@ async def test_completion_cache_refill_is_serialised(settings_env, monkeypatch):
     assert call_count["n"] == 1
     assert set(first.completion.values) == {"/tmp/fake-corpus", "/tmp/other"}
     assert set(second.completion.values) == {"/tmp/fake-corpus", "/tmp/other"}
+
+
+async def test_housekeeping_prompt_text_contract(settings_env):
+    """index_housekeeping R01 §C7: list → dry run → confirmed prune → list again."""
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.get_prompt("housekeeping", {"days": "45"})
+        text = result.messages[0].content.text
+        assert result.messages[0].role == "user"
+        assert text.index("list_indexes(stale_only=true)") < text.index("index_prune()")
+        assert text.index("index_prune()") < text.index("index_prune(dry_run=false, confirm=true")
+        assert "days=45" in text and "45+ days" in text
+        assert '"cold"' in text and "failed" in text
+        assert "by hand" in text
+
+
+async def test_housekeeping_prompt_defaults_to_thirty_days(settings_env):
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.get_prompt("housekeeping", {})
+        assert "days=30" in result.messages[0].content.text

@@ -38,9 +38,15 @@ doesn't share vocabulary with the query.
   whole project: the tool refuses when the project root differs from the
   path you gave and tells you the root to pass explicitly. `index_status`
   shows both `requested_path` and `project`.
-- `list_indexes` — every indexed project on this machine, with sizes.
+- `list_indexes` — every indexed project on this machine: model, units,
+  searches, index size, last use, whether the project path still exists,
+  and which indexed ancestor shadows it. `stale_only=true` keeps only the
+  `orphaned`, `machine_state` and `shadowed` ones (see Housekeeping).
+- `index_prune` — remove stale indexes in one call. Dry run by default;
+  see Housekeeping for the classes and the confirmation flow.
 - `doctor` — environment self-check (binary found, version, default root).
-  Use when a tool call fails for an unclear reason.
+  Use when a tool call fails for an unclear reason. A `hint:` line names a
+  stale index store when it carries orphaned or machine-state indexes.
 
 ## Writing queries
 
@@ -148,6 +154,33 @@ widen `paths`.
   a large explicit `limit` instead.
 - Do not skip `index_status`/`index_build` on a repository you know is large
   and has never been searched, then be surprised a `search` call times out.
+
+## Housekeeping
+
+colgrep's index store only grows: every path you ever searched keeps its
+index, including scratch directories, removed worktrees and subdirectories
+of a project that was indexed later. `list_indexes` classifies each index:
+
+- `orphaned` — the project path no longer exists on disk.
+- `machine_state` — the path is in the system temp directory, a platform
+  state tree (`~/Library`, `~/AppData`) or a hidden directory under home
+  (`~/.cache`, `~/.claude/...`) and is not a git work tree.
+- `shadowed` — the path lies inside another indexed, existing project
+  (`shadowed_by`): its units are indexed twice, because colgrep only folds
+  a path into an ancestor that was indexed *first*.
+- `cold` — the path exists, has at most `max_searches` searches and was
+  last touched `days` ago or more. Reported by `index_prune` only, opt-in.
+
+`index_prune()` is a dry run over the first three classes, grouped by class
+with sizes and the exact next call. `index_prune(dry_run=false,
+confirm=true, classes=[...])` deletes those index directories; without
+`confirm` it asks through elicitation, exactly like `index_clear`. The
+candidates are recomputed at deletion time and each directory is removed
+only if its own `project.json` still names the candidate, so a stale
+listing can never delete a live project's index. `index_prune` never runs
+`colgrep clear`: on a gone path that command fails, and on a shadowed path
+it would clear the ancestor project instead. The `housekeeping` prompt
+walks the whole sequence.
 
 ## Codes
 

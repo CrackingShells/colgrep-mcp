@@ -11,6 +11,7 @@ prepends a duplicate history. Measured on 2026-09-12 with commitizen 4.18.
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -24,3 +25,34 @@ def test_version_headings_use_the_commitizen_shape():
     assert headings, "CHANGELOG.md has no `## ` version headings"
     bad = [h for h in headings if not _HEADING_RE.match(h)]
     assert not bad, f"headings commitizen's incremental mode cannot parse: {bad}"
+
+
+def test_changelog_pattern_skips_merge_subjects_and_keeps_step_subjects():
+    """`gh pr merge --subject "<step subject> (PR #N)"` makes the merge commit repeat
+    the step's subject; both matched `changelog_pattern` and every release since
+    v0.3.0 listed the entry twice. commitizen applies the pattern with `re.match`
+    to the *whole* message, body included (`changelog.generate_tree_from_commits`,
+    probed on commitizen 4.18), so the messages here carry a body: a pattern that
+    anchors the suffix with `$` passes the subject-only form and still lists the
+    merge twice. Regression test: the `(PR #N)` cases fail against the pattern
+    that shipped in v0.4.0 and against that `$`-anchored first attempt."""
+    config = tomllib.loads((REPO_ROOT / "server" / "pyproject.toml").read_text())
+    pattern = re.compile(config["tool"]["commitizen"]["customize"]["changelog_pattern"])
+    body = "\n\nWhy the change exists.\n\nCo-Authored-By: someone <x@y>"
+
+    kept = [
+        "feat(plugin): ship the search policy, grep redirect and worktree reap as plugin hooks",
+        "fix(plugin): treat the system temp directory and appdata as machine state in the hook gate",
+        "perf(search): skip the per-lock resolve",
+        "feat(search)!: rename limit",
+    ]
+    skipped = [
+        "feat(plugin): ship the search policy, grep redirect and worktree reap as plugin hooks (PR #7)",
+        "fix(repo): replace local machine paths (PR #12)",
+        "docs(reports): close the harness_wiring reports index after the v0.4.0 release",
+        "refactor(index): split the renderer",
+    ]
+    for message in (*kept, *(s + body for s in kept)):
+        assert pattern.match(message), message
+    for message in (*skipped, *(s + body for s in skipped)):
+        assert not pattern.match(message), message

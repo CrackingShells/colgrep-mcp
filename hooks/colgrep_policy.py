@@ -155,13 +155,23 @@ def machine_state_roots(home: str) -> list:
     the system temp directory is machine state wherever it lives — on Windows
     it is `%LOCALAPPDATA%\\Temp`, under the home directory with no dot-prefixed
     component, which is how the first Windows CI run of these hooks read a
-    pytest `tmp_path` as a source corpus (harness_wiring PR #7).
+    pytest `tmp_path` as a source corpus (harness_wiring PR #7). The server's
+    `store.machine_state_roots` restates this list; a test pins them equal.
     """
-    return [
+    roots = [
         os.path.realpath(tempfile.gettempdir()),
         os.path.join(home, "Library"),
         os.path.join(home, "AppData"),
     ]
+    # The per-user temp directory is not the only one: macOS puts it under
+    # `/var/folders` while `/private/tmp` stays a system temp directory, and
+    # the indexes under it (every session scratchpad) read as live projects
+    # until it was listed here (index_housekeeping README §Status).
+    if os.name == "posix":
+        posix_tmp = os.path.realpath("/tmp")
+        if posix_tmp not in roots:
+            roots.append(posix_tmp)
+    return roots
 
 
 def is_source_corpus(path: str) -> bool:

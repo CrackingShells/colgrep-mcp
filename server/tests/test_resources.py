@@ -152,3 +152,23 @@ async def test_read_errors_resource_lists_every_code(settings_env):
     for code in Code:
         assert f"`{code}`" in text
         assert HINTS[code] in text
+
+
+async def test_read_indexes_carries_store_fields(settings_env, fake_store, tmp_path, monkeypatch):
+    """`colgrep://indexes` serves the same enriched `IndexList` as `list_indexes` (R01 §C4)."""
+    import colgrep_mcp.store as store_module
+
+    live = tmp_path / "live"
+    live.mkdir()
+    monkeypatch.setattr(store_module, "machine_state_roots", lambda home: [])
+    fake_store("live-0001", live, search_count=2)
+    fake_store("gone-0002", tmp_path / "gone")
+
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.read_resource("colgrep://indexes")
+
+    payload = json.loads(result.contents[0].text)
+    assert payload["store_root"] == str(fake_store.root)
+    by_project = {i["project"]: i for i in payload["indexes"]}
+    assert by_project[str(live)]["stale"] is None and by_project[str(live)]["size_bytes"] > 0
+    assert by_project[str(tmp_path / "gone")]["stale"] == "orphaned"

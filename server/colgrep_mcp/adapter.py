@@ -117,6 +117,9 @@ class ColgrepAdapter:
         # Set by `_run` after every spawn; for tests only (proving no zombie
         # process survives a `ColgrepTimeout`), never read by production code.
         self._last_proc: asyncio.subprocess.Process | None = None
+        # `store_root()`'s cache: the answer may legitimately be `None`, hence the flag.
+        self._store_root: Path | None = None
+        self._store_root_cached = False
 
     def with_stderr(self, on_stderr: StderrCallback | None) -> ColgrepAdapter:
         """A shallow copy sharing `binary`/`timeout_s` but a different `on_stderr`.
@@ -279,6 +282,33 @@ class ColgrepAdapter:
     async def stats(self) -> list[IndexInfo]:
         stdout, _stderr, _rc = await self._run(["--stats"])
         return parse_stats(stdout)
+
+    async def store_root(self, stats: list[IndexInfo] | None = None) -> Path | None:
+        """The index store directory: the parent of the `Index:` line `status` prints for
+        the first indexed project that still exists on disk (index_housekeeping R01 §C1).
+
+        Derived, never hard-coded (the platform path differs on Windows), and
+        cached for the adapter's lifetime: the store does not move under a
+        running server. `stats` may be passed by a caller that already
+        fetched it, saving the spawn. `None` when no indexed project exists
+        on disk — `status` fails on a gone path (R02), so nothing can be
+        asked for its `Index:` line.
+        """
+        if self._store_root_cached:
+            return self._store_root
+        infos = await self.stats() if stats is None else stats
+        for info in infos:
+            if not os.path.isdir(info.project):
+                continue
+            try:
+                st = await self.status(Path(info.project))
+            except ColgrepError:
+                continue
+            if st.index_path:
+                self._store_root = Path(st.index_path).parent
+                break
+        self._store_root_cached = True
+        return self._store_root
 
     async def settings(self) -> dict[str, str]:
         stdout, _stderr, _rc = await self._run(["settings"])
