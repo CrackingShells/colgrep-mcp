@@ -108,7 +108,7 @@ claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server
 | `index_clear` | Delete a project's index. Asks for confirmation (elicitation) or requires `confirm=true`. |
 | `index_prune` | Remove orphaned, machine-state, shadowed and (opt-in) cold indexes. Dry run by default; `confirm=true` or elicitation to delete. |
 | `list_indexes` | Every indexed project on this machine, with size, last use, whether the path still exists and who shadows it; `stale_only` filters. |
-| `doctor` | Environment self-check: binary, version, settings, default root. |
+| `doctor` | Environment self-check: binary, version, settings, default root; hints at a stale index store. |
 
 `search` defaults to hybrid mode. Pass `pattern` (a regex) to pre-filter units by text before semantic ranking, `include`/`exclude`/`exclude_dir` to scope, `limit` to size the result. Text output is capped by a character budget; the full result is always in `structured_content`.
 
@@ -118,13 +118,13 @@ claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server
 |:--|:--|
 | `colgrep://guide` | The agent guide: how to compose queries, when to use which tool. |
 | `colgrep://settings` | colgrep's current configuration. |
-| `colgrep://indexes` | Indexed projects. |
+| `colgrep://indexes` | Indexed projects, with size, last use, path-exists and shadowing per index. |
 | `colgrep://status/{+path}` | Index status for a path. |
 | `colgrep://errors` | Error and hint codes with the next step for each. |
 
 ### Prompts
 
-`explore` (knowledge-acquisition loop for a question), `locate` (where a symbol or behaviour lives), `impact` (what a change touches). Each takes an optional `path`.
+`explore` (knowledge-acquisition loop for a question), `locate` (where a symbol or behaviour lives), `impact` (what a change touches) — each takes an optional `path` — and `housekeeping` (review and prune the index store; optional `days`).
 
 ### Skill
 

@@ -87,7 +87,7 @@ graph TD
         DR[doctor<br/>hints: INDEX_STORE_STALE]
         RES[colgrep://indexes]
         HK[prompt housekeeping]
-        AD[adapter.stats / status<br/>adapter.remove_index_dir]
+        AD[adapter.stats / status<br/>adapter.store_root]
     end
     CG[colgrep CLI] --> AD
     AD -->|Index: line once| STORE
@@ -219,10 +219,11 @@ PruneCandidate: project, index_dir, class, size_bytes, last_modified,
   capability → `[CONFIRMATION_REQUIRED]`; the elicitation call itself
   failing → `[CONFIRMATION_REQUIRED]`; declined → `pruned=[]`, text
   "Not pruned (declined)".
-- Deletion is `adapter.remove_index_dir(index_dir, project)`: the directory
-  must be a direct child of the store root, and its `project.json` must
-  name `project` at the moment of deletion; otherwise the candidate lands
-  in `failed` and nothing is removed. Never `colgrep clear`: for a shadowed
+- Deletion is `store.remove_index_dir(root, index_dir, project)` — in the
+  store module, not the adapter, because it touches the store's layout and
+  never the binary: the directory must be a direct child of the store root,
+  and its `project.json` must name `project` at the moment of deletion;
+  otherwise the candidate lands in `failed` and nothing is removed. Never `colgrep clear`: for a shadowed
   or a gone path that command either fails (R02) or clears the ancestor
   project that folded the path (colgrep_mcp R05 D3) — the exact failure
   `index_clear`'s `PROJECT_ROOT_MISMATCH` exists to prevent. Each removal
@@ -236,7 +237,9 @@ ok"). When the store root is known and the classification finds orphaned or
 machine-state entries, one hint is appended:
 `[INDEX_STORE_STALE] <n> orphaned, <m> machine-state indexes (<MiB>) …`.
 `Code.INDEX_STORE_STALE` and `Code.INDEX_STORE_UNKNOWN` join `errors.HINTS`
-and so `colgrep://errors`. `doctor` already spawns `--version` and
+and so `colgrep://errors`. `INDEX_STORE_UNKNOWN` is hinted only when
+`--stats` lists projects and none exists on disk — a machine with no index
+at all gets no hint. `doctor` already spawns `--version` and
 `settings`; this adds `--stats`, one `status` and the store read (~40 ms).
 
 ### C7 — `housekeeping` prompt and skill section

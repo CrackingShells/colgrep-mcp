@@ -56,7 +56,7 @@ Either command is a stdio MCP server; register it in your client as such:
 | `list_indexes` | Every indexed project on this machine, with size, last use, path-exists and shadowing. |
 | `doctor` | Environment self-check: binary, version, settings, default root. |
 
-Resources (`colgrep://guide`, `colgrep://settings`, `colgrep://indexes`, `colgrep://status/{+path}`, `colgrep://errors`) and prompts (`explore`, `locate`, `impact`) come with it; the guide resource teaches the agent how to compose queries.
+Resources (`colgrep://guide`, `colgrep://settings`, `colgrep://indexes`, `colgrep://status/{+path}`, `colgrep://errors`) and prompts (`explore`, `locate`, `impact`, `housekeeping`) come with it; the guide resource teaches the agent how to compose queries.
 
 ## License
 

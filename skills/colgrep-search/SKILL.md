@@ -1,6 +1,6 @@
 ---
 name: colgrep-search
-description: 'Use before shell grep/rg whenever a question is about meaning, not literal text — locating where or how something is implemented, mapping an unfamiliar codebase, finding every call site before a refactor or rename, or checking whether a repo already does X before building it again. colgrep-mcp''s tools (search, find_files, expand, index_status/index_build/index_clear, list_indexes, doctor) run hybrid semantic + keyword search over code units (functions, classes, methods, docs sections), not raw lines, so natural-language queries surface relevant code even when it shares no vocabulary with the query. Anti-pattern: reaching for shell grep/rg, or the Grep tool, to answer a "where/how does X work" question — literal-text search misses renamed, refactored, or differently-worded implementations. Plain grep is still fine for a single already-known literal string inside one file you already have open.'
+description: 'Use before shell grep/rg whenever a question is about meaning, not literal text — locating where or how something is implemented, mapping an unfamiliar codebase, finding every call site before a refactor or rename, or checking whether a repo already does X before building it again. colgrep-mcp''s tools (search, find_files, expand, index_status/index_build/index_clear/index_prune, list_indexes, doctor) run hybrid semantic + keyword search over code units (functions, classes, methods, docs sections), not raw lines, so natural-language queries surface relevant code even when it shares no vocabulary with the query. Anti-pattern: reaching for shell grep/rg, or the Grep tool, to answer a "where/how does X work" question — literal-text search misses renamed, refactored, or differently-worded implementations. Plain grep is still fine for a single already-known literal string inside one file you already have open.'
 ---
 
 # colgrep-search
@@ -28,6 +28,7 @@ serve (extensionless or lock files, an inverted match).
 | "Is this repo indexed? Will search be slow?" | `index_status` | `path` |
 | "This repo is large and cold" | `index_build` then `search` | `path` |
 | "What's already indexed here?" | `list_indexes` / `doctor` | — |
+| "The index store is huge / which indexes are dead?" | `list_indexes` then `index_prune` | `stale_only=true`; prune is a dry run until `dry_run=false, confirm=true` |
 
 Never pass `pattern` alone with an empty `query` — pair a semantic query
 with `pattern`, don't replace it. See `../../server/colgrep_mcp/guide.md`
@@ -100,6 +101,32 @@ Worked example — "what calls `parse_config`, before I change its signature?":
 
 ```json
 {"tool": "find_files", "arguments": {"query": "tests for parse_config", "pattern": "parse_config", "include": ["*test*"]}}
+```
+
+### housekeeping — "clean up colgrep's index store"
+
+Every path ever searched keeps an index, so the store fills with removed
+worktrees, scratch directories and subdirectories of projects indexed later.
+Run `list_indexes(stale_only=true)` to see the `orphaned` (path gone),
+`machine_state` (temp, cache, hidden tree) and `shadowed` (inside another
+indexed project) indexes with their sizes; then `index_prune()` for a dry
+run grouped by class; then the same call with `dry_run=false, confirm=true`
+and exactly the classes you reviewed. Add `"cold"` to `classes` only after
+deciding that live projects with at most one search and no use for `days`
+should go too. Never delete under the store by hand — the tool re-checks
+each directory's `project.json` before removing it. The `housekeeping` MCP
+prompt carries this sequence.
+
+```json
+{"tool": "list_indexes", "arguments": {"stale_only": true}}
+```
+
+```json
+{"tool": "index_prune", "arguments": {}}
+```
+
+```json
+{"tool": "index_prune", "arguments": {"dry_run": false, "confirm": true, "classes": ["orphaned", "machine_state", "shadowed"]}}
 ```
 
 ## Details
