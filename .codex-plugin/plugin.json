@@ -10,6 +10,7 @@
   "keywords": ["mcp", "colgrep", "semantic-search", "code-search", "agents"],
   "skills": "./skills/",
   "mcpServers": "./.codex-plugin/mcp.json",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "colgrep",
     "shortDescription": "Semantic and hybrid code search for coding agents, backed by colgrep.",
