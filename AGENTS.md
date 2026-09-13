@@ -85,6 +85,8 @@ disambiguates which one.
 | `R01` (dev_plugin) | `__reports__/dev_plugin/00-architecture_v0.md` |
 | `R01` (pypi_publication) | `__reports__/pypi_publication/00-architecture_v0.md` |
 | `R01` (harness_wiring) | `__reports__/harness_wiring/00-architecture_v0.md` |
+| `R01` (index_housekeeping) | `__reports__/index_housekeeping/00-architecture_v0.md` |
+| `R02` (index_housekeeping) | `__reports__/index_housekeeping/00-findings_clear_probe_v0.md` |
 
 ## Where the rest went
 
