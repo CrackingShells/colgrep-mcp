@@ -38,6 +38,7 @@ class Code(StrEnum):
     COLGREP_FAILED = "COLGREP_FAILED"
     COLGREP_TIMEOUT = "COLGREP_TIMEOUT"
     BAD_HIT_ID = "BAD_HIT_ID"
+    INDEX_STORE_UNKNOWN = "INDEX_STORE_UNKNOWN"
 
 
 #: One imperative sentence per code, naming the tool/argument to reach for next.
@@ -63,6 +64,7 @@ HINTS: dict[Code, str] = {
     Code.COLGREP_FAILED: "Read the stderr tail; run `doctor`; retry with simpler arguments.",
     Code.COLGREP_TIMEOUT: "Call `index_build` on the path first, then retry.",
     Code.BAD_HIT_ID: "Use `hit_id` values exactly as returned by `search`: `<abs file>:<line>-<end_line>`.",
+    Code.INDEX_STORE_UNKNOWN: "Run `index_build` on a project that exists on disk so the store can be located; retry.",
 }
 
 

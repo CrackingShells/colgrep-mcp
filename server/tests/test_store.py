@@ -169,3 +169,36 @@ async def test_store_root_is_none_when_no_indexed_project_exists(fake_store, set
     settings = Settings.from_env()
     adapter = ColgrepAdapter(binary=settings.binary, timeout_s=30)
     assert await adapter.store_root() is None
+
+
+# --- remove_index_dir --------------------------------------------------------------------
+
+
+def test_remove_index_dir_removes_a_matching_child(fake_store, tmp_path):
+    d = fake_store("gone-0001", tmp_path / "gone")
+    store.remove_index_dir(fake_store.root, d, str(tmp_path / "gone"))
+    assert not d.exists()
+
+
+def test_remove_index_dir_refuses_a_project_mismatch(fake_store, tmp_path):
+    d = fake_store("live-0001", tmp_path / "live")
+    with pytest.raises(store.StoreError, match="names"):
+        store.remove_index_dir(fake_store.root, d, str(tmp_path / "gone"))
+    assert d.is_dir()
+
+
+def test_remove_index_dir_refuses_a_directory_outside_the_root(fake_store, tmp_path):
+    d = fake_store("live-0001", tmp_path / "live")
+    with pytest.raises(store.StoreError, match="not directly under"):
+        store.remove_index_dir(tmp_path / "elsewhere", d, str(tmp_path / "live"))
+    with pytest.raises(store.StoreError, match="not directly under"):
+        store.remove_index_dir(fake_store.root, d / "index", str(tmp_path / "live"))
+    assert d.is_dir()
+
+
+def test_remove_index_dir_refuses_a_missing_project_json(fake_store, tmp_path):
+    d = fake_store("live-0001", tmp_path / "live")
+    (d / "project.json").unlink()
+    with pytest.raises(store.StoreError, match="unreadable"):
+        store.remove_index_dir(fake_store.root, d, str(tmp_path / "live"))
+    assert d.is_dir()

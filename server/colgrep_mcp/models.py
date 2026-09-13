@@ -127,6 +127,26 @@ class IndexClearResult(BaseModel):
     cleared: bool
 
 
+class PruneCandidate(BaseModel):
+    project: str
+    index_dir: str
+    kind: str = Field(description="`orphaned`, `machine_state`, `shadowed` or `cold` (index_housekeeping R01 §C3).")
+    size_bytes: int
+    last_modified: str
+    search_count: int | None = None
+    shadowed_by: str | None = None
+
+
+class PruneResult(BaseModel):
+    dry_run: bool
+    store_root: str
+    candidates: list[PruneCandidate]
+    total_bytes: int = Field(description="Bytes under every candidate's index directory.")
+    pruned: list[str] = Field(default_factory=list, description="Projects whose index directory was removed.")
+    failed: list[str] = Field(default_factory=list, description="`<project>: <reason>` per candidate left in place.")
+    freed_bytes: int = 0
+
+
 class Doctor(BaseModel):
     colgrep_path: str | None
     version: str | None

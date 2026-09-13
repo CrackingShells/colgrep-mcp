@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import tempfile
 import time
 from dataclasses import dataclass
@@ -224,6 +225,34 @@ def classify_now(entries: list[StoreEntry], *, days: int = 30, max_searches: int
 
 def iso_utc(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=UTC).isoformat(timespec="seconds")
+
+
+# --- removal --------------------------------------------------------------------------
+
+
+class StoreError(Exception):
+    """A removal guard refused (R01 §C5); the directory was left in place."""
+
+
+def remove_index_dir(root: Path, index_dir: Path, project: str) -> None:
+    """Delete `index_dir` only if it is a direct child of `root` whose `project.json`
+    names `project` right now (index_housekeeping R01 §C5).
+
+    Never `colgrep clear`: on a gone path it exits 1 (R02), and on a folded
+    path it clears the ancestor project instead — the failure `index_clear`'s
+    `PROJECT_ROOT_MISMATCH` exists to prevent. Re-reading `project.json` at
+    deletion time means a candidate list from an earlier call, or a store
+    that changed under us, can never point the delete at another project.
+    """
+    if index_dir.parent != root:
+        raise StoreError(f"{index_dir} is not directly under the store root {root}")
+    try:
+        named = json.loads((index_dir / "project.json").read_text(encoding="utf-8")).get("project_path")
+    except (OSError, ValueError) as exc:
+        raise StoreError(f"{index_dir}/project.json unreadable: {exc}") from exc
+    if named != project:
+        raise StoreError(f"{index_dir}/project.json names {named!r}, not {project!r}")
+    shutil.rmtree(index_dir)
 
 
 # --- the joined view --------------------------------------------------------------

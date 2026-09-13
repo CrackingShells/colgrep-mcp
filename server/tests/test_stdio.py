@@ -59,7 +59,7 @@ async def test_stdio_round_trip(fake_colgrep_bin, tmp_path):
             assert client.server_info.name == "colgrep"
 
             tools = await client.list_tools()
-            assert len(tools.tools) == 8
+            assert len(tools.tools) == 9
 
             resources = await client.list_resources()
             # 3 today (guide, settings, indexes); a fourth (colgrep://errors) is

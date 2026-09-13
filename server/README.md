@@ -52,7 +52,8 @@ Either command is a stdio MCP server; register it in your client as such:
 | `index_status` | Whether a path is indexed, with which model, where, how big. |
 | `index_build` | Build or refresh an index now, with progress notifications. |
 | `index_clear` | Delete a project's index, after confirmation. |
-| `list_indexes` | Every indexed project on this machine. |
+| `index_prune` | Remove orphaned, machine-state, shadowed and (opt-in) cold indexes; dry run by default. |
+| `list_indexes` | Every indexed project on this machine, with size, last use, path-exists and shadowing. |
 | `doctor` | Environment self-check: binary, version, settings, default root. |
 
 Resources (`colgrep://guide`, `colgrep://settings`, `colgrep://indexes`, `colgrep://status/{+path}`, `colgrep://errors`) and prompts (`explore`, `locate`, `impact`) come with it; the guide resource teaches the agent how to compose queries.

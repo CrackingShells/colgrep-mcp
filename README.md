@@ -106,7 +106,8 @@ claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server
 | `index_status` | Whether a path is indexed, with which model, where, how big. |
 | `index_build` | Build or refresh an index now, with progress notifications. |
 | `index_clear` | Delete a project's index. Asks for confirmation (elicitation) or requires `confirm=true`. |
-| `list_indexes` | Every indexed project on this machine. |
+| `index_prune` | Remove orphaned, machine-state, shadowed and (opt-in) cold indexes. Dry run by default; `confirm=true` or elicitation to delete. |
+| `list_indexes` | Every indexed project on this machine, with size, last use, whether the path still exists and who shadows it; `stale_only` filters. |
 | `doctor` | Environment self-check: binary, version, settings, default root. |
 
 `search` defaults to hybrid mode. Pass `pattern` (a regex) to pre-filter units by text before semantic ranking, `include`/`exclude`/`exclude_dir` to scope, `limit` to size the result. Text output is capped by a character budget; the full result is always in `structured_content`.
