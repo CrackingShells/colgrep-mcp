@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -201,6 +202,21 @@ def test_corpus_search_at_machine_state_passes(tmp_path: Path):
         }
     )
     assert (rc, out) == (0, "")
+
+
+def test_system_temp_and_platform_state_trees_are_never_a_corpus(tmp_path: Path):
+    """On Windows the temp directory is `%LOCALAPPDATA%\\Temp`: under the home
+    directory, no dot-prefixed component. The first Windows CI run of these
+    hooks read a pytest `tmp_path` as a source corpus and denied a grep there
+    (PR #7); this pins the temp directory, `Library` and `AppData` as machine
+    state on every platform, independent of where the runner's temp lives."""
+    module = _load_module()
+    home = os.path.realpath(os.path.expanduser("~"))
+
+    assert module.is_source_corpus(os.path.realpath(tempfile.gettempdir())) is False
+    assert module.is_source_corpus(str(tmp_path.resolve())) is False
+    for tree in ("Library", "AppData"):
+        assert module.is_source_corpus(os.path.join(home, tree, "Caches", "x")) is False
 
 
 def test_shell_alias_and_top_level_command_are_accepted(corpus: Path):

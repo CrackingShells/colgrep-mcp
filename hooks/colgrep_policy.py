@@ -27,6 +27,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 # --- SessionStart / SubagentStart --------------------------------------------
 
@@ -147,13 +148,29 @@ def in_work_tree(path: str) -> bool:
         return False
 
 
+def machine_state_roots(home: str) -> list:
+    """Directories that hold application state even though they sit under the home directory.
+
+    `~/Library` (macOS) and `~/AppData` (Windows) are the platform state trees;
+    the system temp directory is machine state wherever it lives — on Windows
+    it is `%LOCALAPPDATA%\\Temp`, under the home directory with no dot-prefixed
+    component, which is how the first Windows CI run of these hooks read a
+    pytest `tmp_path` as a source corpus (harness_wiring PR #7).
+    """
+    return [
+        os.path.realpath(tempfile.gettempdir()),
+        os.path.join(home, "Library"),
+        os.path.join(home, "AppData"),
+    ]
+
+
 def is_source_corpus(path: str) -> bool:
     if in_work_tree(path):
         return True
     home = os.path.realpath(os.path.expanduser("~"))
-    if path != home and not path.startswith(home + os.sep):
+    if any(path == root or path.startswith(root + os.sep) for root in machine_state_roots(home)):
         return False
-    if path.startswith(os.path.join(home, "Library")):
+    if path != home and not path.startswith(home + os.sep):
         return False
     inner = path[len(home) :]
     return not any(part.startswith(".") for part in inner.split(os.sep) if part)
