@@ -134,6 +134,12 @@ widen `paths`.
   where a behaviour lives — that is exactly what `search` replaces. Shell
   grep is fine for a single already-known literal in one file you have
   open; it is the wrong tool for a meaning-based question over a project.
+- If a `grep -r`/`rg` command or the built-in Grep tool was just denied
+  with a message naming this server, that was the plugin's hook enforcing
+  the point above: call `search` with `pattern` set to the text you were
+  grepping for. `COLGREP_BYPASS=1` in front of a shell command is the
+  escape for files colgrep cannot index (extensionless, lock files) or an
+  inverted match.
 - Do not open a whole file to read one hit — call `expand` on its `hit_id`.
 - Do not re-run the same `search` call expecting new results; change the
   query, `pattern`, or scoping instead.
