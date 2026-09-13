@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -143,6 +144,16 @@ def test_machine_state_roots_match_the_hook():
     spec.loader.exec_module(hook)
     home = os.path.realpath(os.path.expanduser("~"))
     assert store.machine_state_roots(home) == hook.machine_state_roots(home)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="no POSIX /tmp on Windows")
+def test_machine_state_roots_include_the_posix_tmp():
+    """`tempfile.gettempdir()` is `/var/folders/.../T` on macOS, so `/private/tmp` — indexed
+    with 2 434 units on the maintainer's machine, every scratchpad folding into it — read as a
+    live project (index_housekeeping README §Status). `/tmp` is a system temp directory on
+    every POSIX system whatever the per-user one is."""
+    home = os.path.realpath(os.path.expanduser("~"))
+    assert os.path.realpath("/tmp") in store.machine_state_roots(home)
 
 
 # --- store_root ----------------------------------------------------------------------------

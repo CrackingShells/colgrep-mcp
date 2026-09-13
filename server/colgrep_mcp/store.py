@@ -135,11 +135,20 @@ def machine_state_roots(home: str) -> list[str]:
     """The hook's `machine_state_roots` (`hooks/colgrep_policy.py`), restated: the hook
     is stdlib-only and ships outside this package, so it cannot be imported; a drift
     test pins the two lists equal (R01 D4)."""
-    return [
+    roots = [
         os.path.realpath(tempfile.gettempdir()),
         os.path.join(home, "Library"),
         os.path.join(home, "AppData"),
     ]
+    # The per-user temp directory is not the only one: macOS puts it under
+    # `/var/folders` while `/private/tmp` stays a system temp directory, and
+    # the indexes under it (every session scratchpad) read as live projects
+    # until it was listed here (index_housekeeping README §Status).
+    if os.name == "posix":
+        posix_tmp = os.path.realpath("/tmp")
+        if posix_tmp not in roots:
+            roots.append(posix_tmp)
+    return roots
 
 
 def _under(path: str, root: str) -> bool:
