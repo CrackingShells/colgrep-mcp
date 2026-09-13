@@ -5,6 +5,17 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.4.0 (2026-09-13)
+
+### Added
+
+- **plugin**: ship the search policy, grep redirect and worktree reap as plugin hooks (PR #7)
+- **plugin**: ship the search policy, grep redirect and worktree reap as plugin hooks
+
+### Fixed
+
+- **plugin**: treat the system temp directory and appdata as machine state in the hook gate
+
 ## v0.3.1 (2026-09-13)
 
 ### Fixed

@@ -1,7 +1,7 @@
 {
   "name": "colgrep-mcp",
   "displayName": "colgrep",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Semantic and hybrid code search for coding agents, exposed as MCP tools backed by colgrep.",
   "author": {
     "name": "Eliott Jacopin",
