@@ -10,6 +10,11 @@ Reach for it any time the question is "where/how does this repo do X" —
 that class of question is exactly what shell grep is bad at and semantic
 search is good at.
 
+Where the plugin's hooks are loaded, the harness also *denies* the built-in
+Grep tool and recursive shell greps inside a source corpus and points back
+here; `COLGREP_BYPASS=1` prefixes the rare shell command colgrep cannot
+serve (extensionless or lock files, an inverted match).
+
 ## Decision table
 
 | Question type | Tool | Key arguments |

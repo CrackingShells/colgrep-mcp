@@ -129,6 +129,18 @@ claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server
 
 `skills/colgrep-search/SKILL.md` teaches the agent when semantic search beats grep and how to sequence the tools. Claude Code loads it as `/colgrep-mcp:colgrep-search`.
 
+### Hooks
+
+The plugin also ships harness hooks (`hooks/`), so the policy the skill teaches is enforced rather than suggested. One dependency-free Python script, launched as `uv run --no-project python` (about 0.1 s per call, no requirement beyond the `uv` the server already needs), serves three events:
+
+| Event | What it does |
+|:--|:--|
+| `SessionStart`, `SubagentStart` | Injects a short search policy (about 250 tokens) naming the MCP tools, what stays allowed, and the bypass. |
+| `PreToolUse` on `Grep` and `Bash` | Denies the built-in Grep tool and shell corpus searches (`grep -r`, `rg`, `find -exec grep`, `xargs grep`) inside a source corpus, with a reason naming `search`, `find_files` and `expand`. Single-file grep, `cmd \| grep`, `grep -c`/`-v`/`-o`, `rg --files` and file-name lookup stay allowed. Targets that are machine state (hidden directories, `~/Library`, temp directories outside a git work tree) are never gated. Prefix `COLGREP_BYPASS=1` to a command colgrep cannot serve. |
+| `WorktreeRemove` (Claude Code only) | Clears the colgrep index a removed worktree owned, never one it was folded into. |
+
+`hooks/hooks.json` holds only events that Claude Code, Codex and Cursor all understand; `hooks/claude-code.json` holds the Claude-only event and is named by the Claude Code manifest alone. Codex loads a plugin's `hooks/hooks.json` and sets `CLAUDE_PLUGIN_ROOT` for it, but skips the hooks until you trust them once in `/hooks`. Cursor imports Claude Code hooks from `settings.json` files, not from plugins, so a Cursor project copies the three `hooks.json` entries into its `.claude/settings.json`. Agent Plugins 1.0 defines no hooks component and ignores the directory. Design and measurements: `__reports__/harness_wiring/00-architecture_v0.md`.
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -148,6 +160,8 @@ Without `COLGREP_MCP_ROOT` the server falls back to the client's first root, if 
 - **The first start is slow, or fails offline.** `uvx colgrep-mcp==<version>` downloads the package and its dependencies once per version, then runs from cache. On a machine without network at start, `uv tool install colgrep-mcp` beforehand and launch the `colgrep-mcp` executable instead (see [Any MCP client](#any-mcp-client)).
 - **A search times out on a large repository.** Call `index_build` first; it streams progress and the following searches are fast. `index_status` says whether that is needed.
 - **`doctor` reports a problem.** Its `problems` list names what is missing and how to fix it.
+- **The hooks do not fire.** Plugin hooks are read when the plugin loads: after an install or update, run `/reload-plugins` or start a new session, then check `/hooks` for the entries under Plugin Hooks. In Codex, open `/hooks` and trust the plugin's hooks; they are skipped until then.
+- **A shell command was denied.** That is the plugin's `PreToolUse` hook, not colgrep: the reason names the MCP tool to call instead. For a target colgrep cannot index (extensionless or lock files, an inverted match), prefix the command with `COLGREP_BYPASS=1`.
 - **`index_clear` refuses.** colgrep folds a directory into the nearest already-indexed ancestor project. The tool tells you the project root it would clear; pass that root explicitly if that is really intended.
 - **Line numbers.** colgrep 1.6 reports wrong `line`/`end_line` for most units. The server re-locates every unit from its source text and flags `location_verified` on each hit.
 
@@ -178,7 +192,7 @@ The repository root is simultaneously:
 - an [Agent Plugins 1.0](https://agent-plugins.org/specification) plugin (`plugin.json`, `mcp.json`);
 - a Codex plugin (`.codex-plugin/plugin.json`, `.codex-plugin/mcp.json`) and marketplace (`.agents/plugins/marketplace.json`).
 
-Every MCP manifest launches the same argv, with no shell script and no root placeholder: `uvx colgrep-mcp==<version>`, where the pin is the plugin's own version — `cz bump` rewrites it with the manifests' `version` fields, so a plugin update always launches its matching server and never a stale cached one. The only placeholder left is `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in the Claude Code manifest's `env`, the one client documented to expand it. `uvx` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). CI runs the suite on Windows as well as macOS and Linux, builds the distribution and checks its metadata on every pull request; pushing a release tag runs `.github/workflows/publish.yml`, which uploads to PyPI through trusted publishing and creates the GitHub release.
+The Claude Code and Codex plugins share the `hooks/` component ([Hooks](#hooks)); its commands carry the one placeholder both ecosystems expand, `${CLAUDE_PLUGIN_ROOT}`. Every MCP manifest launches the same argv, with no shell script and no root placeholder: `uvx colgrep-mcp==<version>`, where the pin is the plugin's own version — `cz bump` rewrites it with the manifests' `version` fields, so a plugin update always launches its matching server and never a stale cached one. The only placeholder left is `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in the Claude Code manifest's `env`, the one client documented to expand it. `uvx` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). CI runs the suite on Windows as well as macOS and Linux, builds the distribution and checks its metadata on every pull request; pushing a release tag runs `.github/workflows/publish.yml`, which uploads to PyPI through trusted publishing and creates the GitHub release.
 
 ## License
 

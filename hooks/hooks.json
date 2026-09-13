@@ -1,0 +1,41 @@
+{
+  "description": "colgrep-mcp: state the search policy at session and subagent start; deny the built-in Grep tool and shell corpus searches in favour of the colgrep MCP tools. Only events every hook-capable harness (Claude Code, Codex, Cursor) understands live here; Claude-only events are in claude-code.json.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${CLAUDE_PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading the colgrep search policy"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${CLAUDE_PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading the colgrep search policy"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${CLAUDE_PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

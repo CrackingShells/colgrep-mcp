@@ -16,7 +16,7 @@ section, don't re-derive the trap from scratch.
 | Symptom you see | Layer | Reference |
 |:--|:--|:--|
 | a subcommand run with a trailing global flag turned into a search / reindexed the cwd | colgrep | `references/colgrep.md#flag-order` |
-| you're about to run the e2e driver or `colgrep init` against this repo or a worktree | colgrep | `references/colgrep.md#ancestor-folding` |
+| you're about to run the e2e driver against this repo, or you're unsure whether the plugin's `search` is safe in a worktree | colgrep | `references/colgrep.md#ancestor-folding` |
 | a hit's `line`/`end_line` doesn't bound the code you can see | colgrep | `references/colgrep.md#location` |
 | a tool description shows stray leading whitespace to a client | mcp-sdk | `references/mcp-sdk.md#docstring-verbatim` |
 | a `functools.cache`-wrapped resource handler raises at registration | mcp-sdk | `references/mcp-sdk.md#validate-call` |
@@ -27,6 +27,7 @@ section, don't re-derive the trap from scratch.
 | an install/list command's plugin and marketplace names look mismatched or don't carry to another ecosystem | claude-code | `references/claude-code.md#namespaces` |
 | `claude -p` or `claude plugin eval` fails with an OAuth error | claude-code | `references/claude-code.md#oauth` |
 | `claude --plugin-dir . mcp list` says Connected but your edit is not in the server, or the plugin fails right after a bump | claude-code | `references/claude-code.md#uvx-pin` |
+| the plugin's hooks don't fire, or still run the old text, after an edit or an update; Codex lists them but never runs them | claude-code | `references/claude-code.md#plugin-hooks` |
 | a Bash command is blocked, including inside a heredoc that only mentions the search pattern | machine | `references/machine.md#shell-hook` |
 | CI is red only on windows-latest, or only a `setup-uv` step fails | machine | `references/machine.md#windows-ci` |
 | `git worktree add` on `main` fails because it's checked out elsewhere | machine | `references/machine.md#worktree-main` |
@@ -57,6 +58,7 @@ section, don't re-derive the trap from scratch.
   URIs.
 - `references/claude-code.md` — root `.mcp.json` vs plugin-scope
   `.claude-plugin/mcp.json`, marketplace vs plugin namespaces, `claude -p`
-  on an expired OAuth session, the `uvx colgrep-mcp==<version>` pin.
-- `references/machine.md` — the shell-search hook and `COLGREP_BYPASS=1`,
+  on an expired OAuth session, the `uvx colgrep-mcp==<version>` pin, plugin
+  hooks loading (reload, Codex trust, the portable/Claude-only split).
+- `references/machine.md` — the plugin's shell-search hook and `COLGREP_BYPASS=1`,
   Windows CI's two known causes, the detached-worktree trick for `main`.

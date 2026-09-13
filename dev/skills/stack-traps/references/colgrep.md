@@ -22,26 +22,40 @@ are calling colgrep by hand instead of through the adapter, copy that
 ordering. Never rely on flag position "reads fine to a human" — clap's
 parse is positional-first.
 
-## Never run the e2e driver or `colgrep init` against this repo {#ancestor-folding}
+## Never run the e2e driver here; check for an indexed ancestor before the first `search` {#ancestor-folding}
 
 **Symptom**: you're tempted to sanity-check a change by pointing
-`server/tests/e2e/run_e2e.py` or a bare `colgrep init` at this repository or
-one of its worktrees.
+`server/tests/e2e/run_e2e.py` at this repository or one of its worktrees —
+or, the opposite over-correction, you refuse to use the plugin's own
+`search` tool in a worktree at all and fall back to reading whole files.
 
-**Cause**: colgrep folds any path into the nearest already-indexed ancestor
-project, and `colgrep clear` is project-wide. Running the real binary here
-would fold this worktree's files into whatever ancestor project is already
-indexed on the machine, and clearing to recover would wipe that ancestor's
-index too. The e2e driver refuses this repository on purpose, precisely to
-stop this. (`KT-B`, `R03`, `AGENTS.md` §Traps, `MEM`.)
+**Cause**: colgrep folds any path into the nearest *already-indexed
+ancestor* project, and `colgrep clear` is project-wide. A worktree with an
+indexed ancestor would have its files folded into that ancestor's index,
+and clearing to recover would wipe the ancestor too. The e2e driver refuses
+this repository on purpose because it runs `index_build`/`index_clear`
+against its corpus. A path with **no** indexed ancestor has no such
+problem: the first `search` creates a fresh project rooted at that path
+(`index_status` afterwards reports `project == requested_path`), and the
+plugin's `WorktreeRemove` hook reaps that index when the worktree goes.
+That is exactly why the maintainer's worktrees live outside the repository
+tree (`~/…/claude-worktrees/…`, not `<repo>/.claude/worktrees`, which
+colgrep ignores): each gets its own index. Verified 2026-09-13 on the
+`harness_wiring` worktree: no ancestor among 164 indexed projects, first
+`search` indexed it in 13 s, `project` equalled the worktree path. (`KT-B`,
+`R03`, harness_wiring R01, `MEM`.)
 
-**What to do**: run `uv run python tests/e2e/run_e2e.py --corpus <some other
-repo>` against a real, separate corpus instead — the standing one for this
-purpose lives at `~/colgrep-e2e-corpus/click`. Inside this
-repository and its worktrees, exercise behaviour through `fake_colgrep.py`
-and pytest, never the real binary. `COLGREP_MCP_REAL=1 uv run pytest` is the
-one sanctioned opt-in for tests that need the real binary, and it does not
-touch this repo's own tree.
+**What to do**: before the first `search` in a worktree, call
+`index_status` on it. `indexed: false` means the search will create the
+worktree's own project — go ahead. `indexed: true` with `project` different
+from `requested_path` means you are folded into an ancestor: search from
+that ancestor knowingly, and never `index_clear` from the worktree path
+(the tool refuses with `PROJECT_ROOT_MISMATCH` anyway, R05 D3). Never run
+`run_e2e.py` against this repository; use `uv run python
+tests/e2e/run_e2e.py --corpus <some other repo>` (the standing corpus is
+`~/colgrep-e2e-corpus/click`). Tests exercise behaviour through
+`fake_colgrep.py`; `COLGREP_MCP_REAL=1 uv run pytest` is the one opt-in for
+the real binary and does not touch this tree.
 
 ## A hit's `line`/`end_line` looks wrong {#location}
 
