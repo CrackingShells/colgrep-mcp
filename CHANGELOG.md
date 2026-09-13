@@ -5,6 +5,19 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.5.0 (2026-09-13)
+
+### Added
+
+- **prompts**: add the housekeeping prompt that walks list, dry run, prune and check
+- **index**: hint at orphaned and machine-state indexes from doctor
+- **index**: add index_prune to remove orphaned, machine-state, shadowed and cold indexes
+- **index**: read the colgrep store and enrich list_indexes with size, age, path and shadowing
+
+### Fixed
+
+- **index**: treat the posix /tmp as machine state in the classifier and the hook gate
+
 ## v0.4.0 (2026-09-13)
 
 ### Added
