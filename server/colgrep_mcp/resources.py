@@ -38,8 +38,8 @@ from mcp.server.mcpserver.exceptions import ResourceError
 
 from .adapter import ColgrepError
 from .errors import HINTS, Code, from_adapter_error
-from .models import IndexList
 from .server import get_adapter
+from .store import index_list
 
 
 def _map_adapter_error(exc: ColgrepError) -> ResourceError:
@@ -96,13 +96,15 @@ async def settings_resource() -> dict[str, str]:
 
 
 async def indexes_resource() -> dict[str, Any]:
-    """`colgrep://indexes` — every indexed project on this machine (`IndexList`)."""
+    """`colgrep://indexes` — every indexed project on this machine (`IndexList`), with the
+    store-derived size, age, path-exists and shadowing fields `list_indexes` carries
+    (index_housekeeping R01 §C4)."""
     adapter = get_adapter()
     try:
-        infos = await adapter.stats()
+        result = await index_list(adapter)
     except ColgrepError as exc:
         raise _map_adapter_error(exc) from exc
-    return IndexList(indexes=infos).model_dump()
+    return result.model_dump()
 
 
 async def status_resource(path: str, ctx: Context) -> dict[str, Any]:

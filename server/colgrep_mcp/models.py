@@ -88,10 +88,26 @@ class IndexInfo(BaseModel):
     model: str
     units_indexed: int
     search_count: int
+    # Store-derived fields (index_housekeeping R01 §C4); all `None` when the
+    # store root could not be derived or the project is absent from the store.
+    path_exists: bool | None = Field(default=None, description="Whether `project` still exists on disk.")
+    size_bytes: int | None = Field(default=None, description="Bytes under the index directory.")
+    last_modified: str | None = Field(default=None, description="ISO 8601 UTC time of the last search or update.")
+    shadowed_by: str | None = Field(
+        default=None, description="An indexed, existing ancestor project that double-indexes this one's units."
+    )
+    stale: str | None = Field(
+        default=None,
+        description="`orphaned` (path gone), `machine_state` (temp, cache or hidden tree) or `shadowed`; "
+        "`None` for a live project. `cold` needs parameters and is reported by `index_prune` only.",
+    )
 
 
 class IndexList(BaseModel):
     indexes: list[IndexInfo]
+    store_root: str | None = Field(default=None, description="The index store directory, when it could be derived.")
+    total_bytes: int | None = Field(default=None, description="Bytes under the whole store.")
+    total: int | None = Field(default=None, description="Indexed projects before any `stale_only` filter.")
 
 
 class IndexBuildResult(BaseModel):

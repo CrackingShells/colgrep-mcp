@@ -59,3 +59,51 @@ def settings_env(monkeypatch, fake_colgrep_bin, tmp_path) -> dict[str, str]:
     for k, v in env.items():
         monkeypatch.setenv(k, v)
     return env
+
+
+@pytest.fixture
+def fake_store(monkeypatch, tmp_path):
+    """A synthetic colgrep index store under `tmp_path`, wired to the fake binary.
+
+    Returns `add(name, project, *, search_count=0, files=3, age_days=0, model=...)`,
+    which writes `<store>/<name>/{project.json,state.json,index/}` the way colgrep
+    lays them out (index_housekeeping R02) and back-dates `state.json` by
+    `age_days`. `project` is any path string: pass one that exists for a live
+    project, one that does not for an orphan.
+    """
+    import json
+    import os
+    import time
+
+    store = tmp_path / "indices"
+    store.mkdir()
+    monkeypatch.setenv("FAKE_COLGREP_STORE", str(store))
+
+    def add(name, project, *, search_count=0, files=3, age_days=0, model="lightonai/LateOn-Code-edge"):
+        d = store / name
+        (d / "index").mkdir(parents=True)
+        (d / "index" / "blob").write_bytes(b"x" * 1024)
+        (d / "project.json").write_text(
+            json.dumps({"project_path": str(project), "project_name": name, "model": model}), encoding="utf-8"
+        )
+        state = d / "state.json"
+        state.write_text(
+            json.dumps(
+                {
+                    "cli_version": "1.6.2",
+                    "index_format_version": 2,
+                    "files": {f"f{i}.py": {"content_hash": i, "mtime": 0, "size": 1} for i in range(files)},
+                    "ignored_files": {},
+                    "search_count": search_count,
+                    "dirty": False,
+                }
+            ),
+            encoding="utf-8",
+        )
+        if age_days:
+            then = time.time() - age_days * 86400
+            os.utime(state, (then, then))
+        return d
+
+    add.root = store
+    return add

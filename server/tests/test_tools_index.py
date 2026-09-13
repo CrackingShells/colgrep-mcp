@@ -164,6 +164,87 @@ async def test_list_indexes_text_is_budgeted_and_structured_content_is_complete(
     assert len(result.structured_content["indexes"]) == 400
 
 
+@pytest.fixture
+def housekeeping_store(fake_store, tmp_path, monkeypatch):
+    """A store with one live project, one shadowed child, one orphan and one machine-state
+    entry (index_housekeeping R01 §C3). The machine-state roots are pinned to one directory
+    under `tmp_path` because the CI runners' own temp directory sits under the home
+    directory on Windows (R01 risk 2) — `tmp_path` itself must never read as machine state."""
+    live = tmp_path / "live"
+    (live / "sub").mkdir(parents=True)
+    scratch = tmp_path / "temp" / "scratch"
+    scratch.mkdir(parents=True)
+    monkeypatch.setattr(tools_index.store, "machine_state_roots", lambda home: [str(tmp_path / "temp")])
+    fake_store("live-0001", live, search_count=9, files=5)
+    fake_store("sub-0002", live / "sub", search_count=1, files=2)
+    fake_store("gone-0003", tmp_path / "gone", search_count=1, files=4, age_days=45)
+    fake_store("scratch-0004", scratch, search_count=0, files=1)
+    return {"live": live, "sub": live / "sub", "gone": tmp_path / "gone", "scratch": scratch}
+
+
+async def test_list_indexes_carries_store_fields(settings_env, housekeeping_store):
+    """R01 §C4: size, age, path-exists, shadowing and the `stale` class ride along."""
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("list_indexes", {})
+
+    assert not result.is_error
+    by_project = {i["project"]: i for i in result.structured_content["indexes"]}
+    assert set(by_project) == {str(p) for p in housekeeping_store.values()}
+    live = by_project[str(housekeeping_store["live"])]
+    assert live["path_exists"] is True and live["stale"] is None and live["size_bytes"] > 1024
+    assert live["last_modified"][:2] == "20"
+    sub = by_project[str(housekeeping_store["sub"])]
+    assert sub["stale"] == "shadowed" and sub["shadowed_by"] == str(housekeeping_store["live"])
+    gone = by_project[str(housekeeping_store["gone"])]
+    assert gone["stale"] == "orphaned" and gone["path_exists"] is False
+    assert by_project[str(housekeeping_store["scratch"])]["stale"] == "machine_state"
+    assert result.structured_content["total"] == 4
+    assert result.structured_content["total_bytes"] > 4 * 1024
+
+    text = result.content[0].text
+    assert text.splitlines()[0].startswith("4 indexed projects on this machine (")
+    assert "1 orphaned, 1 machine-state, 1 shadowed)" in text.splitlines()[0]
+    assert f"{housekeeping_store['gone']}  model=lightonai/LateOn-Code-edge  units=4  searches=1  size=" in text
+    assert "  [orphaned]" in text
+    assert f"  [shadowed by {housekeeping_store['live']}]" in text
+    assert "  [machine_state]" in text
+
+
+async def test_list_indexes_stale_only_filters_and_keeps_the_total(settings_env, housekeeping_store):
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("list_indexes", {"stale_only": True})
+
+    assert not result.is_error
+    kinds = sorted(i["stale"] for i in result.structured_content["indexes"])
+    assert kinds == ["machine_state", "orphaned", "shadowed"]
+    assert result.structured_content["total"] == 4
+    assert result.content[0].text.splitlines()[0].startswith("3 stale of 4 indexed projects on this machine (")
+
+
+async def test_list_indexes_stale_only_with_nothing_stale(settings_env, fake_store, tmp_path, monkeypatch):
+    live = tmp_path / "live"
+    live.mkdir()
+    monkeypatch.setattr(tools_index.store, "machine_state_roots", lambda home: [])
+    fake_store("live-0001", live, search_count=3)
+
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("list_indexes", {"stale_only": True})
+
+    assert result.structured_content["indexes"] == []
+    assert result.content[0].text == "No stale indexes among the 1 indexed projects on this machine."
+
+
+async def test_list_indexes_without_a_derivable_store_keeps_the_legacy_fields(settings_env):
+    """R01 §C1: the fake's default `--stats` projects do not exist on disk, so no
+    `status` call can yield an `Index:` line; every store field stays `None`."""
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("list_indexes", {})
+
+    assert result.structured_content["store_root"] is None
+    for info in result.structured_content["indexes"]:
+        assert info["size_bytes"] is None and info["stale"] is None and info["path_exists"] is None
+
+
 # --- doctor ---------------------------------------------------------------------
 
 

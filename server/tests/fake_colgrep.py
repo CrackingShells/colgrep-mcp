@@ -21,6 +21,12 @@ Environment knobs:
                           `Project:` line instead of echoing the requested
                           path — simulates colgrep folding a path into an
                           already-registered ancestor project (R05 D3)
+  FAKE_COLGREP_STORE      a directory laid out like colgrep's index store
+                          (`<name>/project.json` + `state.json`, R02): `--stats`
+                          lists its projects (units = files in state.json),
+                          `status <path>` names `Index: <store>/<name>` for a
+                          project it holds and exits 1 like the real binary
+                          when the path does not exist on disk (R02)
 """
 
 import json
@@ -33,6 +39,24 @@ from fixture_paths import FAKE_CORPUS
 
 HERE = Path(__file__).resolve().parent
 MODEL = "lightonai/LateOn-Code-edge"
+
+
+def _store_entries(store):
+    """`(name, project.json, state.json)` per index directory, in name order."""
+    out = []
+    for name in sorted(os.listdir(store)):
+        pj = os.path.join(store, name, "project.json")
+        if not os.path.isfile(pj):
+            continue
+        with open(pj, encoding="utf-8") as f:
+            project = json.load(f)
+        state = {}
+        sj = os.path.join(store, name, "state.json")
+        if os.path.isfile(sj):
+            with open(sj, encoding="utf-8") as f:
+                state = json.load(f)
+        out.append((name, project, state))
+    return out
 
 
 def main(argv):
@@ -64,7 +88,16 @@ def main(argv):
     if "--version" in args:
         print("colgrep 1.6.2")
         return 0
+    store = os.environ.get("FAKE_COLGREP_STORE")
     if "--stats" in args:
+        if store:
+            for _name, project, state in _store_entries(store):
+                files = state.get("files") or {}
+                print(
+                    f"Project: {project['project_path']}\n  Model: {project.get('model', MODEL)}\n"
+                    f"  Functions indexed: {len(files)}\n  Search count: {state.get('search_count', 0)}\n"
+                )
+            return 0
         print(f"Project: /tmp/fake-corpus\n  Model: {MODEL}\n  Functions indexed: 3\n  Search count: 7\n")
         print(f"Project: /tmp/other\n  Model: {MODEL}\n  Functions indexed: 649\n  Search count: 1\n")
         return 0
@@ -78,6 +111,18 @@ def main(argv):
         return 0
     if sub == "status":
         path = next((a for a in args[1:] if not a.startswith("-")), ".")
+        if store:
+            if not os.path.exists(path):
+                sys.stderr.write("Error: No such file or directory (os error 2)\n")
+                return 1
+            for name, project, _state in _store_entries(store):
+                if project["project_path"] == path:
+                    print(
+                        f"Project: {path}\nModel:   {project.get('model', MODEL)}\n"
+                        f"Index:   {os.path.join(store, name)}\n\n"
+                        "Run any search to update the index, or `colgrep clear` to rebuild from scratch."
+                    )
+                    return 0
         if os.environ.get("FAKE_COLGREP_INDEXED", "1") == "0":
             print(f"No index found for {path} [{MODEL}]\nRun `colgrep <query>` to create one.")
         else:

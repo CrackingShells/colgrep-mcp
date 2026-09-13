@@ -16,7 +16,7 @@ from mcp.server.mcpserver import Context
 from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability, TextContent, ToolAnnotations
 from pydantic import BaseModel, Field
 
-from . import tools_search
+from . import store, tools_search
 from .adapter import ColgrepError, ColgrepNotFound
 from .errors import Code, tool_error, translate_adapter_errors
 from .locks import project_lock
@@ -76,11 +76,47 @@ def _render_status(status: IndexStatus) -> str:
     return "\n".join(lines)
 
 
+def _mib(size_bytes: int) -> str:
+    return f"{size_bytes / 2**20:.1f}MiB"
+
+
+def _human_size(size_bytes: int) -> str:
+    return f"{size_bytes / 2**30:.2f}GiB" if size_bytes >= 2**30 else _mib(size_bytes)
+
+
 def _index_block(info: IndexInfo) -> str:
-    return f"{info.project}  model={info.model}  units={info.units_indexed}  searches={info.search_count}"
+    """The pre-0.5 four tokens first, then the store-derived ones (index_housekeeping
+    R01 §C4): a client that read the old line still finds it at the front."""
+    text = f"{info.project}  model={info.model}  units={info.units_indexed}  searches={info.search_count}"
+    if info.size_bytes is not None:
+        text += f"  size={_mib(info.size_bytes)}"
+    if info.last_modified:
+        text += f"  modified={info.last_modified[:10]}"
+    if info.stale == store.SHADOWED:
+        text += f"  [shadowed by {info.shadowed_by}]"
+    elif info.stale:
+        text += f"  [{info.stale}]"
+    return text
 
 
-def _render_index_list(result: IndexList, budget: int) -> tuple[str, bool]:
+def _index_header(result: IndexList, stale_only: bool) -> str:
+    shown = len(result.indexes)
+    total = result.total if result.total is not None else shown
+    header = (
+        f"{shown} stale of {total} indexed projects on this machine"
+        if stale_only
+        else f"{shown} indexed projects on this machine"
+    )
+    if result.total_bytes is None:
+        return header
+    counts = {kind: sum(1 for i in result.indexes if i.stale == kind) for kind in store.STALE_CLASSES}
+    return (
+        f"{header} ({_human_size(result.total_bytes)} in store; {counts[store.ORPHANED]} orphaned, "
+        f"{counts[store.MACHINE_STATE]} machine-state, {counts[store.SHADOWED]} shadowed)"
+    )
+
+
+def _render_index_list(result: IndexList, budget: int, *, stale_only: bool = False) -> tuple[str, bool]:
     """Render `result` through the one budgeted renderer (R01 §C7), capped at
     `budget` chars like every other tool's text listing (R01 consistency
     §Token-budget invariant); `list_indexes`' text is machine-global and was
@@ -91,8 +127,10 @@ def _render_index_list(result: IndexList, budget: int) -> tuple[str, bool]:
     to list) — kept byte-identical to the pre-budget rendering.
     """
     if not result.indexes:
+        if stale_only and result.total:
+            return f"No stale indexes among the {result.total} indexed projects on this machine.", False
         return "No indexed projects on this machine.", False
-    header = f"{len(result.indexes)} indexed projects on this machine"
+    header = _index_header(result, stale_only)
     blocks = [_index_block(info) for info in result.indexes]
     return tools_search._render_budgeted(
         header, blocks, lambda remaining: f"[{remaining} more indexes in structured_content]", [], budget
@@ -158,15 +196,26 @@ async def index_status(
     )
 
 
-async def list_indexes(*, ctx: Context) -> CallToolResult:
-    """List every project colgrep has indexed on this machine, with model and unit counts."""
+async def list_indexes(
+    stale_only: Annotated[
+        bool,
+        Field(
+            description="Only indexes whose project path is gone (`orphaned`), sits in a temp, cache or hidden "
+            "tree (`machine_state`), or lies inside another indexed project (`shadowed`)."
+        ),
+    ] = False,
+    *,
+    ctx: Context,
+) -> CallToolResult:
+    """List every project colgrep has indexed on this machine: model, units, searches, index size,
+    last use, whether the path still exists and whether another indexed project shadows it.
+    Use `index_prune` to remove the stale ones."""
     adapter = get_adapter(ctx)
     settings = get_settings(ctx)
     async with translate_adapter_errors():
-        infos: list[IndexInfo] = await adapter.stats()
+        result = await store.index_list(adapter, stale_only=stale_only)
 
-    result = IndexList(indexes=infos)
-    text, capped = _render_index_list(result, settings.text_budget)
+    text, capped = _render_index_list(result, settings.text_budget, stale_only=stale_only)
     if capped:
         await safe_log(
             ctx,
