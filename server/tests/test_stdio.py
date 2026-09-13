@@ -70,7 +70,7 @@ async def test_stdio_round_trip(fake_colgrep_bin, tmp_path):
             assert len(templates.resource_templates) == 1
 
             prompts = await client.list_prompts()
-            assert len(prompts.prompts) == 3
+            assert len(prompts.prompts) == 4
 
             result = await client.call_tool("search", {"query": "config parsing"})
             assert result.is_error is False

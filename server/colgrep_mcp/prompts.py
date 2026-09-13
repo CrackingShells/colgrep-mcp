@@ -1,4 +1,4 @@
-"""Prompts (`explore`, `locate`, `impact`) and the shared `path` completion.
+"""Prompts (`explore`, `locate`, `impact`, `housekeeping`) and the shared `path` completion.
 
 R01 §Prompts / R05 D5, D11: the prompt text must say `limit=None` is
 exhaustive only together with `pattern` (colgrep's own runtime default,
@@ -137,6 +137,27 @@ def impact(change: str, path: str | None = None) -> str:
     )
 
 
+def housekeeping(days: str = "30") -> str:
+    """housekeeping — review and prune colgrep's index store on this machine."""
+    return (
+        "Clean up colgrep's index store on this machine. Use only the colgrep-mcp tools below; "
+        "never delete anything under the store by hand.\n\n"
+        "1. list_indexes(stale_only=true) — every index whose project path is gone (orphaned), "
+        "sits in a temp, cache or hidden tree (machine_state) or lies inside another indexed "
+        "project (shadowed). The header carries the store size and the per-class counts.\n"
+        "2. index_prune() — a dry run over those three classes, grouped by class with sizes. "
+        'Review it. Add "cold" only if live projects with at most 1 search and untouched for '
+        f'{days}+ days should go too: index_prune(classes=["orphaned", "machine_state", "shadowed", '
+        f'"cold"], days={days}).\n'
+        "3. index_prune(dry_run=false, confirm=true, classes=[...]) with exactly the classes you "
+        "reviewed. The candidates are recomputed at that moment, so an index whose project came "
+        "back is skipped; anything the guard refused is listed under failed.\n"
+        "4. list_indexes(stale_only=true) again to confirm.\n\n"
+        "Output contract: report the candidate count and size per class before and after, the "
+        "bytes freed from the prune result, and every failed entry verbatim."
+    )
+
+
 async def complete_path(
     ref: PromptReference | ResourceTemplateReference,
     argument: CompletionArgument,
@@ -170,4 +191,5 @@ def register(mcp: MCPServer) -> None:
     mcp.prompt(title="Explore: answer a how/why/where question")(explore)
     mcp.prompt(title="Locate: find where a symbol/behaviour lives")(locate)
     mcp.prompt(title="Impact: find what breaks before changing something")(impact)
+    mcp.prompt(title="Housekeeping: review and prune the index store")(housekeeping)
     mcp.completion()(complete_path)
