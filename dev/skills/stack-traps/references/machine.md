@@ -2,17 +2,24 @@
 
 ## A Bash command gets blocked even though it looks harmless {#shell-hook}
 
-**Symptom**: a Bash command is refused, even one you only used inside a
+**Symptom**: a Bash command is refused with "Shell corpus search … is
+disabled by the colgrep-mcp plugin", even one you only used inside a
 heredoc to write a file, or one where the actual search tool wasn't even
 invoked — just its name appeared in the command text.
 
-**Cause**: this machine has a shell hook that blocks recursive corpus
-searches — `grep -r`, `rg`, and equivalents — in any Bash command text,
-heredocs included, on the theory that a corpus search should go through
-colgrep's semantic search instead of brute-force recursive grep. The block
-is on the text of the command, not just its runtime behaviour, so even a
-`cat <<EOF` block that merely *mentions* one of those invocations as
-example text gets blocked. (`KT-H` §Pain Points.)
+**Cause**: the product plugin ships a `PreToolUse` hook
+(`hooks/colgrep_policy.py`, harness_wiring R01 §C5) that denies recursive
+corpus searches — `grep -r`, `rg`, `find -exec grep`, `xargs grep` — in any
+Bash command text whose targets are a source corpus, on the theory that a
+corpus search should go through the `search` tool instead of brute-force
+recursive grep. The block is on the text of the command, not just its
+runtime behaviour, so even a `cat <<EOF` block that merely *mentions* one
+of those invocations as example text gets denied. The same rule used to
+live in the maintainer's `~/.claude/settings.json` before the plugin
+shipped hooks; the wording of the reason changed, the rule did not. That
+older copy also read the `-patterns` inside a hyphenated word as a `-r`
+flag and denied single-file greps; the plugin's copy requires whitespace
+before the dash. (`KT-H` §Pain Points; harness_wiring R01.)
 
 **What to do**: when a file's content must literally contain one of those
 command names (documentation, a skill file like this one, a script
@@ -21,7 +28,9 @@ hook only inspects Bash command text. When a blocked command must actually
 run (rare — plain non-recursive `grep`, or `grep` filtering another
 command's output, is never blocked), prefix it with `COLGREP_BYPASS=1`.
 Don't fight the hook by obfuscating the command; reach for the sanctioned
-bypass or a different tool.
+bypass or a different tool. To see exactly what the hook would decide, feed
+it the harness's JSON by hand — `server/tests/test_hooks.py` shows the
+shape.
 
 ## Windows CI fails only on the fake colgrep binary or a setup step {#windows-ci}
 

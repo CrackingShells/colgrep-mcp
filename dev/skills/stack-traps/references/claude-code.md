@@ -103,3 +103,31 @@ trying to force `claude -p` to work. Eval cases in `dev/evals/*/case.yaml`
 are authored to the documented schema and left unrun this cycle for the
 same reason — the first session with a working authenticated `claude -p`
 should run them, not this one.
+
+## The plugin's hooks don't fire, or run the old text, after a change {#plugin-hooks}
+
+**Symptom**: you edited `hooks/hooks.json` or `hooks/colgrep_policy.py`
+(or a plugin update just landed) and a `grep -r` still passes, the
+session-start policy is the old one, or `/hooks` lists nothing under
+Plugin Hooks; in Codex the hooks are listed but never run.
+
+**Cause**: plugin hooks are read when the plugin is loaded, not per call.
+Claude Code needs `/reload-plugins` or a new session, and a
+marketplace-installed plugin runs the *cached* copy under
+`~/.claude/plugins/cache/`, not your tree; `claude --plugin-dir .` loads
+the tree's hooks — and, unlike the MCP manifest (`#uvx-pin`), they really
+do run from the tree, because they are scripts, not a PyPI pin. Codex
+skips plugin-bundled hooks until you review and trust them in `/hooks`,
+and marks them for review again whenever the hook definition's hash
+changes. Cursor loads Claude Code hooks only from `settings.json` files,
+never from a plugin. (harness_wiring R01 risk 7, D8.)
+
+**What to do**: after editing, `/reload-plugins` (or restart) in Claude
+Code; in Codex open `/hooks` and trust; for Cursor copy the three
+`hooks.json` entries into the project's `.claude/settings.json`. Test the
+script without any harness by piping it the event JSON —
+`server/tests/test_hooks.py` does exactly that through `sys.executable`,
+so `uv run pytest tests/test_hooks.py` is the fastest check. Keep
+Claude-only events (`WorktreeRemove`) in `hooks/claude-code.json`, never in
+the portable `hooks/hooks.json` a Codex parser also reads;
+`test_hooks.py` pins the split.
