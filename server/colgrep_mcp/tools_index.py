@@ -18,8 +18,8 @@ from mcp.types import CallToolResult, ClientCapabilities, ElicitationCapability,
 from pydantic import BaseModel, Field
 
 from . import store, tools_search
-from .adapter import ColgrepError, ColgrepNotFound
-from .errors import Code, tool_error, translate_adapter_errors
+from .adapter import ColgrepAdapter, ColgrepError, ColgrepNotFound
+from .errors import HINTS, Code, note, tool_error, translate_adapter_errors
 from .locks import project_lock
 from .logging_utils import safe_log, safe_notify_resource_updated, safe_progress
 from .models import (
@@ -184,6 +184,8 @@ def _render_doctor(doc: Doctor) -> str:
         lines.append("settings: " + ", ".join(f"{k}={v}" for k, v in doc.settings.items()))
     for problem in doc.problems:
         lines.append(f"problem: {problem}")
+    for hint in doc.hints:
+        lines.append(f"hint: {hint}")
     return "\n".join(lines)
 
 
@@ -327,6 +329,10 @@ async def doctor(*, ctx: Context) -> CallToolResult:
     except ColgrepError as exc:
         problems.append(f"colgrep settings failed: {exc}")
 
+    hints: list[str] = []
+    if version is not None:
+        hints = await _store_hints(adapter)
+
     doc = Doctor(
         colgrep_path=colgrep_path,
         version=version,
@@ -335,11 +341,43 @@ async def doctor(*, ctx: Context) -> CallToolResult:
         root_source=root_source,
         ok=not problems,
         problems=problems,
+        hints=hints,
     )
     return CallToolResult(
         content=[TextContent(type="text", text=_render_doctor(doc))],
         structured_content=doc.model_dump(),
     )
+
+
+async def _store_hints(adapter: ColgrepAdapter) -> list[str]:
+    """`doctor`'s look at the index store (index_housekeeping R01 §C6, D9): a hint, never a
+    problem, when the store carries orphaned or machine-state indexes — or when every
+    indexed project is gone, so the store cannot even be located. A fresh machine with
+    no index at all gets no hint; a `--stats` failure is left to the tools that need it.
+    """
+    try:
+        infos = await adapter.stats()
+        root = await adapter.store_root(infos)
+    except ColgrepError:
+        return []
+    if root is None:
+        if infos:
+            return [note(Code.INDEX_STORE_UNKNOWN, f"{len(infos)} indexed projects, none of which exists on disk.")]
+        return []
+    entries = await asyncio.to_thread(store.read_store, root)
+    verdicts = store.classify_now(entries)
+    orphaned = [v for v in verdicts if v.kind == store.ORPHANED]
+    machine = [v for v in verdicts if v.kind == store.MACHINE_STATE]
+    if not orphaned and not machine:
+        return []
+    size = sum(v.entry.size_bytes for v in (*orphaned, *machine))
+    return [
+        note(
+            Code.INDEX_STORE_STALE,
+            f"{len(orphaned)} orphaned and {len(machine)} machine-state indexes ({_human_size(size)}) in {root}. "
+            f"{HINTS[Code.INDEX_STORE_STALE]}",
+        )
+    ]
 
 
 # --- mutating tools ------------------------------------------------------------

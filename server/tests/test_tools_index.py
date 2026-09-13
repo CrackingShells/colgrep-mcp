@@ -305,6 +305,51 @@ async def test_doctor_reports_client_root_when_env_root_unset(monkeypatch, fake_
     assert doc["default_root"] == str(tmp_path.resolve())
 
 
+async def test_doctor_hints_at_a_stale_store(settings_env, housekeeping_store, fake_store):
+    """R01 §C6: orphaned and machine-state indexes are a hint, not a problem — `ok` stays true."""
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("doctor", {})
+
+    doc = result.structured_content
+    assert doc["ok"] is True and doc["problems"] == []
+    assert len(doc["hints"]) == 1
+    hint = doc["hints"][0]
+    assert hint.startswith(f"[{Code.INDEX_STORE_STALE}] 1 orphaned and 1 machine-state indexes (")
+    assert str(fake_store.root) in hint
+    assert hint.endswith(HINTS[Code.INDEX_STORE_STALE])
+    assert f"hint: [{Code.INDEX_STORE_STALE}]" in result.content[0].text
+
+
+async def test_doctor_no_hint_for_a_clean_store(settings_env, fake_store, tmp_path, monkeypatch):
+    live = tmp_path / "live"
+    (live / "sub").mkdir(parents=True)
+    monkeypatch.setattr(tools_index.store, "machine_state_roots", lambda home: [])
+    fake_store("live-0001", live, search_count=3)
+    fake_store("sub-0002", live / "sub", search_count=3)  # shadowed: reported by list_indexes, not nagged about
+
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("doctor", {})
+
+    assert result.structured_content["hints"] == []
+    assert "hint:" not in result.content[0].text
+
+
+async def test_doctor_hints_when_every_indexed_project_is_gone(settings_env):
+    """The fake's default `--stats` names two projects that do not exist on disk."""
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("doctor", {})
+
+    hints = result.structured_content["hints"]
+    assert len(hints) == 1 and hints[0].startswith(f"[{Code.INDEX_STORE_UNKNOWN}] 2 indexed projects")
+
+
+async def test_doctor_no_hint_on_a_machine_with_no_index(settings_env, fake_store):
+    async with Client(build(), raise_exceptions=True) as client:
+        result = await client.call_tool("doctor", {})
+
+    assert result.structured_content["hints"] == []
+
+
 # --- index_build ------------------------------------------------------------------
 
 

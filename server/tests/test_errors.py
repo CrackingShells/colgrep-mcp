@@ -36,6 +36,7 @@ def test_code_enum_has_exactly_the_specified_members():
         "COLGREP_TIMEOUT",
         "BAD_HIT_ID",
         "INDEX_STORE_UNKNOWN",
+        "INDEX_STORE_STALE",
     }
 
 

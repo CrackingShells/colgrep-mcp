@@ -155,3 +155,8 @@ class Doctor(BaseModel):
     root_source: str
     ok: bool
     problems: list[str] = Field(default_factory=list)
+    hints: list[str] = Field(
+        default_factory=list,
+        description="`[CODE] ...` advice that does not make the environment not-ok, e.g. a stale index store "
+        "(index_housekeeping R01 §C6).",
+    )
