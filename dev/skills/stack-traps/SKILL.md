@@ -16,7 +16,7 @@ section, don't re-derive the trap from scratch.
 | Symptom you see | Layer | Reference |
 |:--|:--|:--|
 | a subcommand run with a trailing global flag turned into a search / reindexed the cwd | colgrep | `references/colgrep.md#flag-order` |
-| you're about to run the e2e driver or `colgrep init` against this repo or a worktree | colgrep | `references/colgrep.md#ancestor-folding` |
+| you're about to run the e2e driver against this repo, or you're unsure whether the plugin's `search` is safe in a worktree | colgrep | `references/colgrep.md#ancestor-folding` |
 | a hit's `line`/`end_line` doesn't bound the code you can see | colgrep | `references/colgrep.md#location` |
 | a tool description shows stray leading whitespace to a client | mcp-sdk | `references/mcp-sdk.md#docstring-verbatim` |
 | a `functools.cache`-wrapped resource handler raises at registration | mcp-sdk | `references/mcp-sdk.md#validate-call` |
