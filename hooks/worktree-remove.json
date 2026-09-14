@@ -1,0 +1,16 @@
+{
+  "description": "colgrep-mcp: the WorktreeRemove event, which only Claude Code fires. One file per event that not every hook-capable harness knows, named after the event; named from .claude-plugin/plugin.json only, never from the Codex manifest, so a parser that knows no WorktreeRemove never sees it. Clears the colgrep index a removed worktree owned (never one it was folded into).",
+  "hooks": {
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${CLAUDE_PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 90
+          }
+        ]
+      }
+    ]
+  }
+}

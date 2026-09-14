@@ -5,11 +5,14 @@ stdin, JSON or nothing on stdout, exit 0 — through the interpreter running
 the tests, so the Windows CI job is the portability oracle for it as it is
 for `fake_colgrep.py` (harness_wiring R01 §Validation). The drift guards pin
 what no ecosystem's loader checks for us: that the portable file names only
-events every hook-capable harness understands (R01 §C1), that the Claude-only
-file is disjoint from it and named by the Claude Code manifest alone (R01
-§C2), that every command launches the one script through the one launcher
-(R01 §C3), and that the injected policy stays under Codex's context cap
-(R01 §C4).
+events every hook-capable harness understands (R01 §C1); that every other
+file holds exactly one event not every harness knows and is named after it
+(`worktree-remove.json`), so no file name sits near a loader default that
+could claim it later (R01 §C2, amended); that the Claude Code manifest names
+exactly those files and never the auto-loaded `hooks/hooks.json`, which fails
+the install (stack-traps `claude-code.md#hooks-manifest-duplicate`); that
+every command launches the one script through the one launcher (R01 §C3);
+and that the injected policy stays under Codex's context cap (R01 §C4).
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ import ast
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -29,12 +33,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOKS_DIR = REPO_ROOT / "hooks"
 SCRIPT = HOOKS_DIR / "colgrep_policy.py"
 PORTABLE_FILE = HOOKS_DIR / "hooks.json"
-CLAUDE_ONLY_FILE = HOOKS_DIR / "claude-code.json"
+#: One file per event that not every harness knows, named after the event.
+EXTRA_FILES = sorted(p for p in HOOKS_DIR.glob("*.json") if p != PORTABLE_FILE)
 
 #: Events documented by all three hook-capable ecosystems: Claude Code's hooks
 #: reference, Codex's "Hooks" doc (§Hooks) and Cursor's third-party-hooks
-#: mapping table (R01 §C1). Anything outside this set belongs in the
-#: Claude-only file.
+#: mapping table (R01 §C1). Anything outside this set gets its own file,
+#: named after the event.
 PORTABLE_EVENTS = {
     "SessionStart",
     "SessionEnd",
@@ -324,12 +329,22 @@ def test_portable_file_names_only_events_every_harness_understands():
     assert {"SessionStart", "SubagentStart", "PreToolUse"} <= events
 
 
-def test_claude_only_file_is_disjoint_from_the_portable_file():
+def _kebab(event: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "-", event).lower()
+
+
+def test_every_extra_file_holds_one_non_portable_event_and_is_named_after_it():
+    """`hooks.json` is the one name both loaders claim by default; every other file is named
+    after the single event it holds, a name no loader default is likely to claim."""
+    assert EXTRA_FILES, "at least one non-portable event (WorktreeRemove) is wired"
     portable = set(_load(PORTABLE_FILE)["hooks"])
-    claude_only = set(_load(CLAUDE_ONLY_FILE)["hooks"])
-    assert claude_only, "the Claude-only file exists to hold at least one event"
-    assert not (claude_only & portable)
-    assert not (claude_only & PORTABLE_EVENTS), "a portable event belongs in hooks.json"
+    for path in EXTRA_FILES:
+        events = list(_load(path)["hooks"])
+        assert len(events) == 1, (path.name, events)
+        assert path.stem == _kebab(events[0]), f"{path.name} must be named after {events[0]}"
+        assert events[0] not in portable, (path.name, "duplicates hooks.json")
+        assert events[0] not in PORTABLE_EVENTS, (path.name, "a portable event belongs in hooks.json")
+    assert {p.stem for p in EXTRA_FILES} >= {"worktree-remove"}
 
 
 def test_pre_tool_use_matches_grep_and_bash_only():
@@ -338,7 +353,7 @@ def test_pre_tool_use_matches_grep_and_bash_only():
 
 
 def test_every_handler_launches_the_one_script_through_the_one_launcher():
-    for path in (PORTABLE_FILE, CLAUDE_ONLY_FILE):
+    for path in (PORTABLE_FILE, *EXTRA_FILES):
         for handler in _commands(_load(path)):
             assert handler["type"] == "command", path.name
             command = handler["command"]
@@ -350,12 +365,24 @@ def test_every_handler_launches_the_one_script_through_the_one_launcher():
 
 
 def test_manifests_name_the_hook_files_per_ecosystem():
+    """The two loaders read the same field with opposite semantics. Claude Code always loads
+    `hooks/hooks.json` and treats `hooks` as *additional* files: naming the default again fails
+    the whole plugin at install time ("Duplicate hooks file detected", Claude Code 2.1.270) while
+    `--plugin-dir` accepts it silently. Codex discovers `hooks/hooks.json` only when the manifest
+    defines no `hooks`, and an explicit value *replaces* that discovery. So the Claude manifest
+    names exactly the extra files (today all Claude-only) and the Codex manifest the portable
+    file (stack-traps `claude-code.md#hooks-manifest-duplicate`)."""
     claude = _load(REPO_ROOT / ".claude-plugin" / "plugin.json")
     codex = _load(REPO_ROOT / ".codex-plugin" / "plugin.json")
     agent = _load(REPO_ROOT / "plugin.json")
 
-    assert claude["hooks"] == ["./hooks/hooks.json", "./hooks/claude-code.json"]
-    assert codex["hooks"] == "./hooks/hooks.json", "Codex must never be pointed at the Claude-only file"
+    named = [claude["hooks"]] if isinstance(claude["hooks"], str) else list(claude["hooks"])
+    assert "./hooks/hooks.json" not in named, (
+        "Claude Code auto-loads hooks/hooks.json; naming it in the manifest fails the plugin"
+    )
+    assert set(named) == {f"./hooks/{p.name}" for p in EXTRA_FILES}, "every extra file is Claude-only today"
+    assert claude["hooks"] == "./hooks/worktree-remove.json"
+    assert codex["hooks"] == "./hooks/hooks.json", "Codex: the field replaces default discovery, so name hooks.json"
     assert "hooks" not in agent, "Agent Plugins 1.0 defines no hooks component"
 
 

@@ -1,5 +1,5 @@
 {
-  "description": "colgrep-mcp: state the search policy at session and subagent start; deny the built-in Grep tool and shell corpus searches in favour of the colgrep MCP tools. Only events every hook-capable harness (Claude Code, Codex, Cursor) understands live here; Claude-only events are in claude-code.json.",
+  "description": "colgrep-mcp: state the search policy at session and subagent start; deny the built-in Grep tool and shell corpus searches in favour of the colgrep MCP tools. Only events every hook-capable harness (Claude Code, Codex, Cursor) understands live here, in the one file both Claude Code and Codex load by default; an event not every harness knows gets its own file named after it (worktree-remove.json).",
   "hooks": {
     "SessionStart": [
       {
