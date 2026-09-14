@@ -13,6 +13,24 @@ at the same time a Claude Code plugin, an Agent Plugins 1.0 plugin and a Codex
 plugin; all three launch the same server with `uv run`. Both its users and its
 maintainers are LLM agents inside harnesses; design for them first.
 
+## Execution model
+
+Work here is run by a lead that delegates first. The lead holds the architecture,
+the specs and the merges; implementers take bounded, file-disjoint leaves in their
+own worktrees, on the cheapest tier that finishes a leaf with the gates green.
+Two currencies decide who does what. **Tokens**: the lead runs on the most capable
+tier and everything it reads or edits itself stays in its context, re-sent on every
+later turn of the cycle; an implementer's tokens are spent once, on a cheaper tier,
+in a context discarded after its report. **Latency**: parallel leaves cost the
+slowest leaf rather than the sum, but each dispatch carries a fixed overhead (the
+brief, then the implementer's cold read of this file, its leaf and the cited
+reports) that measured leaves place at 4–15 minutes (`KT-C`, `KT-D`). So delegation
+is the default, and not stubborn: a leaf the lead finishes faster than it can brief
+(scaffold, shared helpers, CI, this file, changelog) stays with the lead. Whatever
+the harness offers for parallel workers instantiates this; with nothing, the lead
+runs the same roadmap sequentially under the same discipline. Load the
+`campaign-lead` dev skill before deciding a task is too small for it.
+
 ## Load the dev plugin
 
 ```bash
@@ -26,7 +44,7 @@ claude plugin install colgrep-mcp-dev@colgrep-mcp    # from the repo's marketpla
 | Skill | Load it when |
 |:--|:--|
 | `maintainer-policy` | you are about to add scaffold, CI, hooks, docs or a "best practice"; review or refactor server code; choose between `perf` and `refactor`; write a docstring |
-| `campaign-lead` | you lead, plan or dispatch multi-agent work here: architecture report, roadmap, worktrees, reviewer pass, closing a cycle |
+| `campaign-lead` | a task has, or might have, more than one lead-sized leaf — decide that inside the skill, not before it: architecture report, roadmap, worktrees, dispatch, reviewer pass, closing a cycle |
 | `landing-and-release` | you commit, rebase, merge, open or land a PR, resolve a conflict, cut a release, or `cz check` rejects you |
 | `stack-traps` | you run `colgrep` by hand, touch a handler or a manifest, debug a plugin that does not connect, read a Windows CI failure, or `claude -p` fails |
 

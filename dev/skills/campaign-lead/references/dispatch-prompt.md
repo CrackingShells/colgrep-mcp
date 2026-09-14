@@ -23,6 +23,10 @@ shape to look complete:
   the lead re-runs and compares rather than trusting a summary.
 - **Commit rules and hard-stop time** keep the history and the time-box legible across many
   parallel branches the lead did not watch being written in real time.
+- **Tier is the lead's choice, not a template field.** Dispatch on the cheapest tier that has
+  cleared the gates for leaves of this size (`campaign-lead` §The Default); the final report's
+  gate-attempt count is the signal to escalate *that leaf* to a stronger tier on the next
+  round, not to stop delegating.
 
 ---
 
@@ -52,6 +56,7 @@ never edit versions by hand; never author a `release(...)` commit.
 how each fact is cited, size caps, prohibited real-world side effects such as running a real
 external tool or a live eval>.
 **Final report** (your last message, plain text): the commits (hash + subject); the exact
-output line of each gate; files touched outside your ownership (should be none) or changes you
-recommend elsewhere; anything unfinished at the hard stop.
+output line of each gate and how many attempts each took to go green; files touched outside
+your ownership (should be none) or changes you recommend elsewhere; anything unfinished at the
+hard stop.
 ```
