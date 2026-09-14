@@ -4,7 +4,7 @@
     "colgrep": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["colgrep-mcp==0.5.0"]
+      "args": ["colgrep-mcp==0.5.1"]
     }
   }
 }
