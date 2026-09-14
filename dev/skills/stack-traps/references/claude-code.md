@@ -62,27 +62,33 @@ hand and never re-tag.
 
 ## The install/list command reads oddly or fails to resolve {#namespaces}
 
-**Symptom**: `claude plugin install colgrep-mcp@colgrep-mcp` looks like a
-typo (same name on both sides of the `@`), or a plugin/marketplace name
-collision seems like it should fail but doesn't — or conversely, an install
+**Symptom**: `claude plugin install colgrep-mcp@cracking-shells` names a
+marketplace that is not the repository; an install string copied from an
+older README or report (`colgrep-mcp@colgrep-mcp`,
+`colgrep-mcp@colgrep-mcp-marketplace`) no longer resolves; or an install
 command copied from Claude Code's convention doesn't work verbatim for
 Codex.
 
-**Cause**: marketplace names and plugin names live in separate namespaces.
-`colgrep-mcp@colgrep-mcp` parses unambiguously as `<plugin>@<marketplace>`
-even though both happen to be named `colgrep-mcp` — a naming coincidence,
-not a bug. Codex's own marketplace file names itself `colgrep-mcp-marketplace`
-(not `colgrep-mcp`), so the equivalent Codex command is
-`codex plugin add colgrep-mcp@colgrep-mcp-marketplace` — the two
-ecosystems' install commands don't mirror each other syntactically. A
-`source` field of `"./"` or `"./dev"` in a marketplace manifest resolves
-relative to the marketplace root, which works for a marketplace added from
-a git source or local directory but not for a direct URL to the
-`marketplace.json` file itself. (`RI`.)
+**Cause**: marketplace names and plugin names live in separate namespaces,
+`<plugin>@<marketplace>`. Both marketplace files
+(`.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`) name
+themselves `cracking-shells`, the organization, so one marketplace can carry
+every CrackingShells plugin; the plugin keeps the repository's name. Until
+after v0.5.0 the Claude marketplace was named `colgrep-mcp` and the Codex one
+`colgrep-mcp-marketplace`, so reports and machines from that period still
+carry those strings, and a machine that added the marketplace under the old
+name keeps it under that name until it is removed and re-added. A `source`
+field of `"./"` or `"./dev"` in a marketplace manifest resolves relative to
+the marketplace root, which works for a marketplace added from a git source
+or local directory but not for a direct URL to the `marketplace.json` file
+itself. (`RI`.)
 
-**What to do**: don't "fix" the `colgrep-mcp@colgrep-mcp` string as if it
-were a typo. When writing install instructions for a second ecosystem,
-copy that ecosystem's own marketplace `name`, not Claude Code's.
+**What to do**: on a machine that shows `colgrep-mcp` under
+`claude plugin marketplace list`, run
+`claude plugin marketplace remove colgrep-mcp` and add it again, then
+reinstall `colgrep-mcp@cracking-shells`. When writing install instructions
+for a second ecosystem, copy that ecosystem's own marketplace `name`; here
+the two happen to match, which is a choice, not a rule.
 
 ## `claude -p` / `claude plugin eval` fails with an OAuth error {#oauth}
 

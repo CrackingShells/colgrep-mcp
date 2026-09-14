@@ -7,7 +7,7 @@ installs it:
 
 ```bash
 claude --plugin-dir ./dev                     # from a clone
-claude plugin install colgrep-mcp-dev@colgrep-mcp   # from the repo's own marketplace
+claude plugin install colgrep-mcp-dev@cracking-shells  # from the repo's own marketplace
 ```
 
 The product plugin (`colgrep-mcp`, repository root) never ships these skills;

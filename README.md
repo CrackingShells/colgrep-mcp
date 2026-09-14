@@ -29,7 +29,7 @@ claude plugin marketplace add CrackingShells/colgrep-mcp
 ```
 
 ```bash
-claude plugin install colgrep-mcp@colgrep-mcp
+claude plugin install colgrep-mcp@cracking-shells
 ```
 
 Add `--scope project` to the marketplace command to declare it in the repository's own `.claude/settings.json` instead of your user settings, so teammates who open this project pick it up too.
@@ -41,7 +41,7 @@ codex plugin marketplace add CrackingShells/colgrep-mcp
 ```
 
 ```bash
-codex plugin add colgrep-mcp@colgrep-mcp-marketplace
+codex plugin add colgrep-mcp@cracking-shells
 ```
 
 The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`.
