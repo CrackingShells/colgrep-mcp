@@ -6,8 +6,9 @@ the tests, so the Windows CI job is the portability oracle for it as it is
 for `fake_colgrep.py` (harness_wiring R01 §Validation). The drift guards pin
 what no ecosystem's loader checks for us: that the portable file names only
 events every hook-capable harness understands (R01 §C1), that the Claude-only
-file is disjoint from it and named by the Claude Code manifest alone (R01
-§C2), that every command launches the one script through the one launcher
+file is disjoint from it and is the only file the Claude Code manifest names,
+`hooks/hooks.json` being auto-loaded (R01 §C2, amended: naming it again fails the
+install), that every command launches the one script through the one launcher
 (R01 §C3), and that the injected policy stays under Codex's context cap
 (R01 §C4).
 """
@@ -350,11 +351,18 @@ def test_every_handler_launches_the_one_script_through_the_one_launcher():
 
 
 def test_manifests_name_the_hook_files_per_ecosystem():
+    """Claude Code loads `hooks/hooks.json` by itself and treats `hooks` as *additional* files:
+    a manifest naming the default again fails the whole plugin at install time ("Duplicate hooks
+    file detected", Claude Code 2.1.270) while `--plugin-dir` accepts it silently, so the Claude
+    manifest names only the Claude-only file (stack-traps `claude-code.md#hooks-manifest-duplicate`).
+    Codex reads whatever its manifest names, so it keeps naming the portable file."""
     claude = _load(REPO_ROOT / ".claude-plugin" / "plugin.json")
     codex = _load(REPO_ROOT / ".codex-plugin" / "plugin.json")
     agent = _load(REPO_ROOT / "plugin.json")
 
-    assert claude["hooks"] == ["./hooks/hooks.json", "./hooks/claude-code.json"]
+    assert claude["hooks"] == "./hooks/claude-code.json", (
+        "Claude Code auto-loads hooks/hooks.json; naming it in the manifest fails the plugin"
+    )
     assert codex["hooks"] == "./hooks/hooks.json", "Codex must never be pointed at the Claude-only file"
     assert "hooks" not in agent, "Agent Plugins 1.0 defines no hooks component"
 

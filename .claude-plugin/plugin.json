@@ -12,6 +12,6 @@
   "license": "AGPL-3.0-or-later",
   "keywords": ["mcp", "colgrep", "semantic-search", "code-search", "agents"],
   "mcpServers": "./.claude-plugin/mcp.json",
-  "hooks": ["./hooks/hooks.json", "./hooks/claude-code.json"],
+  "hooks": "./hooks/claude-code.json",
   "skills": "./skills/"
 }
