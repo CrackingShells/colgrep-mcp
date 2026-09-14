@@ -4,6 +4,8 @@ Semantic and hybrid code search for coding agents, as an MCP server.
 
 [colgrep](https://github.com/lightonai/next-plaid) indexes a repository into *code units* (functions, classes, methods, Markdown sections) and ranks them with a ColBERT late-interaction model fused with keyword search. It is fast and it understands meaning. It is also a CLI, and agents trained on `grep` rarely reach for it unprompted. `colgrep-mcp` puts the same capability in the agent's tool list, where it gets used.
 
+This is an independent project. It is not affiliated with or supported by [LightOn](https://www.lighton.ai), who make colgrep. A problem with the search tools belongs in this repository's issues, a problem with colgrep itself in [next-plaid](https://github.com/lightonai/next-plaid/issues).
+
 One directory installs as a **Claude Code plugin**, an **[Agent Plugins 1.0](https://agent-plugins.org) plugin** (Codex, Cursor, GitHub Copilot, VS Code, Kiro) and a **Codex plugin**.
 
 ## Requirements
@@ -173,6 +175,14 @@ Without `COLGREP_MCP_ROOT` the server falls back to the client's first root, if 
 - **A shell command was denied.** That is the plugin's `PreToolUse` hook, not colgrep: the reason names the MCP tool to call instead. For a target colgrep cannot index (extensionless or lock files, an inverted match), prefix the command with `COLGREP_BYPASS=1`.
 - **`index_clear` refuses.** colgrep folds a directory into the nearest already-indexed ancestor project. The tool tells you the project root it would clear; pass that root explicitly if that is really intended.
 - **Line numbers.** colgrep 1.6 reports wrong `line`/`end_line` for most units. The server re-locates every unit from its source text and flags `location_verified` on each hit.
+
+## For agents, by agents
+
+Everyone who touches this repository is an LLM agent. Users reach it through the MCP tools, and the maintenance itself is handed to a coding agent, at present Claude Fable 5.1 in Claude Code: it reads the architecture reports, plans the work as a roadmap, implements in its own git worktree, writes the tests and the docs, and opens the pull request. The MCP server and the skill are the two layers made for the human and the agent to talk to each other; everything else, from the drift tests to the maintainer skills in `dev/`, is optimised for an agent picking the work up cold.
+
+A change goes through an ordinary pull-request cycle. The agent commits with the vocabulary `cz check` enforces (`CONTRIBUTING.md`), pushes a branch and opens the PR; CI runs ruff, the test suite on Linux, macOS and Windows, the commit check and a build; the maintainer reads the diff and the PR body, then merges; a release is a `cz bump` on `main` and a tag push, which publishes to PyPI. Larger work runs as a campaign: an architecture report under `__reports__/`, a roadmap under `__roadmap__/`, one worktree per leaf, a read-only reviewer pass, and a retrospective whose lessons become the next revision of the `dev/` skills.
+
+This holds because the agent is a frontier model and because the maintainer, who has built MCP servers before, reads every diff. The tests, the drift guards and the reports exist so that the trust placed in the agent is verified at each merge rather than assumed; the same process with a weaker model, or with merges nobody reads, would drift.
 
 ## Development
 
