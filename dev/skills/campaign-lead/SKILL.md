@@ -6,8 +6,8 @@ description: "Guides a lead through running a multi-agent campaign on this repos
 # Campaign Lead
 
 Composes with the machine-level `writing-reports`, `managing-roadmaps` and `writing-history`
-skills for mechanics; this skill is the order of operations and the rules three prior campaigns
-(`colgrep_mcp`, `repo_health`, `consistency`) paid to learn.
+skills for mechanics; this skill is the order of operations and the rules this repository's
+campaigns established, each cited to the retrospective that records it (`AGENTS.md` legend).
 
 ## Order of Operations
 
@@ -21,14 +21,14 @@ skills for mechanics; this skill is the order of operations and the rules three 
    KT-C §Wins: helpers before dispatch → zero conflicts).
 4. **One worktree per leaf, created by hand**: `git worktree add <path> -b task/<leaf>
    <campaign-branch>`. Never rely on the Agent tool's `isolation: worktree` for this — it
-   branches from the primary checkout's `main`, not the campaign branch, and cost a full
-   wasted dispatch round in `repo_health` (KT-H §Pain Points, KT-B §Root Causes, lead memory).
+   branches from the primary checkout's `main`, not the campaign branch, and a whole dispatch
+   round lands on the wrong base (KT-H §Pain Points, KT-B §Root Causes).
 5. **Dispatch** with `references/dispatch-prompt.md`. Every prompt states "stop if the leaf
-   file is missing from your worktree" — it turned the wrong-base failure above into a
-   ~15-second no-op with zero stray commits instead of wasted work (KT-H §Wins).
+   file is missing from your worktree" — it turns a wrong-base worktree into a ~15-second
+   no-op with zero stray commits instead of wasted work (KT-H §Wins).
 6. **Merge level by level**, rebase-then-`--no-ff` (mechanics: `writing-history`). Re-run the
-   gates yourself on every branch first — an implementer's reported count is not evidence; one
-   branch reported 196 passing tests on a tree that actually collected 206 (KT-C §Pain Points).
+   gates yourself on every branch first — an implementer's reported test count is not evidence
+   (KT-C §Pain Points).
 7. **Reviewer after any level with more than two parallel branches** — see
    `references/reviewer-brief.md` — before merging onward.
 8. **Close with a knowledge-transfer report** (`writing-reports`); its Next-cycle Changes seed
@@ -39,9 +39,8 @@ skills for mechanics; this skill is the order of operations and the rules three 
 - **Worktrees see only committed files.** Commit every spec and helper before dispatching, or
   the implementer's worktree simply will not have them.
 - **File-disjoint ownership**, stated in the roadmap README's Gotchas, not assumed: each leaf
-  edits only its own files and *reports* anything else it notices in its final message.
-  `repo_health` and `consistency` both closed with zero merge conflicts this way (KT-H, KT-C
-  §Wins).
+  edits only its own files and *reports* anything else it notices in its final message. This
+  is what closes a campaign with zero merge conflicts (KT-H, KT-C §Wins).
 - **Hard stop time**, stated in both the leaf and the dispatch prompt: the lead merges whatever
   is green at the stop (`consistency` roadmap README §Gotchas).
 - **Do lead-sized leaves yourself.** Scaffolding, shared helpers, CI wiring, `AGENTS.md`,
@@ -57,18 +56,18 @@ skills for mechanics; this skill is the order of operations and the rules three 
   whenever a leaf is the first to exercise a previously-untested path, and name that path in
   the PR body (KT-C §Pain Points, CI).
 - **A subagent that says it is "watching CI in the background" has already ended its turn.**
-  Make it block on `gh run watch --exit-status`, or read the run yourself (lead memory).
+  Make it block on `gh run watch --exit-status`, or read the run yourself.
 - **A drift test that relates two artefacts owned by different leaves is red until both land.**
   Order the roadmap so the *naming* side lands first (e.g. the `AGENTS.md` skill table before
-  the skill leaves it names), or every merge in between is red on a test nobody owns; the
-  `dev_plugin` campaign had to land its surface leaf ahead of BFS order for this (dev_plugin
-  KT §Pain Points). Also: git does not track empty directories, so a scaffolded-but-empty
-  directory never reaches a task worktree — a test that lists it must treat "absent" as "empty".
+  the skill leaves it names), even ahead of BFS order, or every merge in between is red on a
+  test nobody owns (KT-D §Pain Points). Also: git does not track empty directories, so a
+  scaffolded-but-empty directory never reaches a task worktree — a test that lists it must
+  treat "absent" as "empty".
 - **Merge commits are commits too.** Probe every merge subject with `cz check --message` and run
   `cz check --rev-range main..HEAD` on the campaign branch before pushing; per-task-branch ranges
-  never contain the lead's own merges (PR #4 of `dev_plugin` failed CI on one).
-- **Note the clock at the start; time-box the cycle.** The three prior cycles closed between
-  50 minutes and 4 hours (KT-C, KT-H).
+  never contain the lead's own merges, and CI checks the whole range (KT-D §Pain Points).
+- **Note the clock at the start; time-box the cycle.** A cycle here runs between one and four
+  hours (KT-C, KT-H).
 
 ## What This Skill Does Not Restate
 

@@ -6,10 +6,10 @@ description: Lists what colgrep, the MCP Python SDK v2, and Claude Code's plugin
 # stack-traps
 
 Four layers hide behind this repository's day-to-day commands, and each one
-has already bitten a maintaining agent at least once. This skill is the
-symptom index; each fact lives in exactly one `references/*.md` file, cited
-back to the report or docstring that established it — read the linked
-section, don't re-derive the trap from scratch.
+fails in ways its output does not explain. This skill is the symptom index;
+each fact lives in exactly one `references/*.md` file, cited back to the
+report or docstring that established it (`AGENTS.md` legend) — read the
+linked section, don't re-derive the trap from scratch.
 
 ## Symptom index
 
@@ -40,13 +40,13 @@ section, don't re-derive the trap from scratch.
    what to do, in that order).
 2. Open only the reference file the row names; the other three files are
    for different symptoms and not worth loading.
-3. Do what "what to do" says before trying anything else — every trap here
-   already cost someone real time working around the wrong layer (fixing
-   the server for what was actually a test-harness bug, treating a naming
-   coincidence as an error, adding a root `.mcp.json` back, etc.).
-4. If you hit a stack trap not listed here, it belongs in a future revision
-   of the matching `references/*.md` file, cited to its source — don't
-   leave it as tribal knowledge in a commit message or a private aside.
+3. Do what "what to do" says before trying anything else — the usual way to
+   lose an hour is to work around the wrong layer (fixing the server for a
+   test-harness bug, treating a naming coincidence as an error, adding a
+   root `.mcp.json` back).
+4. If you hit a stack trap not listed here, add it to the matching
+   `references/*.md` file, cited to its source — don't leave it as tribal
+   knowledge in a commit message or a private aside.
 
 ## References
 
@@ -61,4 +61,5 @@ section, don't re-derive the trap from scratch.
   on an expired OAuth session, the `uvx colgrep-mcp==<version>` pin, plugin
   hooks loading (reload, Codex trust, the portable/Claude-only split).
 - `references/machine.md` — the plugin's shell-search hook and `COLGREP_BYPASS=1`,
-  Windows CI's two known causes, the detached-worktree trick for `main`.
+  Windows CI's two known causes, the detached-worktree trick for `main`, the
+  permission classifier, a venv whose shebangs point at a moved checkout.

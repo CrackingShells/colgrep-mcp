@@ -5,15 +5,15 @@ description: Git and release mechanics for colgrep-mcp — commit shape, rebase-
 
 # Landing and release
 
-Three cycles of this repository hit the same detours at these mechanics. This
-skill is the fourth cycle not repeating them.
+The git and release mechanics of this repository, with the reason behind each
+rule and a citation to the report that records it (`AGENTS.md` legend).
 
 ## Commit shape
 
 Why: `cz check` enforces the schema in `server/pyproject.toml`
 `[tool.commitizen.customize]`, and CI blocks a PR on it — a subject that looks
 right by eye can still fail the regex. The type/bump table lives in
-[`CONTRIBUTING.md`](../../../CONTRIBUTING.md#allowed-types); this skill does
+[`CONTRIBUTING.md`](../../../CONTRIBUTING.md#commit-convention); this skill does
 not repeat it.
 
 Rules the schema enforces: `type(scope): description`, scope mandatory and
@@ -42,20 +42,20 @@ whatever the task branch happened to have last. Rebase the task branch onto
 its target, re-run the gates, then `git merge --no-ff -m "<message>"` into the
 target — never `git merge -F -`, which does not read stdin inside an `&&`
 chain. After any conflicting merge, search the tree for `<<<<<<<` before
-committing; it has bitten this repository twice. (`KT-C`, `KT-B` §Pain
-Points.) The merge commit is a commit too: probe its subject with
-`cz check --message` before merging, and run `cz check --rev-range
-main..HEAD` on the campaign branch before pushing — checking each task
-branch's range is not enough (PR #4 of the `dev_plugin` campaign failed CI
-on a 111-char merge subject the lead wrote; `land_branch.sh` now probes it). The general rebase-then-merge method is the machine-level
-`writing-history` skill (`~/.claude/skills/writing-history/SKILL.md`,
-`references/branches.md`); `scripts/land_branch.sh` runs the sequence for
-this repository's gates.
+committing (`KT-C`, `KT-B` §Pain Points). The merge commit is a commit too:
+probe its subject with `cz check --message` before merging, and run
+`cz check --rev-range main..HEAD` on the campaign branch before pushing —
+checking each task branch's range is not enough, because the lead's own
+merge subjects appear only in the campaign branch's range (`KT-D` §Pain
+Points; `land_branch.sh` probes the subject). The general rebase-then-merge
+method is the machine-level `writing-history` skill (`references/branches.md`
+there); `scripts/land_branch.sh` runs the sequence for this repository's
+gates.
 
 Never bare `git stash`: the stash stack is shared across worktrees and
 sessions, so a pop can take someone else's work. Prefer a throwaway commit;
 if you must stash, `git stash push -u -m <tag>` and restore by SHA, never
-`pop`. (Environment rule, `MEM`.)
+`pop`.
 
 `.gitignore` rules are written for the whole repository, not one package —
 anchor them (`/server/build/`); a bare `build/` once hid
@@ -64,10 +64,10 @@ anchor them (`/server/build/`); a bare `build/` once hid
 ## Branches and worktree cleanup
 
 `main` is always installable; one `task/<leaf>` branch per roadmap leaf,
-branched from the campaign branch (which may itself be the session's
+branched from the campaign branch (which may itself be a harness-created
 `claude/<name>` branch). Delete a branch and remove its worktree only after
 the branch is merged (`git worktree remove`, `git branch -d`).
-(`CONTRIBUTING.md` §Branching.)
+(`CONTRIBUTING.md` §Gates.)
 
 ## Landing a PR
 
@@ -81,8 +81,9 @@ pushed straight to `main` leaves the PR open on GitHub.
 Why: `cz bump` mutates version-tracked files across the tree and pushes a
 tag; running it anywhere but the one checkout that is actually `main` risks
 bumping a version nobody merges, or a push a sandboxed permission classifier
-silently blocks. Only from the main checkout
-(`~/colgrep-mcp`; `release.sh` reads it from `git worktree list`), never a scratch or detached worktree:
+silently blocks. Only from the main checkout (the first entry of
+`git worktree list`, which is how `release.sh` finds it), never a scratch or
+detached worktree:
 
 ```bash
 cd server
@@ -96,8 +97,8 @@ version-tracked manifests, the `uvx colgrep-mcp==<version>` pin in the three
 MCP manifests, and `CHANGELOG.md`, and writes its own
 `release(colgrep-mcp): v<x.y.z>` commit — never author that commit or edit a
 version by hand; a version-drift test failing means a file was hand-edited,
-not that the environment is stale. (`AGENTS.md` §Traps, `OBS-H` Check 4,
-`CONTRIBUTING.md`, `MEM`.) `scripts/release.sh` enforces the checkout/branch
+not that the environment is stale. (`OBS-H` Check 4, `CONTRIBUTING.md`
+§Versioning and release.) `scripts/release.sh` enforces the checkout/branch
 check and runs the recipe up to (never including) the push.
 
 The tag push is the publish decision: `.github/workflows/publish.yml` fires

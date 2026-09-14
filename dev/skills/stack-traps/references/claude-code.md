@@ -13,10 +13,10 @@ loader, one that has no notion of `CLAUDE_PLUGIN_ROOT` and so leaves the
 placeholder unexpanded, tried literally as a path. This is why this
 repository's MCP config lives at `.claude-plugin/mcp.json` instead: a
 root-level project open then discovers no `mcpServers.colgrep` entry at
-all. Since 0.3.0 no manifest carries a placeholder in `args` at all — every
-one launches `uvx colgrep-mcp==<version>` (see `#uvx-pin`) — and the only
-one left, `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in `env`, is in the Claude
-Code manifest only; Codex has its own `.codex-plugin/mcp.json` without it.
+all. No manifest carries a placeholder in `args` — every one launches
+`uvx colgrep-mcp==<version>` (see `#uvx-pin`) — and the only placeholder at
+all, `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in `env`, is in the Claude Code
+manifest only; Codex has its own `.codex-plugin/mcp.json` without it.
 Placeholders belong only in `args`/`env` (never `command` — no ecosystem
 expands placeholders there); `${VAR:-default}` fallback syntax is documented
 only for *project*-scope `.mcp.json`, not for the plugin substitution path,
@@ -48,9 +48,8 @@ cached environment (pypi_publication R01 §C6, D4).
 
 The third symptom is uv's HTTP cache: it keeps PyPI's simple-index page for
 `colgrep-mcp` for as long as PyPI's cache headers allow, so a pin that was
-uploaded a moment ago is "no version of colgrep-mcp==X" to a warm cache
-(seen on the v0.3.1 release: the gate failed twice, then connected after a
-refresh). The plugin loader shows none of that text — only the closed pipe.
+uploaded a moment ago is "no version of colgrep-mcp==X" to a warm cache.
+The plugin loader shows none of that text — only the closed pipe.
 
 **What to do**: after a release, warm the cache once with
 `uvx --refresh colgrep-mcp==<version> --version`, then re-run the gate. To
@@ -78,8 +77,7 @@ not a bug. Codex's own marketplace file names itself `colgrep-mcp-marketplace`
 ecosystems' install commands don't mirror each other syntactically. A
 `source` field of `"./"` or `"./dev"` in a marketplace manifest resolves
 relative to the marketplace root, which works for a marketplace added from
-a git source or local directory (confirmed end-to-end for this repo's own
-`.claude-plugin/marketplace.json`) but not for a direct URL to the
+a git source or local directory but not for a direct URL to the
 `marketplace.json` file itself. (`RI`.)
 
 **What to do**: don't "fix" the `colgrep-mcp@colgrep-mcp` string as if it
@@ -92,17 +90,16 @@ copy that ecosystem's own marketplace `name`, not Claude Code's.
 OAuth session expired`; `claude plugin eval` or skill-creator's
 `run_loop.py`/`run_eval.py` fail the same way.
 
-**Cause**: all of these need an authenticated `claude -p` session; on this
-machine that OAuth session is expired, and none of them have a working
-fallback. (`KT-B`; this campaign.)
+**Cause**: all of these need an authenticated `claude -p` session; when
+the OAuth session has expired, none of them has a working fallback.
+(`KT-B`.)
 
 **What to do**: don't treat this as a bug in the plugin or the skill.
 Degrade the plugin-connectivity gate to `claude --plugin-dir . mcp list`
 (non-interactive, shows `✔ Connected` without needing `-p`) instead of
-trying to force `claude -p` to work. Eval cases in `dev/evals/*/case.yaml`
-are authored to the documented schema and left unrun this cycle for the
-same reason — the first session with a working authenticated `claude -p`
-should run them, not this one.
+trying to force `claude -p` to work. The eval cases in
+`dev/evals/*/case.yaml` need the same authenticated session; run them from
+one that has it.
 
 ## The plugin's hooks don't fire, or run the old text, after a change {#plugin-hooks}
 

@@ -2,11 +2,11 @@
 
 The validator and bump machinery in `server/pyproject.toml`
 `[tool.commitizen]` / `[tool.commitizen.customize]` behave slightly
-differently from what their flags suggest. Each row below was found by
-deliberately probing the validator with an invalid input, not by reading
-valid history — `cz check --rev-range` only ever sees commits that already
-passed, so it cannot show you a rejection. (`KT-H` §Pain Points, `OBS-H`
-findings 1-3.)
+differently from what their flags suggest. Each row below comes from probing
+the validator with a deliberately invalid input, not from reading valid
+history — `cz check --rev-range` only ever sees commits that already passed,
+so it cannot show you a rejection. (`KT-H` §Pain Points, `OBS-H` findings
+1-3.)
 
 | Symptom | Cause | What to do |
 |:--|:--|:--|

@@ -34,15 +34,15 @@ or once per line of subprocess output:
 None of these matter for a single call in isolation — that's exactly the
 trap. On a shared machine, every one of these runs again for every other
 program's request too; "it's I/O-bound anyway" ignores that the same waste is
-paid by everyone else at the same time (`MEM`). Remove it even when a single
+paid by everyone else at the same time. Remove it even when a single
 instance looks negligible, and prefer making the I/O lazy — don't do it until
 the caller's request actually needs the answer.
 
 ## Measured examples (`KT-C`)
 
 These are the numbers that anchor the rule — not hypothetical savings, but
-what this repository's own consistency campaign measured, median of 5, on a
-synthetic corpus:
+what the `consistency` campaign measured, median of 5, on a synthetic
+corpus:
 
 | Hot path | Before | After | What changed |
 |:--|:--|:--|:--|

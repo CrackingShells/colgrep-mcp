@@ -1,27 +1,26 @@
 # Dispatch-Prompt Template
 
 Copy this template for every implementer you dispatch; fill the `<placeholders>` from the
-leaf file and the roadmap README. Every field exists because a prior campaign paid for its
-absence, not because the shape looked complete:
+leaf file and the roadmap README. Every field answers a recorded failure, not a wish for the
+shape to look complete:
 
 - **Worktree/branch, created from the campaign branch** and the **"stop if the leaf file is
-  missing"** instruction both answer the same failure from two directions: `KT-H` records a
-  worktree made from `main` instead of the campaign branch (the Agent tool's `isolation:
-  worktree` does this by default) — the field names the correct base explicitly. When a
-  worktree still ends up wrong-based, the "stop if missing" line is what turned that mistake
-  into a ~15-second no-op with zero stray commits, instead of an implementer inventing work
-  against a repo state the lead never intended (`KT-H` §Wins).
+  missing"** instruction both answer the same failure from two directions: a worktree made
+  from `main` instead of the campaign branch (the Agent tool's `isolation: worktree` does this
+  by default) — the field names the correct base explicitly. When a worktree still ends up
+  wrong-based, the "stop if missing" line turns that mistake into a ~15-second no-op with zero
+  stray commits, instead of an implementer inventing work against a repo state the lead never
+  intended (`KT-H` §Pain Points, §Wins).
 - **Read-first list and owned files, plus "commit specs before dispatching"** answer `KT-B`:
-  specs that existed only in the lead's own working tree were invisible to a worktree that
-  sees only committed files, and separately an unanchored `.gitignore` rule once hid roadmap
-  leaf files from git entirely. Naming the exact files to read, and stating that the lead
-  commits specs first, closes both holes.
+  a spec that exists only in the lead's own working tree is invisible to a worktree, which
+  sees only committed files, and an unanchored `.gitignore` rule can hide roadmap leaf files
+  from git entirely. Naming the exact files to read, and stating that the lead commits specs
+  first, closes both holes.
 - **Gate commands, spelled out verbatim, and the final-report shape asking for gate output
-  lines** answer `KT-C`: an implementer's own claimed test count is not evidence (one branch
-  reported 196 passing on a tree that actually collected 206), and a refactor with no named
-  oracle has nothing for the lead — or a reviewer — to diff against. The template asks for the
-  exact output line of each gate, not a paraphrase, precisely so the lead re-runs and compares
-  rather than trusting a summary.
+  lines** answer `KT-C`: an implementer's own claimed test count is not evidence, and a
+  refactor with no named oracle has nothing for the lead — or a reviewer — to diff against.
+  The template asks for the exact output line of each gate, not a paraphrase, precisely so
+  the lead re-runs and compares rather than trusting a summary.
 - **Commit rules and hard-stop time** keep the history and the time-box legible across many
   parallel branches the lead did not watch being written in real time.
 

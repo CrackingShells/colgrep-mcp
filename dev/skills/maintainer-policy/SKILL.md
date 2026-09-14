@@ -12,7 +12,7 @@ reach it through the MCP tools, maintainers reach it through this dev plugin.
 Every design, engineering, and project-management decision is judged by one
 question — does it make an agent's next command shorter, or make a failure
 disappear? `README.md` is the sole exception: humans read it to decide
-whether to install the tool or point their own agent at it (`MEM`, `KT-H`
+whether to install the tool or point their own agent at it (`KT-H`
 §Executive Summary). When you are drafting anything else — a doc, a check, a
 convention — picture the agent that will read it under time pressure, not a
 human skimming for reassurance.
@@ -22,13 +22,13 @@ human skimming for reassurance.
 Generic GitHub ceremony — heavy CI, pre-commit hooks, badges, issue/PR
 templates, bot integrations — is suspect by default. Before adding any of it,
 name the agent command it shortens or the agent failure it removes; if you
-can't, don't add it (`MEM`: "a lot of good code or github practice is
-overengineering").
+can't, don't add it: most of what passes for good GitHub practice is
+overengineering here (`KT-H`).
 
 This is why enforcement here is **CI-only**: there is no blocking local git
 hook, because an agent authoring a commit would pay a retry loop for no local
 benefit. `cz check`, `pytest`, and `ruff check` gate the pull request, not the
-commit (`CONTRIBUTING.md` §Checks, `KT-H`).
+commit (`CONTRIBUTING.md` §Gates, `KT-H`).
 
 ## Drift tests, not checklists
 
@@ -62,8 +62,8 @@ program sharing the machine, not once. Hunt for work proportional to the
 round-trips, environment copies, a `Path.resolve()` per lock — and remove it
 even when a single instance looks negligible; make I/O lazy where the answer
 may not be needed at all. A change justified only by human readability, with
-no effect on an agent's commands or failures, does not meet this bar (`MEM`,
-`KT-C`). The measured examples that anchor this rule — `find_files` and
+no effect on an agent's commands or failures, does not meet this bar
+(`KT-C`). The measured examples that anchor this rule — `find_files` and
 `expand` before/after, the per-spawn env copy, the per-lock resolve, the
 per-request guide read — are in `references/input-proportional-waste.md`;
 read it before arguing a hunt target is too small to matter.
@@ -73,7 +73,7 @@ read it before arguing a hunt target is too small to matter.
 An agent should navigate this codebase by symbol, not by re-deriving the
 pattern each time. Every concern below has exactly one entry point; a tool
 that reimplements it instead of calling it is a bug, not a style choice
-(`AGENTS.md` §Conventions, `KT-C`):
+(`KT-C`):
 
 | Concern | Single idiom |
 |:--|:--|
