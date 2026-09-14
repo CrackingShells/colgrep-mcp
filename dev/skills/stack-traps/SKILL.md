@@ -28,6 +28,7 @@ linked section, don't re-derive the trap from scratch.
 | `claude -p` or `claude plugin eval` fails with an OAuth error | claude-code | `references/claude-code.md#oauth` |
 | `claude --plugin-dir . mcp list` says Connected but your edit is not in the server, or the plugin fails right after a bump | claude-code | `references/claude-code.md#uvx-pin` |
 | the plugin's hooks don't fire, or still run the old text, after an edit or an update; Codex lists them but never runs them | claude-code | `references/claude-code.md#plugin-hooks` |
+| `claude plugin list` shows the plugin `failed to load` with `Duplicate hooks file detected`, while `--plugin-dir` lists every hook | claude-code | `references/claude-code.md#hooks-manifest-duplicate` |
 | an implementer reports "leaf file missing", or its branch is based on `main` instead of the campaign branch | claude-code | `references/claude-code.md#agent-worktree` |
 | a subagent said it was watching CI or would follow up, and nothing happened | claude-code | `references/claude-code.md#worker-turn` |
 | a Bash command is blocked, including inside a heredoc that only mentions the search pattern | machine | `references/machine.md#shell-hook` |
@@ -61,7 +62,8 @@ linked section, don't re-derive the trap from scratch.
 - `references/claude-code.md` — root `.mcp.json` vs plugin-scope
   `.claude-plugin/mcp.json`, marketplace vs plugin namespaces, `claude -p`
   on an expired OAuth session, the `uvx colgrep-mcp==<version>` pin, plugin
-  hooks loading (reload, Codex trust, the portable/Claude-only split), the
+  hooks loading (reload, Codex trust, the portable/Claude-only split, the
+  auto-loaded `hooks/hooks.json` a manifest must not name again), the
   Agent tool's worktree base and the end of a subagent's turn.
 - `references/machine.md` — the plugin's shell-search hook and `COLGREP_BYPASS=1`,
   Windows CI's two known causes, the detached-worktree trick for `main`, the

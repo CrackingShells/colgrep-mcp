@@ -132,8 +132,42 @@ script without any harness by piping it the event JSON —
 `server/tests/test_hooks.py` does exactly that through `sys.executable`,
 so `uv run pytest tests/test_hooks.py` is the fastest check. Keep
 Claude-only events (`WorktreeRemove`) in `hooks/claude-code.json`, never in
-the portable `hooks/hooks.json` a Codex parser also reads;
+the portable `hooks/hooks.json` a Codex parser also reads, and name only
+`claude-code.json` from the Claude Code manifest (`#hooks-manifest-duplicate`);
 `test_hooks.py` pins the split.
+
+## `claude plugin list` says "failed to load: Duplicate hooks file detected" {#hooks-manifest-duplicate}
+
+**Symptom**: after `claude plugin install` or `claude plugin update`, the
+plugin shows `✘ failed to load` with `Hook load failed: Duplicate hooks file
+detected: ./hooks/hooks.json resolves to already-loaded file
+~/.claude/plugins/cache/<marketplace>/colgrep-mcp/<version>/hooks/hooks.json`,
+and nothing of the plugin — hooks, MCP server, skill — is available; yet
+`claude --plugin-dir . plugin details colgrep-mcp` on the very same tree lists
+all four hooks and `claude plugin validate .` passes.
+
+**Cause**: Claude Code loads `hooks/hooks.json` automatically and reads the
+manifest's `hooks` field as *additional* files only (the plugins reference
+documents the field with the example `"./my-extra-hooks.json"` and files
+hooks under "own merge rules"; the error text states the rule outright). A
+manifest listing `./hooks/hooks.json` names the default twice, and the
+marketplace loader refuses the whole plugin — observed with Claude Code
+2.1.270 on the 0.4.0 and 0.5.0 installs. Neither `--plugin-dir`, `plugin
+details` nor `plugin validate` runs that check, so every tree-level gate in
+`AGENTS.md` stayed green on a manifest the install path rejected. harness_wiring
+R01 §C2 designed the manifest as an array of both files before the rule was
+documented; the manifest carried it from 0.4.0 until this fix.
+
+**What to do**: the Claude Code manifest's `hooks` is the single string
+`"./hooks/claude-code.json"`; never add `./hooks/hooks.json` back —
+`test_hooks.py::test_manifests_name_the_hook_files_per_ecosystem` pins it, and
+the Codex manifest keeps naming `./hooks/hooks.json` because Codex has no
+auto-load documented (R01 risk 1). To check a manifest the way an install
+does, register a scratch directory marketplace (a `marketplace.json` with a
+throwaway `name` whose plugin `source` is a copy of the tree without `.git`
+and `.venv`), `claude plugin install colgrep-mcp@<that-name>`, read
+`claude plugin list`, then uninstall and `claude plugin marketplace remove` it.
+`--plugin-dir` is not that check.
 
 ## An implementer's worktree is based on `main`, not the campaign branch {#agent-worktree}
 
