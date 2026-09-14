@@ -131,10 +131,10 @@ Code; in Codex open `/hooks` and trust; for Cursor copy the three
 script without any harness by piping it the event JSON —
 `server/tests/test_hooks.py` does exactly that through `sys.executable`,
 so `uv run pytest tests/test_hooks.py` is the fastest check. Keep
-Claude-only events (`WorktreeRemove`) in `hooks/claude-code.json`, never in
-the portable `hooks/hooks.json` a Codex parser also reads, and name only
-`claude-code.json` from the Claude Code manifest (`#hooks-manifest-duplicate`);
-`test_hooks.py` pins the split.
+Claude-only events (`WorktreeRemove`) in their own per-event file
+(`hooks/worktree-remove.json`), never in the portable `hooks/hooks.json` a
+Codex parser also reads, and name only the per-event files from the Claude
+Code manifest (`#hooks-manifest-duplicate`); `test_hooks.py` pins the split.
 
 ## `claude plugin list` says "failed to load: Duplicate hooks file detected" {#hooks-manifest-duplicate}
 
@@ -158,12 +158,22 @@ details` nor `plugin validate` runs that check, so every tree-level gate in
 R01 §C2 designed the manifest as an array of both files before the rule was
 documented; the manifest carried it from 0.4.0 until this fix.
 
-**What to do**: the Claude Code manifest's `hooks` is the single string
-`"./hooks/claude-code.json"`; never add `./hooks/hooks.json` back —
-`test_hooks.py::test_manifests_name_the_hook_files_per_ecosystem` pins it, and
-the Codex manifest keeps naming `./hooks/hooks.json` because Codex has no
-auto-load documented (R01 risk 1). To check a manifest the way an install
-does, register a scratch directory marketplace (a `marketplace.json` with a
+Codex reads the same field the other way round: it discovers
+`hooks/hooks.json` only when the manifest defines no `hooks`, and an explicit
+value *replaces* that discovery instead of adding to it (Codex plugin docs,
+"Build a plugin"). No single manifest value serves both loaders, which is why
+the two manifests differ.
+
+**What to do**: the Claude Code manifest's `hooks` names only the per-event
+files — today the single string `"./hooks/worktree-remove.json"` — and never
+`./hooks/hooks.json`; the Codex manifest names `./hooks/hooks.json` and never
+a per-event file whose event it may not know (R01 risk 1).
+`test_hooks.py::test_manifests_name_the_hook_files_per_ecosystem` pins both.
+Name every non-portable hook file after the one event it holds
+(`WorktreeRemove` → `worktree-remove.json`): `hooks.json` is the name both
+loaders claim by default, and a second generic name beside it (the former
+`claude-code.json`) is the kind a loader could claim next; the per-event test
+enforces the stem. To check a manifest the way an install does, register a scratch directory marketplace (a `marketplace.json` with a
 throwaway `name` whose plugin `source` is a copy of the tree without `.git`
 and `.venv`), `claude plugin install colgrep-mcp@<that-name>`, read
 `claude plugin list`, then uninstall and `claude plugin marketplace remove` it.

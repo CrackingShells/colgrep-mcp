@@ -62,8 +62,9 @@ linked section, don't re-derive the trap from scratch.
 - `references/claude-code.md` — root `.mcp.json` vs plugin-scope
   `.claude-plugin/mcp.json`, marketplace vs plugin namespaces, `claude -p`
   on an expired OAuth session, the `uvx colgrep-mcp==<version>` pin, plugin
-  hooks loading (reload, Codex trust, the portable/Claude-only split, the
-  auto-loaded `hooks/hooks.json` a manifest must not name again), the
+  hooks loading (reload, Codex trust, the portable/per-event file split, the
+  auto-loaded `hooks/hooks.json` a Claude manifest must not name again and a
+  Codex manifest must), the
   Agent tool's worktree base and the end of a subagent's turn.
 - `references/machine.md` — the plugin's shell-search hook and `COLGREP_BYPASS=1`,
   Windows CI's two known causes, the detached-worktree trick for `main`, the
