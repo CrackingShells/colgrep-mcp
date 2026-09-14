@@ -67,11 +67,12 @@ Opt-in: `COLGREP_MCP_REAL=1 uv run pytest` adds the few tests that need the real
 `colgrep`; `uv run python tests/e2e/run_e2e.py --corpus <some other repo>` runs the
 end-to-end driver — never against this repository (see `stack-traps`).
 
-## Report ids in docstrings
+## Report ids in docstrings and skills
 
-Docstrings cite report ids as pointers to measured evidence, not narration.
-The same `R01` label is reused per campaign; the module docstring's topic
-disambiguates which one.
+Docstrings and the dev skills cite report ids as pointers to measured evidence,
+not narration. The same `R01` label is reused per campaign; the module
+docstring's topic disambiguates which one. `KT-*` are knowledge-transfer
+reports, `OBS-*` observation reports from a reviewer pass.
 
 | Id | Report |
 |:--|:--|
@@ -87,6 +88,16 @@ disambiguates which one.
 | `R01` (harness_wiring) | `__reports__/harness_wiring/00-architecture_v0.md` |
 | `R01` (index_housekeeping) | `__reports__/index_housekeeping/00-architecture_v0.md` |
 | `R02` (index_housekeeping) | `__reports__/index_housekeeping/00-findings_clear_probe_v0.md` |
+| `KT-B` | `__reports__/colgrep_mcp/03-knowledge_transfer_v0.md` |
+| `KT-H` | `__reports__/repo_health/02-knowledge_transfer_v0.md` |
+| `KT-C` | `__reports__/consistency/02-knowledge_transfer_v0.md` |
+| `KT-D` | `__reports__/dev_plugin/03-knowledge_transfer_v0.md` |
+| `OBS-H` | `__reports__/repo_health/01-observation_review_v0.md` |
+| `OBS-C` | `__reports__/consistency/01-observation_review_v0.md` |
+| `OBS-D` | `__reports__/dev_plugin/02-observation_review_v0.md` |
+| `PH` | `__reports__/repo_health/00-findings_launch_placeholders_v0.md` |
+| `CI` | `__reports__/repo_health/03-findings_ci_matrix_v0.md` |
+| `RI` | `__reports__/repo_health/04-findings_remote_install_v0.md` |
 
 ## Where the rest went
 

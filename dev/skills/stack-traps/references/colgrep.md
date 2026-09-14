@@ -11,8 +11,8 @@ current directory.
 `[QUERY]` positional of the default `search` command. `colgrep --color never
 status` is not "status with color off"; it is a search for the words
 `--color never status` is never reached because `--color` is itself consumed
-as part of the query token stream ahead of any subcommand. One agent indexed
-its worktree this way. (`KT-B` §Pain Points; `server/colgrep_mcp/adapter.py`
+as part of the query token stream ahead of any subcommand, so the command
+indexes and searches the cwd. (`KT-B` §Pain Points; `server/colgrep_mcp/adapter.py`
 docstring — the adapter itself always inserts `--color never` *after*
 `argv[0]`, i.e. right after the subcommand, for exactly this reason.)
 
@@ -38,12 +38,9 @@ against its corpus. A path with **no** indexed ancestor has no such
 problem: the first `search` creates a fresh project rooted at that path
 (`index_status` afterwards reports `project == requested_path`), and the
 plugin's `WorktreeRemove` hook reaps that index when the worktree goes.
-That is exactly why the maintainer's worktrees live outside the repository
-tree (`~/…/claude-worktrees/…`, not `<repo>/.claude/worktrees`, which
-colgrep ignores): each gets its own index. Verified 2026-09-13 on the
-`harness_wiring` worktree: no ancestor among 164 indexed projects, first
-`search` indexed it in 13 s, `project` equalled the worktree path. (`KT-B`,
-`R03`, harness_wiring R01, `MEM`.)
+That is why worktrees belong outside the repository tree (not under
+`<repo>/.claude/worktrees`, which colgrep ignores): each gets its own
+index. (`KT-B`, `R03`, harness_wiring R01.)
 
 **What to do**: before the first `search` in a worktree, call
 `index_status` on it. `indexed: false` means the search will create the
@@ -52,8 +49,8 @@ from `requested_path` means you are folded into an ancestor: search from
 that ancestor knowingly, and never `index_clear` from the worktree path
 (the tool refuses with `PROJECT_ROOT_MISMATCH` anyway, R05 D3). Never run
 `run_e2e.py` against this repository; use `uv run python
-tests/e2e/run_e2e.py --corpus <some other repo>` (the standing corpus is
-`~/colgrep-e2e-corpus/click`). Tests exercise behaviour through
+tests/e2e/run_e2e.py --corpus <some other repo>` against a clone of any
+other project. Tests exercise behaviour through
 `fake_colgrep.py`; `COLGREP_MCP_REAL=1 uv run pytest` is the one opt-in for
 the real binary and does not touch this tree.
 
@@ -68,8 +65,8 @@ sampled units, while `unit.code` itself is exact. The server does not trust
 colgrep's line numbers as-is: `locate.py` re-derives `(line, end_line)` by
 finding `code`'s first line verbatim in the file (disambiguating by
 following-line match or nearest distance to the reported line), and sets
-`location_verified` accordingly. (`R03`; `KT-B` §Open Questions — whether
-`--no-pool` changes this is still an open re-probe, not yet answered.)
+`location_verified` accordingly. (`R03`; `KT-B` §Open Questions lists
+whether `--no-pool` changes this.)
 
 **What to do**: trust `line`/`end_line` only when `location_verified` is
 true; when it is false, cite the file rather than a specific line range,

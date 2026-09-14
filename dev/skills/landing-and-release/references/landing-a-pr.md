@@ -4,7 +4,7 @@ A GitHub PR and a local `git merge --no-ff` are two different ways to
 integrate a branch, and they leave GitHub's own bookkeeping in different
 states. Pick the PR path deliberately when the unit of work is going through
 GitHub review, and follow it all the way through — mixing the two is what
-causes the failure mode below. (`MEM`.)
+causes the failure mode below.
 
 ## The sequence
 
@@ -28,9 +28,8 @@ causes the failure mode below. (`MEM`.)
    traceable back to the PR from `git log` alone. Pass `--body "<why>"` as
    well: with `--subject` alone GitHub copies the PR *title* into the merge
    commit's body, and if that title is itself a `feat(...)`/`fix(...)` line
-   commitizen parses it as a second entry — v0.3.0's changelog lists the
-   PR #6 subject twice for exactly this reason. Probe the subject first with
-   `cz check --message` (the merge commit is a commit too).
+   commitizen parses it as a second changelog entry. Probe the subject first
+   with `cz check --message` (the merge commit is a commit too).
 
 ## Why not a local rebase-then-merge here
 
@@ -38,9 +37,8 @@ A local `git merge --no-ff` followed by `git push origin <task>:main` does
 land the code, but it rewrites the commit SHAs relative to what GitHub's PR
 page is tracking. GitHub cannot recognize the pushed commits as "this PR,
 merged" and leaves the PR showing **open** even though `main` now contains
-the work. This has happened twice (PR #1, #2): the fix each time was to close
-the PR by hand with a comment pointing at the merge commit SHA that actually
-landed the change.
+the work. The only fix then is to close the PR by hand with a comment
+pointing at the merge commit SHA that actually landed the change.
 
 If a PR is open for a branch, land it through `gh pr merge`, not a local
 merge and push. Reserve the local `land_branch.sh` path (see `SKILL.md`

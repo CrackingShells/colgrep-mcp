@@ -1,4 +1,4 @@
-# This machine's traps
+# Machine and harness traps
 
 ## A Bash command gets blocked even though it looks harmless {#shell-hook}
 
@@ -14,12 +14,10 @@ Bash command text whose targets are a source corpus, on the theory that a
 corpus search should go through the `search` tool instead of brute-force
 recursive grep. The block is on the text of the command, not just its
 runtime behaviour, so even a `cat <<EOF` block that merely *mentions* one
-of those invocations as example text gets denied. The same rule used to
-live in the maintainer's `~/.claude/settings.json` before the plugin
-shipped hooks; the wording of the reason changed, the rule did not. That
-older copy also read the `-patterns` inside a hyphenated word as a `-r`
-flag and denied single-file greps; the plugin's copy requires whitespace
-before the dash. (`KT-H` §Pain Points; harness_wiring R01.)
+of those invocations as example text gets denied. The flag match requires
+whitespace before the dash, so `-r` inside a hyphenated word such as
+`-patterns` is not read as a flag and a single-file grep passes.
+(`KT-H` §Pain Points; harness_wiring R01.)
 
 **What to do**: when a file's content must literally contain one of those
 command names (documentation, a skill file like this one, a script
@@ -39,18 +37,17 @@ and the failures look like they're in test infrastructure rather than in
 the server's own logic — or a `setup-uv` step fails outright before tests
 even run.
 
-**Cause**: two distinct, already-diagnosed causes. (1) `setup-uv@v10` is
-not a real moving tag — the action's tags stop at `v7` while releases reach
-`v10.1.0`, so pin the exact release tag, not a bare major. (2) Windows'
-`CreateProcess` cannot spawn a bare `.py` file the way POSIX can
-(`WinError 193`), which fails everything downstream of the fake `colgrep`
-binary; the fix is a `.cmd` wrapper around the fake, `win32`-only, not a
-change to the server. In both historical runs, once these two were fixed,
-the *server*'s own code needed only one guarded fix in `resources.py`
-(a path-normalisation branch for drive-rooted paths) — the adapter, locks
-and path resolution needed nothing, i.e. the server itself was already
-portable; only the test harness was not. `uv run` re-syncs the editable
-install before running, on every OS. (`CI`, `KT-H`.)
+**Cause**: two distinct causes. (1) `setup-uv@v10` is not a real moving
+tag — the action's tags stop at `v7` while releases reach `v10.1.0`, so pin
+the exact release tag, not a bare major. (2) Windows' `CreateProcess`
+cannot spawn a bare `.py` file the way POSIX can (`WinError 193`), which
+fails everything downstream of the fake `colgrep` binary; the fix is a
+`.cmd` wrapper around the fake, `win32`-only, not a change to the server.
+The server itself is portable — the adapter, locks and path resolution
+need nothing Windows-specific beyond the drive-rooted path branch in
+`resources.py` — so a red Windows job is almost always the test harness.
+`uv run` re-syncs the editable install before running, on every OS.
+(`CI`, `KT-H`.)
 
 **What to do**: when Windows CI is the only red job, check whether it's a
 `setup-uv` tag problem or a fake-binary spawn problem before assuming the
@@ -63,8 +60,7 @@ body.
 
 **Symptom**: `git worktree add <path> -b <branch> main` (or any variant
 naming `main`) fails because `main` is already checked out in another
-worktree (the main checkout, typically
-`~/colgrep-mcp`).
+worktree (the main checkout).
 
 **Cause**: git refuses to check out the same branch in two worktrees at
 once. A reviewer or lead adding a read-only worktree for inspection hits
@@ -82,9 +78,8 @@ implementer, which names a real branch on purpose.
 ## Auto-mode permission classifier blocks compound history rewrites {#classifier}
 
 **Symptom**: a Bash command chaining `git checkout --detach … && git merge … && git cherry-pick …
-&& git branch -f … && git push --force-with-lease` is refused with "Blocked by classifier",
-as was `git push … HEAD:main` and `cz bump` from a detached `/private/tmp` worktree in the
-consistency session (`MEM`).
+&& git branch -f … && git push --force-with-lease` is refused with "Blocked by classifier";
+so is `git push … HEAD:main` or `cz bump` run from a detached worktree under a temp directory.
 
 **Cause**: the auto-mode classifier judges the whole command; anything that rewrites a
 checked-out branch or force-pushes reads as destructive, and a scratch worktree under a temp
@@ -93,8 +88,7 @@ directory makes it worse.
 **What to do**: never rewrite history in place. Create a fresh branch (`git worktree add -b
 <new-branch> <dir> <good-commit>`), rebuild it with single-purpose commands (`git merge`,
 `git cherry-pick <sha>…`, one per call), push it normally, open a new PR and close the old one
-with a pointer — the `dev_plugin` campaign's PR #4 → #5 is the precedent. Do releases from the
-main checkout (`landing-and-release`).
+with a pointer. Do releases from the main checkout (`landing-and-release`).
 
 ## `uv run` says "Failed to spawn: `cz`" although `uv sync` audits every package {#stale-venv}
 
@@ -106,8 +100,7 @@ reports every package present and `.venv/bin/cz` exists.
 launcher in `.venv/bin/` has an absolute shebang
 (`#!/old/path/server/.venv/bin/python3`), `uv sync` audits installed
 packages rather than shebangs, so nothing rewrites them; the kernel's "bad
-interpreter" surfaces as uv's "Failed to spawn". Bit the v0.3.0 release
-(main checkout moved from `~/colgrep-mcp`).
+interpreter" surfaces as uv's "Failed to spawn".
 
 **What to do**: `rm -rf server/.venv && uv sync --directory server`. Never
 hand-edit the shebangs and never "fix" it by pointing the release at another

@@ -42,10 +42,9 @@ handler or the completion callback, but the SDK gives these no request
 
 **Cause**: only tool handlers receive a request `Context`. The process-wide
 adapter/settings still need to be reachable from handlers the SDK doesn't
-hand one to. (`KT-C`; review finding `OBS-C` OV1 — an earlier attempt at
-this used a plain module global, which corrupted state across overlapping
-sessions, e.g. two in-memory test clients whose lifespans overlap in one
-process.)
+hand one to. (`KT-C`; `OBS-C` OV1 — a plain module global corrupts state
+across overlapping sessions, e.g. two in-memory test clients whose
+lifespans overlap in one process.)
 
 **What to do**: call `server.get_app(ctx=None)` (or `get_adapter`/
 `get_settings`, which are thin wrappers over it). It reads a `ContextVar`,
@@ -74,7 +73,7 @@ open the session in legacy mode. Never assume a deprecation warning at
 startup indicates a bug to silence differently — it's filtered
 deliberately. Send every client notification through
 `logging_utils.safe_log`/`safe_progress`/`safe_notify_resource_updated`
-(see `references/../SKILL.md` cross-reference in `AGENTS.md` §Conventions)
+(`maintainer-policy` §One idiom per concern)
 so a client that has dropped the logging capability never fails a tool
 call — never wrap a notification in a tool's own bare
 `try/except Exception: pass`.
@@ -87,8 +86,7 @@ resolves to something with a leading slash before the drive letter.
 
 **Cause**: client roots arrive as `file:///C:/Users/...` URIs. Building a
 path with `Path(uri.path)` keeps the URI's leading `/` before the drive
-letter, which is not a valid Windows path. (`KT-C` §Pain Points; the
-`url2pathname` fix landed in PR #3.)
+letter, which is not a valid Windows path. (`KT-C` §Pain Points.)
 
 **What to do**: convert a root URI with `urllib.request.url2pathname`,
 never `Path(uri.path)` — this is exactly what `paths.py` does today; don't

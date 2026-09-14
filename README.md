@@ -4,6 +4,8 @@ Semantic and hybrid code search for coding agents, as an MCP server.
 
 [colgrep](https://github.com/lightonai/next-plaid) indexes a repository into *code units* (functions, classes, methods, Markdown sections) and ranks them with a ColBERT late-interaction model fused with keyword search. It is fast and it understands meaning. It is also a CLI, and agents trained on `grep` rarely reach for it unprompted. `colgrep-mcp` puts the same capability in the agent's tool list, where it gets used.
 
+This is an independent project. It is not affiliated with or supported by [LightOn](https://www.lighton.ai), who make colgrep. A problem with the search tools belongs in this repository's issues, a problem with colgrep itself in [next-plaid](https://github.com/lightonai/next-plaid/issues).
+
 One directory installs as a **Claude Code plugin**, an **[Agent Plugins 1.0](https://agent-plugins.org) plugin** (Codex, Cursor, GitHub Copilot, VS Code, Kiro) and a **Codex plugin**.
 
 ## Requirements
@@ -42,11 +44,19 @@ codex plugin marketplace add CrackingShells/colgrep-mcp
 codex plugin add colgrep-mcp@colgrep-mcp-marketplace
 ```
 
-The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`. These commands follow the Codex plugin documentation and have not yet been exercised end to end; a report of a working (or failing) install is welcome as an issue.
+The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`.
 
 ### Agent Plugins 1.0 clients (Cursor, GitHub Copilot, VS Code, Kiro)
 
-The [Agent Plugins 1.0 spec](https://agent-plugins.org/specification) defines the plugin package (`plugin.json`, `mcp.json`) but explicitly leaves installation, distribution and marketplaces to each client — there is no spec-defined command for installing straight from a git URL. Check that client's own plugin or extension docs for how it adds a plugin from a repository; until then, point it at a local clone the way it expects a plugin directory (below).
+The [Agent Plugins 1.0 spec](https://agent-plugins.org/specification) defines the plugin package (`plugin.json`, `mcp.json`) and leaves installation, distribution and marketplaces to each client, so the install command is the client's own. Each of these clients can add a plugin straight from this repository; its plugin or extension docs name the command.
+
+For example, in VS Code:
+
+1. Open the Command Palette (`Cmd`+`Shift`+`P` on macOS, `Ctrl`+`Shift`+`P` elsewhere).
+2. Run **Chat: Install Plugin from Source**.
+3. Choose the git repository option and enter `CrackingShells/colgrep-mcp` (the full URL `https://github.com/CrackingShells/colgrep-mcp` works too).
+
+A client without such a command takes a local clone as its plugin directory ([From a local clone](#from-a-local-clone)).
 
 ### Any MCP client
 
@@ -140,7 +150,7 @@ The plugin also ships harness hooks (`hooks/`), so the policy the skill teaches 
 | `PreToolUse` on `Grep` and `Bash` | Denies the built-in Grep tool and shell corpus searches (`grep -r`, `rg`, `find -exec grep`, `xargs grep`) inside a source corpus, with a reason naming `search`, `find_files` and `expand`. Single-file grep, `cmd \| grep`, `grep -c`/`-v`/`-o`, `rg --files` and file-name lookup stay allowed. Targets that are machine state (hidden directories, `~/Library`, temp directories outside a git work tree) are never gated. Prefix `COLGREP_BYPASS=1` to a command colgrep cannot serve. |
 | `WorktreeRemove` (Claude Code only) | Clears the colgrep index a removed worktree owned, never one it was folded into. |
 
-`hooks/hooks.json` holds only events that Claude Code, Codex and Cursor all understand; `hooks/claude-code.json` holds the Claude-only event and is named by the Claude Code manifest alone. Codex loads a plugin's `hooks/hooks.json` and sets `CLAUDE_PLUGIN_ROOT` for it, but skips the hooks until you trust them once in `/hooks`. Cursor imports Claude Code hooks from `settings.json` files, not from plugins, so a Cursor project copies the three `hooks.json` entries into its `.claude/settings.json`. Agent Plugins 1.0 defines no hooks component and ignores the directory. Design and measurements: `__reports__/harness_wiring/00-architecture_v0.md`.
+`hooks/hooks.json` holds only events that Claude Code, Codex and Cursor all understand; `hooks/claude-code.json` holds the Claude-only event and is named by the Claude Code manifest alone. Codex loads a plugin's `hooks/hooks.json` and sets `CLAUDE_PLUGIN_ROOT` for it, but skips the hooks until you trust them once in `/hooks`. Cursor imports Claude Code hooks from `settings.json` files, not from plugins, so a Cursor project copies the three `hooks.json` entries into its `.claude/settings.json`. Agent Plugins 1.0 defines no hooks component and ignores the directory.
 
 ## Configuration
 
@@ -166,6 +176,14 @@ Without `COLGREP_MCP_ROOT` the server falls back to the client's first root, if 
 - **`index_clear` refuses.** colgrep folds a directory into the nearest already-indexed ancestor project. The tool tells you the project root it would clear; pass that root explicitly if that is really intended.
 - **Line numbers.** colgrep 1.6 reports wrong `line`/`end_line` for most units. The server re-locates every unit from its source text and flags `location_verified` on each hit.
 
+## For agents, by agents
+
+Everyone who touches this repository is an LLM agent. Users reach it through the MCP tools, and the maintenance itself is handed to a coding agent, at present Claude Fable 5.1 in Claude Code: it reads the architecture reports, plans the work as a roadmap, implements in its own git worktree, writes the tests and the docs, and opens the pull request. The MCP server and the skill are the two layers made for the human and the agent to talk to each other; everything else, from the drift tests to the maintainer skills in `dev/`, is optimised for an agent picking the work up cold.
+
+A change goes through an ordinary pull-request cycle. The agent commits with the vocabulary `cz check` enforces (`CONTRIBUTING.md`), pushes a branch and opens the PR; CI runs ruff, the test suite on Linux, macOS and Windows, the commit check and a build; the maintainer reads the diff and the PR body, then merges; a release is a `cz bump` on `main` and a tag push, which publishes to PyPI. Larger work runs as a campaign: an architecture report under `__reports__/`, a roadmap under `__roadmap__/`, one worktree per leaf, a read-only reviewer pass, and a retrospective whose lessons become the next revision of the `dev/` skills.
+
+This holds because the agent is a frontier model and because the maintainer, who has built MCP servers before, reads every diff. The tests, the drift guards and the reports exist so that the trust placed in the agent is verified at each merge rather than assumed; the same process with a weaker model, or with merges nobody reads, would drift.
+
 ## Development
 
 ```bash
@@ -174,7 +192,7 @@ cd server && uv run pytest -q
 
 If you are a coding agent maintaining this repository, start with `AGENTS.md`: repo map, gate commands, conventions and known traps.
 
-Tests run against a fake `colgrep` (`server/tests/fake_colgrep.py`); set `COLGREP_MCP_REAL=1` to include the few that need the real binary. Architecture, measured behaviour and decisions live in `__reports__/colgrep_mcp/`; the execution plan in `__roadmap__/colgrep_mcp/`; commit conventions in `CONTRIBUTING.md`.
+Tests run against a fake `colgrep` (`server/tests/fake_colgrep.py`); set `COLGREP_MCP_REAL=1` to include the few that need the real binary. Architecture, findings and retrospectives live under `__reports__/`, one directory per campaign; the roadmaps under `__roadmap__/`; commit conventions in `CONTRIBUTING.md`.
 
 `server/tests/e2e/run_e2e.py` is a separate, non-pytest script (no `test_` prefix, so `pytest` never collects it) that drives the assembled server over stdio against a **real** `colgrep` binary and a real repository, for measured end-to-end validation rather than fixture-driven unit tests:
 
@@ -183,7 +201,7 @@ cd server && uv run python tests/e2e/run_e2e.py --corpus /path/to/a/real/repo
 cd server && uv run python tests/e2e/run_e2e.py --corpus /path/to/a/real/repo --dry-run  # print the call plan, exit 0
 ```
 
-It refuses to run against this repository/its worktrees or anything under `/private/tmp` (colgrep folds such paths into whichever project already anchors that prefix — see `__reports__/colgrep_mcp/02-architecture_v1.md` D3). Findings from the latest run live in `__reports__/colgrep_mcp/02-findings_e2e_validation_v0.md`.
+It refuses to run against this repository, its worktrees or anything under `/private/tmp`: colgrep folds such paths into whichever project already anchors that prefix, and the driver builds and clears indexes.
 
 ## Packaging
 

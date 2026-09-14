@@ -1,14 +1,14 @@
 # dirtree-rdm Grammar Gotchas
 
 `managing-roadmaps` owns `dirtree-rdm` itself and its full BNF grammar; this file only lists
-the traps this repository's campaigns have actually hit. Before writing any leaf file or
-roadmap README by hand, run:
+the traps that matter in this repository. Before writing any leaf file or roadmap README by
+hand, run:
 
 ```bash
 bash ~/.claude/skills/managing-roadmaps/scripts/dirtree-rdm.sh grammar leaf
 ```
 
-Read what it prints — do not guess the shape from a prior campaign's file and hand-edit a new
+Read what it prints — do not guess the shape from another campaign's file and hand-edit a new
 one to match; the grammar is strict and a mismatch fails validation without necessarily saying
 which line is wrong.
 
