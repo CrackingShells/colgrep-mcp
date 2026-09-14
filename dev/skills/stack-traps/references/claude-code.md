@@ -128,3 +128,37 @@ so `uv run pytest tests/test_hooks.py` is the fastest check. Keep
 Claude-only events (`WorktreeRemove`) in `hooks/claude-code.json`, never in
 the portable `hooks/hooks.json` a Codex parser also reads;
 `test_hooks.py` pins the split.
+
+## An implementer's worktree is based on `main`, not the campaign branch {#agent-worktree}
+
+**Symptom**: an implementer dispatched with the Agent tool reports "leaf file
+missing" in its first minute, or its commits turn out to sit on a branch cut
+from `main` while the roadmap, specs and helpers live on the campaign branch.
+
+**Cause**: the Agent tool's `isolation: "worktree"` option creates the
+worktree from the primary checkout's HEAD — `main` — never from the branch
+the lead's session is on. One whole dispatch round landed on the wrong base
+this way (`KT-H` §Pain Points, `KT-B` §Root Causes). This is the Claude Code
+instance of the harness-neutral rule in `campaign-lead` step 4.
+
+**What to do**: create every implementer worktree yourself, `git worktree
+add <path> -b task/<leaf> <campaign-branch>`, and pass the path in the
+dispatch prompt; never set `isolation: "worktree"` from a campaign branch.
+Keep the "stop if the leaf file is missing" line in every prompt — it is what
+turned the wrong-base round into a 15-second no-op.
+
+## A subagent said it was watching CI, and nothing happened {#worker-turn}
+
+**Symptom**: an implementer's final message says it is "watching CI in the
+background" or "will follow up when the run finishes"; the run finishes red
+or green and nothing follows.
+
+**Cause**: an Agent-tool subagent's turn ends with its final message; there
+is no later execution, so any promise about the future in that message is
+never kept. The same holds for any harness whose workers return a single
+report (`campaign-lead` §Rules).
+
+**What to do**: make the implementer block inside its turn — `gh run watch
+--exit-status <run-id>` — and paste the verdict line into its report, or read
+the run yourself after the report. Never treat a worker's "watching" as a
+gate result.

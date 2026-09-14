@@ -1,6 +1,6 @@
 ---
 name: campaign-lead
-description: "Guides a lead through running a multi-agent campaign on this repository: writing the architecture report, building the roadmap, creating worktrees by hand, dispatching implementers, merging per level, running a read-only reviewer, and closing with a knowledge-transfer report. Load this whenever asked to lead, coordinate, plan, or dispatch work on this repo, to create a roadmap or worktrees for subagents, to review a merged roadmap level, or to close out a campaign cycle — even if the request never says 'skill'."
+description: "Guides a lead through running a multi-agent campaign on this repository: deciding what to delegate and what to keep, writing the architecture report, building the roadmap, creating worktrees by hand, dispatching implementers, merging per level, running a read-only reviewer, and closing with a knowledge-transfer report. Load this whenever asked to lead, coordinate, plan, or dispatch work on this repo, before deciding a task is too small to delegate, to create a roadmap or worktrees for implementers, to review a merged roadmap level, or to close out a campaign cycle — even if the request never says 'skill'."
 ---
 
 # Campaign Lead
@@ -8,6 +8,21 @@ description: "Guides a lead through running a multi-agent campaign on this repos
 Composes with the machine-level `writing-reports`, `managing-roadmaps` and `writing-history`
 skills for mechanics; this skill is the order of operations and the rules this repository's
 campaigns established, each cited to the retrospective that records it (`AGENTS.md` legend).
+
+## The Default: Delegate First
+
+`AGENTS.md` §Execution model states the contract; this section is how the lead applies it.
+Every task that touches more than one file-disjoint leaf is a campaign, and every leaf goes to
+an implementer unless the exception below applies. The lead's own context is the expensive
+currency — it runs on the most capable tier and re-reads everything it touched on every later
+turn — and wall-clock is the other: implementers run in parallel, so a level costs its slowest
+leaf, while a dispatch carries a fixed overhead of the brief plus the implementer's cold read
+of `AGENTS.md`, its leaf and the cited reports. Measured leaves ran 4–15 minutes each on the
+cheaper tier (KT-C §Wins, KT-D §Wins); below that floor the lead is faster than its own brief.
+Run implementers on the cheapest tier that clears the gates for leaves of that size; when one
+leaf fails there, escalate that leaf, not the round. The harness instantiates the mechanism —
+whatever it offers for parallel workers, in worktrees the lead created; with none, run the same
+roadmap sequentially under the same discipline, and say so in the retrospective.
 
 ## Order of Operations
 
@@ -20,9 +35,10 @@ campaigns established, each cited to the retrospective that records it (`AGENTS.
    not-yet-shared helper duplicates it, and two duplicates collide at merge (KT-B §Wins,
    KT-C §Wins: helpers before dispatch → zero conflicts).
 4. **One worktree per leaf, created by hand**: `git worktree add <path> -b task/<leaf>
-   <campaign-branch>`. Never rely on the Agent tool's `isolation: worktree` for this — it
-   branches from the primary checkout's `main`, not the campaign branch, and a whole dispatch
-   round lands on the wrong base (KT-H §Pain Points, KT-B §Root Causes).
+   <campaign-branch>`. Never let the harness create it — a harness convenience branches from
+   whatever it considers the default base, not the campaign branch, and a whole dispatch round
+   lands on the wrong base (KT-H §Pain Points, KT-B §Root Causes; the Claude Code instance of
+   this trap is `stack-traps` `references/claude-code.md#agent-worktree`).
 5. **Dispatch** with `references/dispatch-prompt.md`. Every prompt states "stop if the leaf
    file is missing from your worktree" — it turns a wrong-base worktree into a ~15-second
    no-op with zero stray commits instead of wasted work (KT-H §Wins).
@@ -43,9 +59,11 @@ campaigns established, each cited to the retrospective that records it (`AGENTS.
   is what closes a campaign with zero merge conflicts (KT-H, KT-C §Wins).
 - **Hard stop time**, stated in both the leaf and the dispatch prompt: the lead merges whatever
   is green at the stop (`consistency` roadmap README §Gotchas).
-- **Do lead-sized leaves yourself.** Scaffolding, shared helpers, CI wiring, `AGENTS.md`,
-  changelog fixes: delegating them costs a dispatch round-trip for work the lead finishes in
-  minutes (KT-C, KT-H §Wins).
+- **The exception to the default: do lead-sized leaves yourself.** Scaffolding, shared
+  helpers, CI wiring, `AGENTS.md`, changelog fixes: delegating them costs a dispatch round-trip
+  for work the lead finishes in minutes (`adapter_hygiene` took 4; KT-C, KT-H §Wins). The
+  exception is per leaf, never per cycle — a cycle with no dispatch at all needs the
+  retrospective to say why.
 - **Refactor leaves need an explicit dump-and-diff oracle**, not "tests still pass": dump
   `Client.list_tools()`/`list_resources()`/`list_resource_templates()`/`list_prompts()` JSON on
   the base and the branch, diff empty. The MCP SDK ships docstrings verbatim, so even
@@ -55,8 +73,9 @@ campaigns established, each cited to the retrospective that records it (`AGENTS.
 - **Windows CI is the only portability oracle here** — read its verdict, don't skim it,
   whenever a leaf is the first to exercise a previously-untested path, and name that path in
   the PR body (KT-C §Pain Points, CI).
-- **A subagent that says it is "watching CI in the background" has already ended its turn.**
-  Make it block on `gh run watch --exit-status`, or read the run yourself.
+- **An implementer's turn ends with its report.** Anything it says it will do "in the
+  background" after that never happens; make it block on the run (`gh run watch
+  --exit-status`) or read the run yourself (`stack-traps` `references/claude-code.md#worker-turn`).
 - **A drift test that relates two artefacts owned by different leaves is red until both land.**
   Order the roadmap so the *naming* side lands first (e.g. the `AGENTS.md` skill table before
   the skill leaves it names), even ahead of BFS order, or every merge in between is red on a

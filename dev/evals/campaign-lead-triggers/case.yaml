@@ -9,7 +9,7 @@ execution:
   allowed_tools: [Read, Glob, Skill]
 prompt: |
   We just merged the knowledge-transfer report for the consistency campaign. Time to run
-  the next cycle on this repo with three Sonnet implementers working in parallel worktrees;
+  the next cycle on this repo with three implementers working in parallel worktrees;
   here are the follow-ups from that retrospective to turn into roadmap leaves. Set it up and
   get them dispatched.
 graders:
