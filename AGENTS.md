@@ -35,7 +35,7 @@ runs the same roadmap sequentially under the same discipline. Load the
 
 ```bash
 claude --plugin-dir ./dev                            # from a clone
-claude plugin install colgrep-mcp-dev@colgrep-mcp    # from the repo's marketplace
+claude plugin install colgrep-mcp-dev@cracking-shells   # from the repo's marketplace
 ```
 
 `colgrep-mcp-dev` (`dev/`) ships the maintainer skills; the product plugin

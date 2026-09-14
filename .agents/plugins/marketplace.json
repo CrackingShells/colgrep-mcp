@@ -1,7 +1,7 @@
 {
-  "name": "colgrep-mcp-marketplace",
+  "name": "cracking-shells",
   "interface": {
-    "displayName": "colgrep"
+    "displayName": "CrackingShells"
   },
   "plugins": [
     {

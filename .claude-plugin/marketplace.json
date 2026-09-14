@@ -1,6 +1,6 @@
 {
-  "name": "colgrep-mcp",
-  "description": "Marketplace for colgrep-mcp: the product plugin (semantic and hybrid code search as MCP tools) and the maintainer's dev plugin of skills.",
+  "name": "cracking-shells",
+  "description": "CrackingShells marketplace. Here: colgrep-mcp, the product plugin (semantic and hybrid code search as MCP tools), and colgrep-mcp-dev, the maintainer's plugin of skills.",
   "owner": {
     "name": "Eliott Jacopin",
     "email": "eliott.jacopin@riken.jp"

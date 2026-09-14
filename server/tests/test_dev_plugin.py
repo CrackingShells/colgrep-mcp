@@ -64,7 +64,7 @@ def test_agents_md_names_every_dev_skill():
 def test_agents_md_says_how_to_load_the_dev_plugin():
     text = AGENTS_MD.read_text()
     assert "--plugin-dir ./dev" in text or "--plugin-dir dev" in text
-    assert "colgrep-mcp-dev@colgrep-mcp" in text
+    assert "colgrep-mcp-dev@cracking-shells" in text
 
 
 def test_every_dev_skill_has_a_name_matching_its_directory_and_a_description():
