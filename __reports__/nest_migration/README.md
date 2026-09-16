@@ -28,10 +28,17 @@ SSH — was fixed in Nest `2ebd2bc` and re-tested here after uninstalling first,
 so the pass measures the published catalogue rather than the local workaround
 that produced v0's result.
 
-One gate is recorded as unverified rather than inferred: whether the
-search-policy hook fires at the start of a fresh session. `claude -p` fails
-with an expired OAuth session on this machine (`stack-traps#oauth`), retried
-and failed again. The installed hook script was exercised directly instead — it
-emits the policy on `SessionStart` and denies both `Grep` and a shell corpus
-search on `PreToolUse` — so script behaviour and manifest wiring are proven and
-harness-level firing is not.
+**The last gate is now closed.** Both findings reports record the
+fresh-session hook check as unverified, because `claude -p` failed twice with
+an expired OAuth session (`stack-traps#oauth`). After re-authentication it was
+exercised for real: a fresh `claude -p` session, running the plugin installed
+from the published catalogue, received the `SessionStart` context and quoted it
+back verbatim —
+
+> "Denied in this session: the built-in Grep tool, and shell CORPUS searches
+> (grep -r, rg, find -exec grep, xargs grep)."
+
+So harness-level firing is confirmed, not just script behaviour and manifest
+wiring. Every gate in `verify/install_check` has now been exercised live. This
+note is the record of that closure; the reports themselves are left as written,
+since a finding is a statement about what was known when it was made.
