@@ -10,6 +10,11 @@
   "homepage": "https://github.com/CrackingShells/colgrep-mcp",
   "repository": "https://github.com/CrackingShells/colgrep-mcp",
   "license": "AGPL-3.0-or-later",
-  "keywords": ["colgrep-mcp", "maintainer", "skills", "agents"],
+  "keywords": [
+    "colgrep-mcp",
+    "maintainer",
+    "skills",
+    "agents"
+  ],
   "skills": "./skills/"
 }
