@@ -92,9 +92,9 @@ uv run pytest   # uv run re-syncs the editable install
 git push origin main v<x.y.z>   # the tag is lightweight; --follow-tags skips it
 ```
 
-`cz bump` rewrites `pyproject.toml`, `uv.lock` (pre-bump hook), the four
-version-tracked manifests, the `uvx colgrep-mcp==<version>` pin in the three
-MCP manifests, and `CHANGELOG.md`, and writes its own
+`cz bump` rewrites `pyproject.toml`, `uv.lock` (pre-bump hook), the three
+version-tracked plugin manifests, the `uvx colgrep-mcp==<version>` pin in the
+two MCP manifests, and `CHANGELOG.md`, and writes its own
 `release(colgrep-mcp): v<x.y.z>` commit — never author that commit or edit a
 version by hand; a version-drift test failing means a file was hand-edited,
 not that the environment is stale. (`OBS-H` Check 4, `CONTRIBUTING.md`

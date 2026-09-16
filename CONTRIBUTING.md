@@ -45,7 +45,7 @@ Pushing the tag is the publish decision: `.github/workflows/publish.yml` builds 
 distribution, uploads it to PyPI through trusted publishing (no token; the publisher
 registered on PyPI names `publish.yml` and the `pypi` environment) and creates the
 GitHub release from the tag's `CHANGELOG.md` section. The `uvx colgrep-mcp==<version>`
-pin in the three MCP manifests is a `version_files` target, so the bump moves it too.
+pin in the two MCP manifests is a `version_files` target, so the bump moves it too.
 
 ## Gates
 

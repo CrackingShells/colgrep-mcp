@@ -35,7 +35,7 @@ runs the same roadmap sequentially under the same discipline. Load the
 
 ```bash
 claude --plugin-dir ./dev                            # from a clone
-claude plugin install colgrep-mcp-dev@cracking-shells   # from the repo's marketplace
+claude plugin install colgrep-mcp-dev@cracking-shells   # from CrackingShells/Nest, after `claude plugin marketplace add CrackingShells/Nest`
 ```
 
 `colgrep-mcp-dev` (`dev/`) ships the maintainer skills; the product plugin
@@ -55,7 +55,8 @@ claude plugin install colgrep-mcp-dev@cracking-shells   # from the repo's market
 | `server/colgrep_mcp/` | the server: `server.py` (assembly), `adapter.py` (colgrep subprocess), `tools_search.py`, `tools_index.py`, `resources.py`, `prompts.py`, `errors.py`, `guide.md` (agent guide served as a resource) | implementers |
 | `server/tests/` | pytest suite against `fake_colgrep.py`; `test_manifests.py`, `test_version.py`, `test_changelog.py`, `test_readme.py`, `test_dev_plugin.py` are drift guards; `e2e/run_e2e.py` drives the real binary (not collected by pytest) | implementers |
 | `server/pyproject.toml` | the only version source, dependencies, `[tool.commitizen]`, `[tool.ruff]`, pytest config | `cz bump` for the version; humans/agents for the rest |
-| `plugin.json`, `mcp.json`, `.claude-plugin/`, `.codex-plugin/`, `.agents/` | product plugin manifests for the three ecosystems; each MCP config (`.claude-plugin/mcp.json`, `.codex-plugin/mcp.json`, `mcp.json`) launches `uvx colgrep-mcp==<version>`; `version` fields and the pins are written by `cz bump` only | launcher/packaging changes |
+| `plugin.json`, `mcp.json`, `.claude-plugin/`, `.agents/` | product plugin manifests for the three ecosystems; Codex reads the root `plugin.json` and its `extensions["com.openai"]` block rather than a directory of its own; each MCP config (`.claude-plugin/mcp.json`, `mcp.json`) launches `uvx colgrep-mcp==<version>`; `version` fields and the pins are written by `cz bump` only | launcher/packaging changes |
+| `colgrep-mcp.spec.json` | the spec the manifests above are regenerated from, by the playbook's `spawning-agent-plugins` generator. Declares hub mode (`marketplace.hub` names `CrackingShells/Nest`), so regenerating writes no marketplace file here. Must stay byte-identical to the playbook's `assets/examples/colgrep-mcp.spec.json`: that copy is what the playbook's regeneration guard measures against this repo, so a divergence leaves the guard green while measuring a spec nobody uses | maintainers, in lockstep with the playbook's copy |
 | `skills/colgrep-search/SKILL.md` | the end-user skill that teaches agents when to use the tools | when tool semantics change |
 | `hooks/` | the plugin hooks: `hooks.json` (events every hook-capable harness knows), one `<event>.json` per event not every harness knows (`worktree-remove.json`), `colgrep_policy.py` (one stdlib script serving all events); pinned by `server/tests/test_hooks.py` | when the search policy or the harness wiring changes |
 | `dev/` | the `colgrep-mcp-dev` plugin: `skills/<name>/` (SKILL.md, `references/`, `scripts/`), `evals/<name>-triggers/case.yaml`; versioned by `cz bump` with the product | maintainers, when a cycle learns something |
