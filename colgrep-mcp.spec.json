@@ -17,7 +17,9 @@
     "agents"
   ],
   "version_from": "pyproject:server/pyproject.toml",
-  "marketplace": "hub",
+  "marketplace": {
+    "hub": "https://github.com/CrackingShells/Nest"
+  },
   "ecosystems": [
     "claude",
     "codex",
