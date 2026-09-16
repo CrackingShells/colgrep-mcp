@@ -34,7 +34,7 @@ colgrep-mcp ships no marketplace, points users at Nest, and carries manifests in
 graph TD
     relinquish_marketplace[Relinquish Marketplace]:::done
     regenerate_manifests[Regenerate Manifests]:::done
-    verify[Verification]:::inprogress
+    verify[Verification]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -47,7 +47,7 @@ graph TD
 |:-----|:-----|:-------|
 | `relinquish_marketplace.md` | 📄 Leaf Task | ✅ Done |
 | `regenerate_manifests.md` | 📄 Leaf Task | ✅ Done |
-| `verify/` | 📁 Directory | 🔄 In Progress |
+| `verify/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

@@ -8,23 +8,30 @@ generator's output.
 
 | Document | Type | Latest |
 |:--|:--|:--|
-| [00-findings_migration_v0.md](00-findings_migration_v0.md) | findings | ✅ latest |
+| [00-findings_migration_v0.md](00-findings_migration_v0.md) | findings | superseded by v1 |
+
+## Round 01
+
+| Document | Type | Latest |
+|:--|:--|:--|
+| [01-findings_migration_v1.md](01-findings_migration_v1.md) | findings | ✅ latest |
 
 ## Status
 
-The migration is **merged** (PR #15, `a75fb36`) and this repository is complete:
-no marketplace files, Codex served through `extensions["com.openai"]`, installs
-repointed at Nest with a migration note.
+The migration is **complete and installable**. Merged as `a75fb36` (PR #15):
+no marketplace files here, Codex served through `extensions["com.openai"]`,
+`.codex-plugin/` retired, installs repointed at Nest with a migration note.
 
-One item is outstanding and lives **outside this repository**: Nest's
-Claude-side `colgrep-mcp` entry uses the `github` + `repo` shorthand, which
-Claude Code clones over SSH, so the install fails for anyone without a GitHub
-SSH key. Six of seven entries already use an explicit HTTPS source, and the
-fix has been verified locally. Until it lands in Nest, the install path this
-repository's README documents does not work for HTTPS-only users.
+All seven Nest entries install, including `colgrep-mcp`. The v0 blocker — its
+catalogue entry using the `github` shorthand, which Claude Code clones over
+SSH — was fixed in Nest `2ebd2bc` and re-tested here after uninstalling first,
+so the pass measures the published catalogue rather than the local workaround
+that produced v0's result.
 
-One gate could not be closed here: whether the search-policy hook fires at the
-start of a fresh session. `claude -p` fails with an expired OAuth session on
-this machine (`stack-traps#oauth`), so the hook was exercised by feeding the
-installed script the harness's JSON instead. Script behaviour and manifest
-wiring are proven; harness-level firing is not.
+One gate is recorded as unverified rather than inferred: whether the
+search-policy hook fires at the start of a fresh session. `claude -p` fails
+with an expired OAuth session on this machine (`stack-traps#oauth`), retried
+and failed again. The installed hook script was exercised directly instead — it
+emits the policy on `SessionStart` and denies both `Grep` and a shell corpus
+search on `PreToolUse` — so script behaviour and manifest wiring are proven and
+harness-level firing is not.
