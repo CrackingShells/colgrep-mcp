@@ -44,7 +44,7 @@ codex plugin marketplace add CrackingShells/colgrep-mcp
 codex plugin add colgrep-mcp@cracking-shells
 ```
 
-The Codex manifests are `.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json`.
+The Codex manifests are `.agents/plugins/marketplace.json` and the root `plugin.json` (Codex extras live under its `extensions["com.openai"]`).
 
 ### Agent Plugins 1.0 clients (Cursor, GitHub Copilot, VS Code, Kiro)
 
@@ -209,7 +209,7 @@ The repository root is simultaneously:
 
 - a [Claude Code](https://code.claude.com/docs/en/plugins-reference) plugin (`.claude-plugin/plugin.json`, `.claude-plugin/mcp.json`) and a one-plugin marketplace (`.claude-plugin/marketplace.json`);
 - an [Agent Plugins 1.0](https://agent-plugins.org/specification) plugin (`plugin.json`, `mcp.json`);
-- a Codex plugin (`.codex-plugin/plugin.json`, `.codex-plugin/mcp.json`) and marketplace (`.agents/plugins/marketplace.json`).
+- a Codex plugin served by the root `plugin.json`'s `extensions["com.openai"]` block, which Codex parses directly (it auto-wires `skills` to `./skills` and the MCP servers to `mcp.json` by convention), and marketplace (`.agents/plugins/marketplace.json`).
 
 The Claude Code and Codex plugins share the `hooks/` component ([Hooks](#hooks)); its commands carry the one placeholder both ecosystems expand, `${CLAUDE_PLUGIN_ROOT}`. Every MCP manifest launches the same argv, with no shell script and no root placeholder: `uvx colgrep-mcp==<version>`, where the pin is the plugin's own version — `cz bump` rewrites it with the manifests' `version` fields, so a plugin update always launches its matching server and never a stale cached one. The only placeholder left is `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in the Claude Code manifest's `env`, the one client documented to expand it. `uvx` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). CI runs the suite on Windows as well as macOS and Linux, builds the distribution and checks its metadata on every pull request; pushing a release tag runs `.github/workflows/publish.yml`, which uploads to PyPI through trusted publishing and creates the GitHub release.
 
