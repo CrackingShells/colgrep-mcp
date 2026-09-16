@@ -32,9 +32,9 @@ colgrep-mcp ships no marketplace, points users at Nest, and carries manifests in
 ## Status
 ```mermaid
 graph TD
-    relinquish_marketplace[Relinquish Marketplace]:::blocked
+    relinquish_marketplace[Relinquish Marketplace]:::done
     regenerate_manifests[Regenerate Manifests]:::done
-    verify[Verification]:::blocked
+    verify[Verification]:::inprogress
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -45,9 +45,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `relinquish_marketplace.md` | 📄 Leaf Task | 🚫 Blocked |
+| `relinquish_marketplace.md` | 📄 Leaf Task | ✅ Done |
 | `regenerate_manifests.md` | 📄 Leaf Task | ✅ Done |
-| `verify/` | 📁 Directory | 🚫 Blocked |
+| `verify/` | 📁 Directory | 🔄 In Progress |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
