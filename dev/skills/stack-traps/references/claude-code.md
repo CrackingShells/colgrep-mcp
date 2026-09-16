@@ -90,6 +90,38 @@ reinstall `colgrep-mcp@cracking-shells`. When writing install instructions
 for a second ecosystem, copy that ecosystem's own marketplace `name`; here
 the two happen to match, which is a choice, not a rule.
 
+## `claude plugin validate .` validates the marketplace, not the plugin {#validate-picks-one}
+
+`claude plugin validate <dir>` validates **one** manifest: it looks for
+`.claude-plugin/marketplace.json` first and, finding one, validates that and
+stops. It never reaches `.claude-plugin/plugin.json`. So for as long as this
+repository shipped its own marketplace, the gate `claude plugin validate .`
+in `AGENTS.md` was checking the catalogue and nothing else — the plugin
+manifest was unvalidated by that command, and a green result said less than
+it appeared to.
+
+Deleting the marketplace in the `nest_migration` campaign made the command
+fall through to the plugin manifest for the first time, which immediately
+surfaced a warning that had been latent all along:
+
+```
+⚠ root: CLAUDE.md at the plugin root is not loaded as project context.
+  To ship context with your plugin, use a skill (skills/<name>/SKILL.md) instead.
+```
+
+That warning is **expected and benign here, and `CLAUDE.md` must stay.** It is
+an eleven-byte `@AGENTS.md` pointer that exists for agents working in a clone
+of this repository; it is not meant to travel to end users who install the
+plugin, and the maintainer knowledge it points at ships separately as the
+`colgrep-mcp-dev` plugin's skills. The validator is right that it does
+nothing for an installed plugin, and that is fine.
+
+The trap is the masking, not the warning: a validator that silently changes
+*what it validates* depending on which manifest it finds means "validation
+passed" is only as strong as the manifest it happened to pick. When you want
+the plugin manifest checked, point the command at a tree with no marketplace
+in it, or read the first line of the output — it names the manifest it chose.
+
 ## `claude -p` / `claude plugin eval` fails with an OAuth error {#oauth}
 
 **Symptom**: `claude -p` fails with something like `Failed to authenticate:

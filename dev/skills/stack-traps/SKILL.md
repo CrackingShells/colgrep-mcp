@@ -25,6 +25,7 @@ linked section, don't re-derive the trap from scratch.
 | a Windows client's root path won't resolve | mcp-sdk | `references/mcp-sdk.md#windows-roots` |
 | opening this repo as a plain project shows a pending colgrep entry or a `spawn ENOENT` | claude-code | `references/claude-code.md#root-mcp-json` |
 | an install/list command's plugin and marketplace names look mismatched or don't carry to another ecosystem | claude-code | `references/claude-code.md#namespaces` |
+| `claude plugin validate .` reports a warning it never used to, or you want to know which manifest it actually checked | claude-code | `references/claude-code.md#validate-picks-one` |
 | `claude -p` or `claude plugin eval` fails with an OAuth error | claude-code | `references/claude-code.md#oauth` |
 | `claude --plugin-dir . mcp list` says Connected but your edit is not in the server, or the plugin fails right after a bump | claude-code | `references/claude-code.md#uvx-pin` |
 | the plugin's hooks don't fire, or still run the old text, after an edit or an update; Codex lists them but never runs them | claude-code | `references/claude-code.md#plugin-hooks` |
