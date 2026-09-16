@@ -17,7 +17,8 @@ users with neither.
 colgrep-mcp ships no marketplace, points users at Nest, and carries manifests in the Agent-Plugins-plus-extensions shape.
 
 ## Pre-conditions
-- [ ] `agent_plugin_nest/generator/rollout/verify/end_to_end.md` is done — Nest installs playbook plugins for real
+- [ ] `relinquish_marketplace` waits on `agent_plugin_nest/generator/rollout/verify/end_to_end.md` — Nest must install playbook plugins for real before this repo gives up a working catalogue
+- [ ] `regenerate_manifests` waits only on `agent_plugin_nest/generator/generator_reshape.md`, so it can start earlier than its sibling
 - [ ] Nest lists `colgrep-mcp` and `colgrep-mcp-dev`, so nothing is dropped when this repo stops listing them
 - [ ] A playbook checkout containing the reshaped generator is available, and its path is named in the implementer's brief
 
