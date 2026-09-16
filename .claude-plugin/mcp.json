@@ -3,7 +3,7 @@
     "colgrep": {
       "command": "uvx",
       "args": [
-        "colgrep-mcp==0.5.1"
+        "colgrep-mcp==0.5.2"
       ],
       "env": {
         "COLGREP_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"

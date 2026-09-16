@@ -5,6 +5,15 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.5.2 (2026-09-16)
+
+### Fixed
+
+- **plugin**: record the hub repository in the spec's marketplace key
+- **marketplace**: use a valid Codex authentication policy
+- **plugin**: restore the hand-maintained dev README the regeneration clobbered
+- **roadmap**: make regenerate_manifests set hub mode before regenerating
+
 ## v0.5.1 (2026-09-15)
 
 ### Fixed

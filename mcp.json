@@ -5,7 +5,7 @@
       "type": "stdio",
       "command": "uvx",
       "args": [
-        "colgrep-mcp==0.5.1"
+        "colgrep-mcp==0.5.2"
       ]
     }
   }
