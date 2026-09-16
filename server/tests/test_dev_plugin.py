@@ -82,11 +82,18 @@ def test_dev_plugin_manifest_is_the_versioned_skills_plugin():
     assert "mcpServers" not in manifest, "the dev plugin carries knowledge, never a server"
 
 
-def test_marketplace_lists_both_plugins_from_disjoint_sources():
-    plugins = {p["name"]: p for p in _load(".claude-plugin/marketplace.json")["plugins"]}
-    assert set(plugins) == {"colgrep-mcp", "colgrep-mcp-dev"}
-    assert plugins["colgrep-mcp-dev"]["source"] == "./dev"
-    assert plugins["colgrep-mcp"]["source"] == "./"
+def test_product_and_dev_plugins_are_named_and_placed_disjointly():
+    """This used to read the two plugins' entries out of `.claude-plugin/marketplace.json`
+    (name, source), but relinquish_marketplace deleted that file: the catalogue that lists
+    both plugins now lives in CrackingShells/Nest, not in this repository. What is still
+    ours to guard is that the two manifests name disjoint plugins at disjoint locations."""
+    product = _load(".claude-plugin/plugin.json")
+    dev = _load("dev/.claude-plugin/plugin.json")
+    assert product["name"] == "colgrep-mcp"
+    assert dev["name"] == "colgrep-mcp-dev"
+    assert (REPO_ROOT / "dev" / ".claude-plugin" / "plugin.json").resolve() != (
+        REPO_ROOT / ".claude-plugin" / "plugin.json"
+    ).resolve()
 
 
 def test_product_plugin_never_ships_the_dev_skills():

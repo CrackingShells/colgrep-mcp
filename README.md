@@ -25,7 +25,7 @@ The server is the [`colgrep-mcp` package on PyPI](https://pypi.org/project/colgr
 ### Claude Code
 
 ```bash
-claude plugin marketplace add CrackingShells/colgrep-mcp
+claude plugin marketplace add CrackingShells/Nest
 ```
 
 ```bash
@@ -37,14 +37,14 @@ Add `--scope project` to the marketplace command to declare it in the repository
 ### Codex
 
 ```bash
-codex plugin marketplace add CrackingShells/colgrep-mcp
+codex plugin marketplace add CrackingShells/Nest
 ```
 
 ```bash
 codex plugin add colgrep-mcp@cracking-shells
 ```
 
-The Codex manifests are `.agents/plugins/marketplace.json` and the root `plugin.json` (Codex extras live under its `extensions["com.openai"]`).
+The Codex manifest is the root `plugin.json` (Codex extras live under its `extensions["com.openai"]`); this repository carries no marketplace file of its own — see [Migrating from this repository's old marketplace](#migrating-from-this-repositorys-old-marketplace) below.
 
 ### Agent Plugins 1.0 clients (Cursor, GitHub Copilot, VS Code, Kiro)
 
@@ -103,6 +103,20 @@ claude mcp add colgrep -- uv run --quiet --directory /path/to/colgrep-mcp/server
 ```
 
 `uvx --from /path/to/colgrep-mcp/server colgrep-mcp` is the one-off equivalent. Note that `claude --plugin-dir /path/to/colgrep-mcp` loads the clone's *skill* but launches the manifest's PyPI pin, not the clone's code — use one of the commands above to test a change.
+
+### Migrating from this repository's old marketplace
+
+This repository used to declare the `cracking-shells` marketplace itself (`.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`); that catalogue now lives in [`CrackingShells/Nest`](https://github.com/CrackingShells/Nest), which lists both `colgrep-mcp` and `colgrep-mcp-dev`. A client keeps whichever repository it registered under a marketplace name at add time, so if you already have `cracking-shells` registered as pointing at this repository, adding `CrackingShells/Nest` under the same name does **not** happen automatically — your client will silently keep resolving `cracking-shells` to the old, now-unpublished two-plugin catalogue here, with no error to tell you it's stale. Remove the old registration first:
+
+```bash
+claude plugin marketplace remove cracking-shells
+```
+
+```bash
+codex plugin marketplace remove cracking-shells
+```
+
+Then add `CrackingShells/Nest` as shown above. `colgrep-mcp@cracking-shells` and `colgrep-mcp-dev@cracking-shells` install the same way afterward — only the marketplace's home moved, not its name.
 
 ## What the agent gets
 
@@ -207,9 +221,11 @@ It refuses to run against this repository, its worktrees or anything under `/pri
 
 The repository root is simultaneously:
 
-- a [Claude Code](https://code.claude.com/docs/en/plugins-reference) plugin (`.claude-plugin/plugin.json`, `.claude-plugin/mcp.json`) and a one-plugin marketplace (`.claude-plugin/marketplace.json`);
+- a [Claude Code](https://code.claude.com/docs/en/plugins-reference) plugin (`.claude-plugin/plugin.json`, `.claude-plugin/mcp.json`);
 - an [Agent Plugins 1.0](https://agent-plugins.org/specification) plugin (`plugin.json`, `mcp.json`);
-- a Codex plugin served by the root `plugin.json`'s `extensions["com.openai"]` block, which Codex parses directly (it auto-wires `skills` to `./skills` and the MCP servers to `mcp.json` by convention), and marketplace (`.agents/plugins/marketplace.json`).
+- a Codex plugin served by the root `plugin.json`'s `extensions["com.openai"]` block, which Codex parses directly (it auto-wires `skills` to `./skills` and the MCP servers to `mcp.json` by convention).
+
+The `cracking-shells` marketplace catalogue itself — for both Claude Code and Codex — lives in [`CrackingShells/Nest`](https://github.com/CrackingShells/Nest), not in this repository; see [Install](#install).
 
 The Claude Code and Codex plugins share the `hooks/` component ([Hooks](#hooks)); its commands carry the one placeholder both ecosystems expand, `${CLAUDE_PLUGIN_ROOT}`. Every MCP manifest launches the same argv, with no shell script and no root placeholder: `uvx colgrep-mcp==<version>`, where the pin is the plugin's own version — `cz bump` rewrites it with the manifests' `version` fields, so a plugin update always launches its matching server and never a stale cached one. The only placeholder left is `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in the Claude Code manifest's `env`, the one client documented to expand it. `uvx` and `colgrep` must be on `PATH` (see Troubleshooting for GUI clients that start without one). CI runs the suite on Windows as well as macOS and Linux, builds the distribution and checks its metadata on every pull request; pushing a release tag runs `.github/workflows/publish.yml`, which uploads to PyPI through trusted publishing and creates the GitHub release.
 
