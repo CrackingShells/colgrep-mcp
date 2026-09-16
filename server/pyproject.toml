@@ -57,16 +57,18 @@ update_changelog_on_bump = true
 changelog_incremental = true
 changelog_file = "../CHANGELOG.md"
 version_files = [
+    # Codex parses this same root manifest natively (extras under
+    # extensions["com.openai"]); it has no plugin.json of its own since
+    # nest_migration/regenerate_manifests retired .codex-plugin/.
     "../plugin.json:\"version\"",
     "../.claude-plugin/plugin.json:\"version\"",
-    "../.codex-plugin/plugin.json:\"version\"",
     "../dev/.claude-plugin/plugin.json:\"version\"",
-    # The three MCP manifests launch `uvx colgrep-mcp==<version>`: the pin is
+    # The two MCP manifests launch `uvx colgrep-mcp==<version>`: the pin is
     # the plugin version by construction, and moving it changes uvx's cache
     # key so a plugin update never reuses a stale server environment
-    # (pypi_publication R01 §C6, D4).
+    # (pypi_publication R01 §C6, D4). Codex reads the same root mcp.json as
+    # Agent Plugins 1.0, so one entry covers both.
     "../.claude-plugin/mcp.json:colgrep-mcp==",
-    "../.codex-plugin/mcp.json:colgrep-mcp==",
     "../mcp.json:colgrep-mcp==",
     # uv.lock records this project's own version too. The pattern below never
     # contains a version string, so commitizen rewrites nothing here, but it

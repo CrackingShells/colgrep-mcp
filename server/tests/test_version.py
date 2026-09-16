@@ -2,7 +2,8 @@
 
 `colgrep_mcp.__version__` is derived from installed package metadata (see
 `colgrep_mcp/__init__.py`); the plugin manifests and the `uvx
-colgrep-mcp==<version>` pin in the three MCP manifests are rewritten by
+colgrep-mcp==<version>` pin in the two MCP manifests (`.claude-plugin/mcp.json`
+and the shared root `mcp.json`, which Codex also reads) are rewritten by
 `cz bump` through `version_files` (pypi_publication R01 §C6). Nothing else
 enforces that they stay aligned except this test and
 `tests/test_manifests.py`.
@@ -31,18 +32,23 @@ def test_version_matches_pyproject():
 
 
 def test_manifests_match_pyproject():
+    """`.codex-plugin/plugin.json` no longer exists: Codex parses the shared root
+    `plugin.json` natively (extras under `extensions["com.openai"]`), so checking
+    `plugin.json` here also covers Codex's version."""
     version = _pyproject_version()
 
-    for relpath in ("plugin.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
+    for relpath in ("plugin.json", ".claude-plugin/plugin.json"):
         manifest = json.loads((REPO_ROOT / relpath).read_text())
         assert manifest["version"] == version, f"{relpath} version mismatch"
 
 
 def test_mcp_manifests_pin_the_pyproject_version():
-    """The `colgrep-mcp==` regex in `version_files` must have rewritten every pin; a lag means a hand edit."""
+    """The `colgrep-mcp==` regex in `version_files` must have rewritten every pin; a lag
+    means a hand edit. Codex reads the same root `mcp.json` as Agent Plugins 1.0 (no
+    manifest of its own), so it is covered by that one entry."""
     version = _pyproject_version()
 
-    for relpath in (".claude-plugin/mcp.json", ".codex-plugin/mcp.json", "mcp.json"):
+    for relpath in (".claude-plugin/mcp.json", "mcp.json"):
         server = json.loads((REPO_ROOT / relpath).read_text())["mcpServers"]["colgrep"]
         assert server["args"] == [f"colgrep-mcp=={version}"], f"{relpath} pin mismatch"
 

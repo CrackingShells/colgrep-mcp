@@ -1,10 +1,14 @@
 """Consistency guards across the plugin packaging manifests.
 
-`plugin.json` and `mcp.json` at the repo root, `.claude-plugin/plugin.json`
-plus `.claude-plugin/mcp.json`, and `.codex-plugin/plugin.json` plus
-`.codex-plugin/mcp.json` describe the same server to three different plugin
-ecosystems (Claude Code, Agent Plugins 1.0, Codex). Nothing enforces that
-they stay in sync on a version bump or a manifest edit except these tests.
+`plugin.json` and `mcp.json` at the repo root, plus `.claude-plugin/plugin.json`
+and `.claude-plugin/mcp.json`, describe the same server to Claude Code, Codex
+and Agent Plugins 1.0. Codex parses the root Agent Plugins manifest natively
+and auto-wires its MCP servers from `mcp.json` by convention (`references/
+manifests.md#codex`, nest_migration `regenerate_manifests`); its own extras
+live under `plugin.json`'s `extensions["com.openai"]` rather than in a
+`.codex-plugin/` directory of its own, which no longer exists. Nothing
+enforces that these files stay in sync on a version bump or a manifest edit
+except these tests.
 
 Every MCP manifest launches `uvx colgrep-mcp==<version>` from PyPI: no root
 placeholder anywhere in `args`, because a client that leaves
@@ -16,10 +20,10 @@ package version so that a plugin update moves uvx's cache key (R01 D4).
 The Claude Code manifest lives at `.claude-plugin/mcp.json`, not at a
 root-level `.mcp.json`: Claude Code's project-scope MCP auto-discovery only
 ever looks for a root `.mcp.json`, and this repository is itself sometimes
-opened as a plain project rather than loaded as a plugin. Codex has its own
-`.codex-plugin/mcp.json` so that the only placeholder left — Claude Code's
-`COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}` in `env` — is read only by the
-client documented to expand it.
+opened as a plain project rather than loaded as a plugin. Codex reads the
+root `mcp.json` (the same file Agent Plugins 1.0 clients read) so that the
+only placeholder left — Claude Code's `COLGREP_MCP_ROOT=${CLAUDE_PROJECT_DIR}`
+in `env` — is read only by the client documented to expand it.
 """
 
 from __future__ import annotations
@@ -47,7 +51,7 @@ AGENT_PLUGIN_PERMITTED_FIELDS = {
 
 FORBIDDEN_MCP_ENV_KEYS = {"PLUGIN_ROOT", "PLUGIN_DATA"}
 
-MCP_MANIFESTS = (".claude-plugin/mcp.json", ".codex-plugin/mcp.json", "mcp.json")
+MCP_MANIFESTS = (".claude-plugin/mcp.json", "mcp.json")
 
 
 def _load(relpath: str) -> dict:
@@ -67,8 +71,9 @@ def test_versions_aligned():
     version = colgrep_mcp.__version__
 
     assert _load(".claude-plugin/plugin.json")["version"] == version
+    # Codex parses this same root manifest natively (no manifest of its own),
+    # so checking it here also covers Codex's version.
     assert _load("plugin.json")["version"] == version
-    assert _load(".codex-plugin/plugin.json")["version"] == version
     # The dev plugin is versioned with the product: its skills describe how to
     # maintain *this* repository at *this* version, so one `cz bump` moves both.
     assert _load("dev/.claude-plugin/plugin.json")["version"] == version
@@ -79,6 +84,17 @@ def test_agent_plugin_fields_whitelist():
 
     assert set(manifest) <= AGENT_PLUGIN_PERMITTED_FIELDS
     assert manifest["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+
+
+def test_codex_extension_carries_the_interface_block():
+    """Codex's extras live under `extensions["com.openai"]`; identity (name, version,
+    author) is read off the shared root manifest fields checked elsewhere in this file."""
+    manifest = _load("plugin.json")
+    codex_ext = manifest["extensions"]["com.openai"]
+
+    for key in ("displayName", "shortDescription", "longDescription", "developerName", "category", "capabilities"):
+        assert codex_ext["interface"].get(key), f"extensions.com.openai.interface lacks {key}"
+    assert codex_ext.get("hooks") == "./hooks/hooks.json"
 
 
 def test_every_mcp_manifest_launches_the_pinned_pypi_release():
@@ -94,7 +110,6 @@ def test_every_mcp_manifest_launches_the_pinned_pypi_release():
 
 def test_plugin_manifests_point_at_their_own_mcp_file():
     assert _load(".claude-plugin/plugin.json")["mcpServers"] == "./.claude-plugin/mcp.json"
-    assert _load(".codex-plugin/plugin.json")["mcpServers"] == "./.codex-plugin/mcp.json"
     assert not (REPO_ROOT / ".mcp.json").exists(), "a root .mcp.json is read as project-scope config; see stack-traps"
 
 
@@ -115,13 +130,15 @@ def test_placeholders_only_in_claude_code_env():
     so only its manifest may carry one, and only in `env`."""
     claude_env = _server(".claude-plugin/mcp.json")["env"]
     assert claude_env == {"COLGREP_MCP_ROOT": "${CLAUDE_PROJECT_DIR}"}
-    for relpath in (".codex-plugin/mcp.json", "mcp.json"):
-        assert "$" not in json.dumps(_server(relpath).get("env", {})), relpath
+    # Codex reads this same root mcp.json (no manifest of its own), so it is
+    # covered by the same placeholder-free assertion as Agent Plugins 1.0.
+    assert "$" not in json.dumps(_server("mcp.json").get("env", {}))
 
 
 def test_names_aligned():
     claude_name = _load(".claude-plugin/plugin.json")["name"]
     agent_name = _load("plugin.json")["name"]
-    codex_name = _load(".codex-plugin/plugin.json")["name"]
+    # Codex parses the same root manifest as agent-plugins (no manifest of its own),
+    # so its name is agent_name; nothing further to compare here.
 
-    assert claude_name == agent_name == codex_name
+    assert claude_name == agent_name

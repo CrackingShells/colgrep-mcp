@@ -368,13 +368,15 @@ def test_manifests_name_the_hook_files_per_ecosystem():
     """The two loaders read the same field with opposite semantics. Claude Code always loads
     `hooks/hooks.json` and treats `hooks` as *additional* files: naming the default again fails
     the whole plugin at install time ("Duplicate hooks file detected", Claude Code 2.1.270) while
-    `--plugin-dir` accepts it silently. Codex discovers `hooks/hooks.json` only when the manifest
+    `--plugin-dir` accepts it silently. Codex discovers `hooks/hooks.json` only when its manifest
     defines no `hooks`, and an explicit value *replaces* that discovery. So the Claude manifest
-    names exactly the extra files (today all Claude-only) and the Codex manifest the portable
-    file (stack-traps `claude-code.md#hooks-manifest-duplicate`)."""
+    names exactly the extra files (today all Claude-only) and Codex's own extras — now
+    `plugin.json`'s `extensions["com.openai"]`, since nest_migration/regenerate_manifests retired
+    the separate `.codex-plugin/` manifest — name the portable file (stack-traps
+    `claude-code.md#hooks-manifest-duplicate`)."""
     claude = _load(REPO_ROOT / ".claude-plugin" / "plugin.json")
-    codex = _load(REPO_ROOT / ".codex-plugin" / "plugin.json")
     agent = _load(REPO_ROOT / "plugin.json")
+    codex_ext = agent["extensions"]["com.openai"]
 
     named = [claude["hooks"]] if isinstance(claude["hooks"], str) else list(claude["hooks"])
     assert "./hooks/hooks.json" not in named, (
@@ -382,8 +384,8 @@ def test_manifests_name_the_hook_files_per_ecosystem():
     )
     assert set(named) == {f"./hooks/{p.name}" for p in EXTRA_FILES}, "every extra file is Claude-only today"
     assert claude["hooks"] == "./hooks/worktree-remove.json"
-    assert codex["hooks"] == "./hooks/hooks.json", "Codex: the field replaces default discovery, so name hooks.json"
-    assert "hooks" not in agent, "Agent Plugins 1.0 defines no hooks component"
+    assert codex_ext["hooks"] == "./hooks/hooks.json", "Codex: the field replaces default discovery, so name hooks.json"
+    assert "hooks" not in agent, "Agent Plugins 1.0 defines no hooks component at its top level"
 
 
 def test_hook_script_is_stdlib_only_and_never_imports_the_server():
