@@ -91,9 +91,18 @@ def test_product_and_dev_plugins_are_named_and_placed_disjointly():
     dev = _load("dev/.claude-plugin/plugin.json")
     assert product["name"] == "colgrep-mcp"
     assert dev["name"] == "colgrep-mcp-dev"
-    assert (REPO_ROOT / "dev" / ".claude-plugin" / "plugin.json").resolve() != (
-        REPO_ROOT / ".claude-plugin" / "plugin.json"
-    ).resolve()
+
+    # Resolve each manifest's *declared* skills path against its own plugin root. Comparing
+    # two hardcoded manifest paths instead would be a tautology: distinct literals are never
+    # equal, so the assertion could not fail and would guard nothing.
+    product_skills = (REPO_ROOT / product["skills"]).resolve()
+    dev_skills = (DEV_PLUGIN / dev["skills"]).resolve()
+    assert product_skills.is_dir(), product_skills
+    assert dev_skills.is_dir(), dev_skills
+    assert product_skills != dev_skills
+    assert not product_skills.is_relative_to(DEV_PLUGIN), (
+        "the product plugin must not point its skills at the maintainer tree"
+    )
 
 
 def test_product_plugin_never_ships_the_dev_skills():
