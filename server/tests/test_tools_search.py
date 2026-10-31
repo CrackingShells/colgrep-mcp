@@ -620,30 +620,40 @@ def _unit(file: Path, name: str, line: int, end_line: int, code: str, unit_type:
     }
 
 
-def _matches_corpus(tmp_path: Path, monkeypatch, notes_text: str = _NOTES) -> tuple[Path, Path]:
-    """Three matched sections of `notes.md` and one function of `tools.py`, as
-    per-unit hits in score order, which `FAKE_COLGREP_MATCHES=1` folds per file
-    the way colgrep 1.8.x does."""
+def _match(line: int, end_line: int, name: str, score: float) -> dict:
+    return {"line": line, "end_line": end_line, "name": name, "score": score}
+
+
+def _matches_corpus(
+    tmp_path: Path, monkeypatch, notes_text: str = _NOTES, notes_matches: list[dict] | None = None
+) -> tuple[Path, Path]:
+    """Literal colgrep 1.8.4+ results (one per file, best first): `notes.md` led by
+    its `Logistics` section with `unit` widened over the three matched sections
+    and `matches` listing each, then `tools.py` with its one function."""
     notes = tmp_path / "notes.md"
     notes.write_text(notes_text)
     tools = tmp_path / "tools.py"
     tools.write_text('def escalate():\n    return "subagent"\n')
+    leader = _unit(notes, "Logistics", 3, 10, "## Logistics\nRoutine scheduling.\n")
     fixture = [
-        {"unit": _unit(notes, "Logistics", 3, 4, "## Logistics\nRoutine scheduling.\n"), "score": 1.2},
+        {
+            "unit": leader,
+            "score": 1.2,
+            "matches": notes_matches
+            or [
+                _match(3, 4, "Logistics", 1.2),
+                _match(6, 7, "Escalation", 0.9),
+                _match(9, 10, "Closing", 0.1),
+            ],
+        },
         {
             "unit": _unit(tools, "escalate", 1, 2, 'def escalate():\n    return "subagent"\n', "function"),
             "score": 1.0,
         },
-        {
-            "unit": _unit(notes, "Escalation", 6, 7, "## Escalation\n- **PI decision:** switch to a subagent.\n"),
-            "score": 0.9,
-        },
-        {"unit": _unit(notes, "Closing", 9, 10, "## Closing\nWave closed.\n"), "score": 0.1},
     ]
     fixture_path = tmp_path / "matches_hits.json"
     fixture_path.write_text(json.dumps(fixture))
     monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
-    monkeypatch.setenv("FAKE_COLGREP_MATCHES", "1")
     return notes, tools
 
 
@@ -706,6 +716,27 @@ async def test_find_files_counts_each_matched_unit(settings_env, monkeypatch, tm
     assert [f["file"] for f in files] == [str(notes), str(tools)]
     assert (files[0]["hits"], files[0]["top_units"]) == (3, ["Logistics", "Escalation", "Closing"])
     assert (files[1]["hits"], files[1]["top_units"]) == (1, ["escalate"])
+
+
+async def test_duplicate_ranges_in_matches_count_once(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(
+        tmp_path,
+        monkeypatch,
+        notes_matches=[
+            _match(3, 4, "Logistics", 1.2),
+            _match(6, 7, "Escalation", 0.9),
+            _match(6, 7, "Escalation", 0.4),
+        ],
+    )
+
+    async with Client(build(), raise_exceptions=True) as c:
+        searched = await c.call_tool("search", {"query": "escalation"})
+        found = await c.call_tool("find_files", {"query": "escalation"})
+
+    hits = [h for h in searched.structured_content["hits"] if h["file"] == str(notes)]
+    assert [(h["hit_id"], h["score"]) for h in hits] == [(f"{notes}:3-4", 1.2), (f"{notes}:6-7", 0.9)]
+    first = found.structured_content["files"][0]
+    assert (first["hits"], first["top_units"]) == (2, ["Logistics", "Escalation"])
 
 
 # --- token budget (R01 §Token-budget invariant) ----------------------------

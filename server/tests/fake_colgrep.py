@@ -6,7 +6,11 @@ Emulates the subset of colgrep 1.6 surface the adapter drives:
   [search] [--json] [-k N] [-e PAT] [flags...] QUERY [PATH...]
 Environment knobs:
   FAKE_COLGREP_EXIT       force this exit code (stderr gets "forced failure")
-  FAKE_COLGREP_HITS       path to a JSON fixture (default: fixtures/hits_small.json)
+  FAKE_COLGREP_HITS       path to a JSON fixture (default: fixtures/hits_small.json),
+                          answered as written: colgrep returns one result per file
+                          (`collapse_by_file`), so `-k N` counts files, and a
+                          fixture lists a file's matched units in `matches` itself
+                          (colgrep 1.8.4+ shape)
   FAKE_COLGREP_SLEEP      seconds to sleep before answering (timeout tests)
   FAKE_COLGREP_INDEXED    "0" -> `status` reports no index
   FAKE_COLGREP_ARGV_FILE  path to write argv (as a JSON list) to, for adapter tests
@@ -27,11 +31,6 @@ Environment knobs:
                           `status <path>` names `Index: <store>/<name>` for a
                           project it holds and exits 1 like the real binary
                           when the path does not exist on disk (R02)
-  FAKE_COLGREP_MATCHES    "1" -> answer a search like colgrep 1.8.x: fixture
-                          hits (one per unit) fold into one result per file,
-                          `unit` the best one with its range widened over the
-                          file's units, plus `matches` when two or more matched;
-                          `-k` then counts files (`collapse_by_file`)
 """
 
 import json
@@ -61,28 +60,6 @@ def _store_entries(store):
             with open(sj, encoding="utf-8") as f:
                 state = json.load(f)
         out.append((name, project, state))
-    return out
-
-
-def _collapse_by_file(hits):
-    """colgrep 1.8.x's `collapse_by_file` over score-ordered per-unit hits."""
-    out = []
-    by_file = {}
-    for h in hits:
-        u = h["unit"]
-        name = "" if u.get("unit_type") in ("document", "raw_code") else u.get("name") or ""
-        match = {"line": u["line"], "end_line": u["end_line"], "name": name, "score": h["score"]}
-        if u["file"] not in by_file:
-            by_file[u["file"]] = len(out)
-            out.append({"unit": dict(u), "score": h["score"], "matches": [match]})
-            continue
-        leader = out[by_file[u["file"]]]
-        leader["matches"].append(match)
-        leader["unit"]["line"] = min(leader["unit"]["line"], u["line"])
-        leader["unit"]["end_line"] = max(leader["unit"]["end_line"], u["end_line"])
-    for r in out:
-        if len(r["matches"]) < 2:
-            del r["matches"]  # serde skips an empty list; a lone match is never recorded
     return out
 
 
@@ -191,8 +168,6 @@ def main(argv):
     # the same literal on POSIX (no-op replace) and a drive-rooted equivalent
     # on Windows (genuinely absolute there too).
     hits = json.loads(fixture.read_text().replace("/tmp/fake-corpus", FAKE_CORPUS))
-    if os.environ.get("FAKE_COLGREP_MATCHES") == "1":
-        hits = _collapse_by_file(hits)
     if "-k" in args:
         k = int(args[args.index("-k") + 1])
         hits = hits[:k]

@@ -14,7 +14,7 @@ from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from .models import IndexBuildResult, IndexInfo, IndexStatus
 from .textparse import parse_index_summary, parse_settings, parse_stats, parse_status
@@ -71,6 +71,73 @@ class SearchRequest:
 
 
 RawHit = dict[str, Any]
+
+
+class UnitMatch(NamedTuple):
+    """One matched unit of a file: its own range, display name and score."""
+
+    line: int
+    end_line: int
+    name: str
+    score: float
+
+
+def _wire_match(entry: Any) -> UnitMatch | None:
+    """A `matches` entry as a `UnitMatch`, or `None` when it is malformed or
+    its range breaks `1 <= line <= end_line`."""
+    if not isinstance(entry, dict):
+        return None
+    try:
+        line, end_line = int(entry.get("line") or 0), int(entry.get("end_line") or 0)
+        score = float(entry.get("score") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if not 1 <= line <= end_line:
+        return None
+    return UnitMatch(line, end_line, entry.get("name") or "", score)
+
+
+def unit_matches(raw: RawHit) -> list[UnitMatch]:
+    """The matched units of one colgrep result, leader first. The only reader of `matches`.
+
+    colgrep returns one result per file (`collapse_by_file`,
+    `colgrep/src/index/mod.rs`): `unit` is the best unit with its range
+    widened over every matched unit, and since 1.8.4 `matches` lists each
+    unit's own `{line, end_line, name, score}`, best first, whenever two or
+    more matched. This is `SearchResult::unit_matches()` in that file, plus
+    what its consumers need: entries sharing a range collapse to the best
+    score (`absorb_matches`), the non-leaders are stable-sorted by score so a
+    cut of the list is a prefix of the file's best units, and entries that
+    break `1 <= line <= end_line` are dropped. A malformed leader is no
+    leader: the result then falls back to its own `unit`, like an absent or
+    one-entry `matches` (colgrep 1.6, a lone matched unit). `name` is the
+    display name (`Class.method`), empty for documents and raw code.
+    """
+    unit = raw.get("unit") or {}
+    score = float(raw.get("score") or 0.0)
+    line = int(unit.get("line") or 1)
+    own = UnitMatch(line, int(unit.get("end_line") or line), unit.get("name") or "", score)
+
+    wire = raw.get("matches") or []
+    if len(wire) < 2:
+        return [own]
+    leader = _wire_match(wire[0])
+    if leader is None:
+        return [own]
+
+    best = {(leader.line, leader.end_line): leader}
+    for entry in wire[1:]:
+        match = _wire_match(entry)
+        if match is None:
+            continue
+        key = (match.line, match.end_line)
+        if key not in best:
+            best[key] = match
+        elif match.score > best[key].score:
+            best[key] = best[key]._replace(score=match.score)
+    leader, *rest = best.values()
+    rest.sort(key=lambda m: m.score, reverse=True)
+    return [leader, *rest]
 
 
 def _require_absolute(path: Path, what: str) -> None:

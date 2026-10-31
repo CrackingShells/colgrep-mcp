@@ -24,7 +24,7 @@ from mcp.server.mcpserver import Context
 from mcp.types import CallToolResult, TextContent
 from pydantic import Field
 
-from .adapter import RawHit, SearchRequest
+from .adapter import RawHit, SearchRequest, unit_matches
 from .errors import Code, note, tool_error, translate_adapter_errors
 from .locate import locate_unit
 from .locks import project_lock
@@ -141,41 +141,36 @@ def hits_from_raw(
     reports none for it.
     """
     leader = hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path)
-    matches = raw.get("matches") or []
+    matches = unit_matches(raw)
     if len(matches) < 2:
         return [leader]
 
     file_lines = file_cache.get(leader.file, "").splitlines()
     first = matches[0]
-    trusted = leader.location_verified and (
-        int(first.get("line") or 0),
-        int(first.get("end_line") or 0),
-    ) == (leader.line, leader.end_line)
+    trusted = leader.location_verified and (first.line, first.end_line) == (leader.line, leader.end_line)
 
     hits = [leader]
     seen = {leader.hit_id}
     for match in matches[1:]:
-        line = int(match.get("line") or 1)
-        end_line = int(match.get("end_line") or line)
-        hit_id = f"{leader.file}:{line}-{end_line}"
+        hit_id = f"{leader.file}:{match.line}-{match.end_line}"
         if hit_id in seen:
             continue
         seen.add(hit_id)
-        body = file_lines[line - 1 : end_line]
+        body = file_lines[match.line - 1 : match.end_line]
         hits.append(
             SearchHit(
                 hit_id=hit_id,
                 file=leader.file,
-                line=line,
-                end_line=end_line,
-                name=match.get("name") or "",
+                line=match.line,
+                end_line=match.end_line,
+                name=match.name,
                 qualified_name="",
                 unit_type="",
                 language=leader.language,
-                score=float(match.get("score") or 0.0),
+                score=match.score,
                 snippet="\n".join(body[:snippet_lines]) if body else None,
                 code="\n".join(body) if include_code and body else None,
-                location_verified=trusted and 1 <= line <= end_line <= len(file_lines),
+                location_verified=trusted and match.end_line <= len(file_lines),
             )
         )
     return hits
@@ -468,21 +463,22 @@ def _file_hits_from_raw(raw_hits: list[RawHit], base_path: Path | None) -> list[
     `SearchHit`, `hit_id` string, snippet or `locate_unit` call is built.
     Hits arrive best-score-first (R05), so the first hit seen for a file sets
     `best_score`; `top_units` is capped at 5, same as the previous fold.
-    A raw hit carrying colgrep 1.8's `matches` counts each matched unit, as
-    `search` lists them (`hits_from_raw`): the leader's own name, then the
-    other units' names.
+    A file counts each unit colgrep matched in it, as `search` lists them,
+    through the one normaliser `unit_matches`; units without a name (documents,
+    raw code) count but are not listed in `top_units`.
     """
     by_file: dict[str, FileHit] = {}
     for raw in raw_hits:
         unit = raw.get("unit") or {}
         file = _resolve_hit_file(unit.get("file") or "", base_path)
         score = float(raw.get("score") or 0.0)
-        names = [unit.get("name") or ""] + [m.get("name") or "" for m in (raw.get("matches") or [])[1:]]
+        matches = unit_matches(raw)
+        names = [m.name for m in matches if m.name]
         existing = by_file.get(file)
         if existing is None:
-            by_file[file] = FileHit(file=file, best_score=score, hits=len(names), top_units=names[:5])
+            by_file[file] = FileHit(file=file, best_score=score, hits=len(matches), top_units=names[:5])
         else:
-            existing.hits += len(names)
+            existing.hits += len(matches)
             existing.top_units.extend(names[: 5 - len(existing.top_units)])
     return list(by_file.values())
 
