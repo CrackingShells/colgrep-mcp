@@ -82,13 +82,32 @@ def locate_unit(file_text: str, code: str, reported_line: int, reported_end: int
     return (reported_line, reported_end, False)
 
 
+def rstripped(lines: list[str]) -> list[str]:
+    """`lines` with trailing whitespace dropped from each: the one normalisation
+    every comparison of a unit's `code` against file lines goes through (F4)."""
+    return [line.rstrip() for line in lines]
+
+
+def span_holds(line: int, end_line: int, span_lines: list[str], code_lines: list[str]) -> bool:
+    """Whether the file's `span_lines`, read at `[line, end_line]`, are exactly `code_lines`.
+
+    The cheap check behind `locate_unit`'s answer: colgrep's own range (since
+    1.8.4, the unit's own, not the file's widened one) is right when it holds
+    as many lines as `code` and every one matches, trailing whitespace
+    ignored like `_full_matches`. A range that is shorter than the file at
+    that point (`span_lines` cut by EOF), or a different length from `code`,
+    never holds, so a stale index or a pre-1.8.4 binary falls through to
+    `locate_unit` over the whole text. A whitespace-only edit still holds.
+    """
+    n = len(code_lines)
+    return (
+        n > 0 and end_line - line + 1 == n and len(span_lines) == n and rstripped(span_lines) == rstripped(code_lines)
+    )
+
+
 def _full_matches(candidates: list[int], file_lines: list[str], code_lines: list[str]) -> list[int]:
     """Candidates whose full block matches `code_lines`, trailing whitespace
     ignored per line (F4: a whitespace-only difference on a non-first line
     must not exclude the otherwise-correct occurrence)."""
-
-    def _norm(lines: list[str]) -> list[str]:
-        return [line.rstrip() for line in lines]
-
-    target = _norm(code_lines)
-    return [c for c in candidates if _norm(file_lines[c - 1 : c - 1 + len(code_lines)]) == target]
+    target = rstripped(code_lines)
+    return [c for c in candidates if rstripped(file_lines[c - 1 : c - 1 + len(code_lines)]) == target]

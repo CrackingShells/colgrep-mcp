@@ -81,6 +81,10 @@ class UnitMatch(NamedTuple):
     name: str
     score: float
 
+    @property
+    def span(self) -> tuple[int, int]:
+        return (self.line, self.end_line)
+
 
 def _wire_match(entry: Any) -> UnitMatch | None:
     """A `matches` entry as a `UnitMatch`, or `None` when it is malformed or

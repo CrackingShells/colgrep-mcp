@@ -6,6 +6,7 @@ from __future__ import annotations
 from colgrep_mcp.adapter import unit_matches
 from colgrep_mcp.models import FileHit, FileResult, SearchHit, SearchResult
 from colgrep_mcp.tools_search import (
+    FileLines,
     _file_block,
     _files_header,
     _hit_block,
@@ -39,10 +40,9 @@ def test_hit_from_raw_locates_true_lines_when_file_readable(tmp_path):
     target.write_text("x = 1\n\ndef parse_config(path: str) -> dict:\n    return {}\n")
     raw = _raw_hit(file=str(target), line=1, end_line=1)  # reported values are wrong (R05 D1)
 
-    # `hit_from_raw` is pure/I/O-free (F11): the async caller (`_fill_file_cache`)
-    # is responsible for populating `file_cache` before this runs.
-    file_cache = {str(target): target.read_text()}
-    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache=file_cache)
+    # `hit_from_raw` is pure/I/O-free (F11): the async caller (`_read_units`)
+    # is responsible for reading the file before this runs.
+    hit = hit_from_raw(raw, unit_matches(raw)[0], 6, False, FileLines({}, target.read_text()))
 
     assert (hit.line, hit.end_line, hit.location_verified) == (3, 4, True)
     assert hit.hit_id == f"{target}:3-4"
@@ -51,21 +51,21 @@ def test_hit_from_raw_locates_true_lines_when_file_readable(tmp_path):
 def test_hit_from_raw_falls_back_when_file_unreadable():
     raw = _raw_hit(line=7, end_line=9)
 
-    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache={})
+    hit = hit_from_raw(raw, unit_matches(raw)[0], 6, False, FileLines({}))
 
     assert (hit.line, hit.end_line, hit.location_verified) == (7, 9, False)
     assert hit.hit_id == "/nonexistent/src/config.py:7-9"
 
 
-def test_hit_from_raw_never_touches_disk_itself(tmp_path):
-    """F11: `hit_from_raw` must trust `file_cache` as given, never opening
-    the file itself — proven here by pointing `file` at a path that does not
-    exist on disk while pre-populating the cache with real text for it."""
-    missing_path = tmp_path / "never-created.py"
-    raw = _raw_hit(file=str(missing_path), line=1, end_line=1)
+def test_hit_from_raw_verifies_by_span_without_touching_disk(tmp_path):
+    """F11: `hit_from_raw` trusts the `FileLines` it is given, never opening the
+    file itself — proven by pointing `file` at a path that does not exist while
+    handing it the lines at colgrep's own range. A trailing-space difference
+    between those lines and `code` still verifies."""
+    raw = _raw_hit(file=str(tmp_path / "never-created.py"), line=1, end_line=2)
+    read = FileLines({(1, 2): ["def parse_config(path: str) -> dict:  ", "    return {}"]})
 
-    file_cache = {str(missing_path): "def parse_config(path: str) -> dict:\n    return {}\n"}
-    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache=file_cache)
+    hit = hit_from_raw(raw, unit_matches(raw)[0], 6, False, read)
 
     assert (hit.line, hit.end_line, hit.location_verified) == (1, 2, True)
 
@@ -73,18 +73,18 @@ def test_hit_from_raw_never_touches_disk_itself(tmp_path):
 def test_hit_from_raw_snippet_truncated_and_code_gated():
     raw = _raw_hit(code="line1\nline2\nline3\nline4\n")
 
-    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=2, include_code=False, file_cache={})
+    hit = hit_from_raw(raw, unit_matches(raw)[0], 2, False, FileLines({}))
     assert hit.snippet == "line1\nline2"
     assert hit.code is None
 
-    hit_full = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=2, include_code=True, file_cache={})
+    hit_full = hit_from_raw(raw, unit_matches(raw)[0], 2, True, FileLines({}))
     assert hit_full.code == "line1\nline2\nline3\nline4\n"
 
 
 def test_hit_from_raw_tolerant_of_missing_optional_fields():
     raw = {"unit": {"file": "/nonexistent/a.py"}, "score": 0.5}
 
-    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache={})
+    hit = hit_from_raw(raw, unit_matches(raw)[0], 6, False, FileLines({}))
 
     assert hit.name == ""
     assert hit.signature is None

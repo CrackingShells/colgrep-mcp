@@ -14,8 +14,9 @@ import asyncio
 import itertools
 import re
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import AsyncExitStack
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, NamedTuple
 
@@ -26,7 +27,7 @@ from pydantic import Field
 
 from .adapter import RawHit, SearchRequest, UnitMatch, unit_matches
 from .errors import Code, note, tool_error, translate_adapter_errors
-from .locate import locate_unit
+from .locate import locate_unit, span_holds
 from .locks import project_lock
 from .logging_utils import safe_log
 from .models import ExpandedUnit, ExpandResult, FileHit, FileResult, SearchHit, SearchResult
@@ -57,29 +58,47 @@ def _resolve_hit_file(file: str, base_path: Path | None) -> str:
     return str(base_path / file)
 
 
+Span = tuple[int, int]
+
+
+class FileLines(NamedTuple):
+    """What reading one hit file produced, for the pure builders (R05 F11).
+
+    `spans` holds the lines at each range a hit will show or verify, read in
+    one pass and still ending in their newline (`_read_spans`); `text` is the
+    whole file, read only when a unit's own range did not hold its code
+    (`span_holds`), so `locate_unit` can search for it. An unreadable file is
+    `FileLines({})`.
+    """
+
+    spans: dict[Span, list[str]]
+    text: str | None = None
+
+
 def hit_from_raw(
     raw: RawHit,
     leader: UnitMatch,
     snippet_lines: int,
     include_code: bool,
-    file_cache: dict[str, str],
+    read: FileLines,
     base_path: Path | None = None,
 ) -> SearchHit:
     """Build the `SearchHit` of one raw colgrep result's best unit (`{"unit": {...}, "score": ...}`).
 
     `leader` is that unit's own `UnitMatch` (`adapter.unit_matches(raw)[0]`):
     `unit.line..end_line` is widened over every matched unit of the file, so
-    only `leader`'s range is the unit's, and the one to fall back to. Re-derives
-    `line`/`end_line` via `locate_unit` (R05 D1: colgrep's reported values are
-    frequently wrong), starting from that range, so `hit_id` is built from
-    trustworthy locations and an unlocatable unit keeps its own range instead
-    of one overlapping its siblings. Pure and I/O-free: `file_cache` must
-    already hold every hit file's text (or `""` for an unreadable one) — the
-    async caller fills it via `_fill_file_cache` (off the event loop, R05 F11)
-    before this runs, so an unreadable file degrades to an empty text rather
-    than raise, which makes `locate_unit` fall back with `verified=False`.
-    `base_path` (the first path the search ran against) resolves a relative
-    `unit.file` to absolute (F13) before `hit_id` is built.
+    only `leader`'s range is the unit's, and the one to fall back to. The
+    range is verified against the file (R05 D1: colgrep's reported values were
+    frequently wrong before 1.8.4): when the lines at it are exactly `code`,
+    trailing whitespace ignored, it is verified as it stands, so a
+    whitespace-only edit since indexing still verifies. Otherwise (an edited
+    file, an older colgrep) `locate_unit` searches `read.text` for the code,
+    and an unlocatable unit keeps its own range with `verified=False`, not one
+    overlapping its siblings. Pure and I/O-free: `read` was filled off the
+    event loop by `_read_units`, and an unreadable file degrades to the
+    unverified fallback rather than raise. `base_path` (the first path the
+    search ran against) resolves a relative `unit.file` to absolute (F13)
+    before `hit_id` is built.
 
     `name` is colgrep's display name for the unit, `Class.method` included;
     `qualified_name`, `unit_type` and `signature` come from `unit`.
@@ -91,10 +110,16 @@ def hit_from_raw(
     unit = raw.get("unit") or {}
     file = _resolve_hit_file(unit.get("file") or "", base_path)
     code = unit.get("code") or ""
-
-    line, end_line, verified = locate_unit(file_cache.get(file, ""), code, leader.line, leader.end_line)
-
     code_lines = code.splitlines()
+
+    held = read.spans.get(leader.span)
+    if held is not None and span_holds(leader.line, leader.end_line, held, code_lines):
+        line, end_line, verified = leader.line, leader.end_line, True
+    elif read.text is not None:
+        line, end_line, verified = locate_unit(read.text, code, leader.line, leader.end_line)
+    else:
+        line, end_line, verified = leader.line, leader.end_line, False
+
     snippet = "\n".join(code_lines[:snippet_lines]) if code_lines else None
 
     return SearchHit(
@@ -153,72 +178,136 @@ def _sibling_hit(
         unit_type="",
         language=leader.language,
         score=match.score,
-        snippet="\n".join(body[:snippet_lines]) if trusted and body else None,
-        code="\n".join(body) if trusted and include_code else None,
+        snippet=_joined(body[:snippet_lines]) if trusted and body else None,
+        code=_joined(body) if trusted and include_code else None,
         location_verified=trusted,
     )
 
 
 def hits_from_raw(
     raw: RawHit,
+    matches: list[UnitMatch],
+    indexes: list[int],
     snippet_lines: int,
     include_code: bool,
-    file_cache: dict[str, str],
+    read: FileLines,
     base_path: Path | None = None,
-) -> list[SearchHit]:
-    """Build one `SearchHit` per unit colgrep matched in one raw result's file.
+) -> dict[int, SearchHit]:
+    """Build the hits of the `indexes` units of `matches` (`adapter.unit_matches(raw)`), by index.
 
     colgrep collapses its results to one per file (`collapse_by_file`,
     `colgrep/src/index/mod.rs`) and since 1.8.4 `unit_matches` lists each
     matched unit's own range and name. Showing only the best hid an answer
     sitting in a file's second-best markdown section, so the agent read the
-    whole file instead (OBS-M). The best unit goes through `hit_from_raw`; the
-    others through `_sibling_hit`, their text read from `file_cache`, already
-    filled for the leader: no further I/O. Output without `matches` (colgrep
-    1.6, or a single matched unit) yields that one hit.
+    whole file instead (OBS-M). The best unit (index 0) goes through
+    `hit_from_raw`; the others through `_sibling_hit` over the lines
+    `_read_units` already read for their ranges: no further I/O. The best unit
+    is always located, whichever units `indexes` selects, since the others
+    are trusted only through it. Output without `matches` (colgrep 1.6, or a
+    single matched unit) is that one hit.
     """
-    matches = unit_matches(raw)
-    leader = hit_from_raw(raw, matches[0], snippet_lines, include_code, file_cache, base_path=base_path)
-    if len(matches) < 2:
-        return [leader]
+    leader = hit_from_raw(raw, matches[0], snippet_lines, include_code, read, base_path=base_path)
+    leader_exact = leader.location_verified and (leader.line, leader.end_line) == matches[0].span
+    return {
+        i: leader
+        if i == 0
+        else _sibling_hit(
+            leader, matches[i], read.spans.get(matches[i].span, []), leader_exact, snippet_lines, include_code
+        )
+        for i in indexes
+    }
 
-    file_lines = file_cache.get(leader.file, "").splitlines()
-    leader_exact = leader.location_verified and (leader.line, leader.end_line) == (matches[0].line, matches[0].end_line)
-    return [leader] + [
-        _sibling_hit(leader, m, file_lines[m.line - 1 : m.end_line], leader_exact, snippet_lines, include_code)
-        for m in matches[1:]
-    ]
 
+def _joined(lines: list[str]) -> str:
+    """The text of `lines` as `_read_spans` returns them, minus the final newline.
 
-async def _read_file_off_loop(file: str) -> str:
-    """`Path(file).read_text(errors="replace")`, run in a worker thread.
-
-    A hit's file can be arbitrarily large; reading it directly on the event
-    loop would block every other in-flight request for as long as the read
-    takes (F11). An unreadable file degrades to `""` (the same fallback
-    `hit_from_raw` used to produce on `OSError`), not an exception.
+    Text mode already folds `\\r\\n` and `\\r` into `\\n`, so this is what
+    `"\\n".join` of the lines stripped one by one gives, without the Python
+    loop. It breaks lines on `\\n` alone, like colgrep and unlike
+    `str.splitlines`, which also breaks on form feeds and U+2028.
     """
+    text = "".join(lines)
+    return text[:-1] if text.endswith("\n") else text
+
+
+def _read_spans(file: str, spans: Iterable[Span]) -> dict[Span, list[str]]:
+    """Read the lines at each `(line, end_line)` span (1-indexed, inclusive) of `file`, in one pass.
+
+    A hit's file can be arbitrarily large, and `search` and `expand` show a few
+    spans of it: reading the whole file with `read_text` + `splitlines` does
+    I/O proportional to its size instead of to the spans asked for. Opening
+    the file and `itertools.islice`-ing its line iterator up to the largest
+    `end_line` reads (and decodes) that prefix once, however many spans share
+    it. The lines keep their `\\n` (`_joined` turns them back into text);
+    `errors="replace"` and the default text-mode encoding match
+    `Path.read_text(errors="replace")`; a span past EOF yields `[]`, and one
+    that crosses it, the lines up to EOF.
+    """
+    bounds = {span: (max(span[0] - 1, 0), max(span[1], span[0] - 1, 0)) for span in spans}
+    if not bounds:
+        return {}
+    with open(file, errors="replace") as f:
+        head = list(itertools.islice(f, max(end for _, end in bounds.values())))
+    return {span: head[start:end] for span, (start, end) in bounds.items()}
+
+
+@dataclass
+class _Wanted:
+    """What one hit file must give back: the ranges to read, and each result's
+    best unit whose range has to hold its code (`FileLines`)."""
+
+    spans: set[Span] = field(default_factory=set)
+    leaders: list[tuple[Span, list[str]]] = field(default_factory=list)
+
+
+def _read_file_lines(file: str, wanted: _Wanted) -> FileLines:
+    """Blocking half of `_read_units` for one file: its spans in one pass, then
+    the whole text, once, if any leader's range did not hold its code."""
     try:
-        return await asyncio.to_thread(Path(file).read_text, errors="replace")
+        spans = _read_spans(file, wanted.spans)
     except OSError:
-        return ""
+        return FileLines({})
+    for (line, end_line), code_lines in wanted.leaders:
+        if not span_holds(line, end_line, spans.get((line, end_line), []), code_lines):
+            try:
+                return FileLines(spans, Path(file).read_text(errors="replace"))
+            except OSError:
+                break
+    return FileLines(spans)
 
 
-async def _fill_file_cache(raw_hits: list[RawHit], file_cache: dict[str, str], base_path: Path | None = None) -> None:
-    """Read every distinct hit file referenced by `raw_hits` into `file_cache`,
-    at most once per file, concurrently and off the event loop (F11).
+async def _read_units(plan: dict[str, _Wanted]) -> dict[str, FileLines]:
+    """Read what `plan` asks of every hit file, at most once per file, concurrently
+    and off the event loop (F11), so the pure builders never touch the disk."""
+    files = list(plan)
+    reads = await asyncio.gather(*(asyncio.to_thread(_read_file_lines, file, plan[file]) for file in files))
+    return dict(zip(files, reads, strict=True))
 
-    Keyed the same way `hit_from_raw` looks values up: `base_path` resolves a
-    relative `unit.file` to absolute first (F13), so a relative and an
-    equivalent already-absolute reference to the same file share one cache
-    entry and one read.
+
+def _plan_reads(
+    raws: list[RawHit], files: list[str], matches: list[list[UnitMatch]], keep: list[tuple[int, int]]
+) -> dict[str, _Wanted]:
+    """What `keep` (surviving `(result, unit)` pairs) needs read from each file.
+
+    Every kept result's best unit is checked, since the rest of its file is
+    trusted only through it, but its range is read only when it is as long as
+    its code: a stale range or an older colgrep's widened one cannot hold it
+    and goes straight to the whole-file search, so reading it would be waste.
+    The other kept units each need their own range.
     """
-    files = {_resolve_hit_file((raw.get("unit") or {}).get("file") or "", base_path) for raw in raw_hits}
-    missing = [f for f in files if f not in file_cache]
-    if not missing:
-        return
-    texts = await asyncio.gather(*(_read_file_off_loop(f) for f in missing))
-    file_cache.update(zip(missing, texts, strict=True))
+    plan: dict[str, _Wanted] = {}
+    for ri in {ri for ri, _ in keep}:
+        lead = matches[ri][0]
+        code_lines = ((raws[ri].get("unit") or {}).get("code") or "").splitlines()
+        wanted = plan.setdefault(files[ri], _Wanted())
+        if code_lines:
+            wanted.leaders.append((lead.span, code_lines))
+            if lead.end_line - lead.line + 1 == len(code_lines):
+                wanted.spans.add((lead.line, lead.end_line))
+    for ri, mi in keep:
+        if mi:
+            plan[files[ri]].spans.add(matches[ri][mi].span)
+    return plan
 
 
 def _search_header(result: SearchResult) -> str:
@@ -517,15 +606,19 @@ async def _do_search(
     snippet_lines: int,
     include_code: bool,
 ) -> SearchResult:
-    """`search`'s body: run the adapter, then convert every raw hit into one
-    `SearchHit` per matched unit (locate, snippet, `hit_id`) via
-    `hits_from_raw`.
+    """`search`'s body: run the adapter, rank every matched unit, and build only the `limit` best.
 
-    Units are ranked by score across files and `limit` caps units, not
-    files. colgrep's `-k limit` returns the top `limit` files by their best
-    unit, and every unit outside them scores at most the last file's best,
-    so those files already hold the top `limit` units; the cut below drops
-    the rest and sets `truncated`.
+    Units are ranked by score across files and `limit` caps units, not files.
+    colgrep's `-k limit` returns the top `limit` files by their best unit,
+    and every unit outside them scores at most the last file's best, so those
+    files already hold the top `limit` units. The stable sort over
+    `unit_matches` lists (score, then colgrep's result order, then unit
+    order) and the cut run before anything is read or built, so the work is
+    proportional to the units returned, not the units colgrep sent; `truncated`
+    is set when the cut dropped any. Each file's list is best first, so its
+    survivors are a prefix and its best unit is among them. `_plan_reads` then
+    names the lines the survivors need, `_read_units` reads them off the loop,
+    and `hits_from_raw` builds the hits.
 
     `find_files` no longer routes through here (R01 §C6): it calls
     `_run_adapter_search` directly and folds raw hits straight into
@@ -554,17 +647,23 @@ async def _do_search(
     # (not expected from colgrep, but not guaranteed absent either) resolves
     # against.
     base_path = outcome.resolved[0]
-    file_cache: dict[str, str] = {}
-    await _fill_file_cache(outcome.raw_hits, file_cache, base_path=base_path)
-    hits = [
-        hit
-        for raw in outcome.raw_hits
-        for hit in hits_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path)
-    ]
-    hits.sort(key=lambda hit: hit.score, reverse=True)  # stable: colgrep's order breaks ties
-    limited = limit is not None and len(hits) > limit
-    if limited:
-        hits = hits[:limit]
+    raws = outcome.raw_hits
+    matches = [unit_matches(raw) for raw in raws]
+    files = [_resolve_hit_file((raw.get("unit") or {}).get("file") or "", base_path) for raw in raws]
+    ranked = [(ri, mi) for ri, units in enumerate(matches) for mi in range(len(units))]
+    ranked.sort(key=lambda unit: -matches[unit[0]][unit[1]].score)  # stable: colgrep's order breaks ties
+    limited = limit is not None and len(ranked) > limit
+    keep = ranked[:limit] if limited else ranked
+
+    reads = await _read_units(_plan_reads(raws, files, matches, keep))
+    indexes: dict[int, list[int]] = {}
+    for ri, mi in keep:
+        indexes.setdefault(ri, []).append(mi)
+    built = {
+        ri: hits_from_raw(raws[ri], matches[ri], mis, snippet_lines, include_code, reads[files[ri]], base_path)
+        for ri, mis in indexes.items()
+    }
+    hits = [built[ri][mi] for ri, mi in keep]
 
     notes: list[str] = []
     if not hits:
@@ -766,34 +865,6 @@ async def find_files(
     )
 
 
-def _strip_line_ending(line: str) -> str:
-    """Remove one trailing line terminator, exactly as `str.splitlines()` would per line."""
-    if line.endswith("\r\n"):
-        return line[:-2]
-    if line.endswith("\n") or line.endswith("\r"):
-        return line[:-1]
-    return line
-
-
-def _read_span(file: str, line: int, end_line: int) -> list[str]:
-    """Read only lines `[line, end_line]` (1-indexed, inclusive) of `file`.
-
-    `expand` returns at most `max_lines` of a hit whose file can be
-    arbitrarily large; reading the whole file with `read_text` +
-    `splitlines` (the old approach) does I/O proportional to the file's
-    size instead of the span actually requested. Opening the file and
-    `itertools.islice`-ing its line iterator reads (and decodes) only the
-    requested span. `errors="replace"` and the default text-mode encoding
-    match `Path.read_text(errors="replace")`; a `line` past EOF yields `[]`,
-    same as the old `lines[start_idx:end_idx]` slicing.
-    """
-    start_idx = max(line - 1, 0)
-    end_idx = max(end_line, start_idx)
-    with open(file, errors="replace") as f:
-        selected = list(itertools.islice(f, start_idx, end_idx))
-    return [_strip_line_ending(raw_line) for raw_line in selected]
-
-
 async def expand(
     hit_ids: Annotated[
         list[str], Field(description="hit_id values from a search/find_files result, e.g. '/repo/a.py:10-42'.")
@@ -830,7 +901,7 @@ async def expand(
         try:
             # Off the event loop (F11): a hit's file can be arbitrarily
             # large, and this handler otherwise never awaits.
-            selected = await asyncio.to_thread(_read_span, file, line, end_line)
+            selected = (await asyncio.to_thread(_read_spans, file, [(line, end_line)]))[(line, end_line)]
         except OSError as exc:
             units.append(
                 ExpandedUnit(
@@ -849,7 +920,7 @@ async def expand(
                 file=file,
                 line=line,
                 end_line=end_line,
-                code="\n".join(selected),
+                code=_joined(selected),
                 truncated=was_truncated,
             )
         )

@@ -19,7 +19,7 @@ from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.locks import project_lock
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
-from colgrep_mcp.tools_search import _fill_file_cache
+from colgrep_mcp.tools_search import _read_units, _Wanted
 
 _FAKE_RAW_HIT = {
     "unit": {
@@ -314,17 +314,17 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
 
 async def test_find_files_does_not_read_hit_files(settings_env, monkeypatch):
     """R01 §C5: `find_files` never exposes `line`/`hit_id`, so `_do_search`
-    must call it with `locate=False` and skip `_fill_file_cache` entirely — that
-    used to cost up to 300 file reads (plus a `locate_unit` pass each) per call
-    for output nothing downstream reads."""
+    must skip `_read_units` entirely — that used to cost up to 300 file reads
+    (plus a `locate_unit` pass each) per call for output nothing downstream
+    reads."""
     calls: list[None] = []
-    real_fill_file_cache = tools_search._fill_file_cache
+    real_read_units = tools_search._read_units
 
-    async def spy(*args: object, **kwargs: object) -> None:
+    async def spy(*args: object, **kwargs: object) -> dict:
         calls.append(None)
-        return await real_fill_file_cache(*args, **kwargs)
+        return await real_read_units(*args, **kwargs)
 
-    monkeypatch.setattr(tools_search, "_fill_file_cache", spy)
+    monkeypatch.setattr(tools_search, "_read_units", spy)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("find_files", {"query": "config parsing"})
@@ -357,21 +357,21 @@ async def test_find_files_never_builds_search_hits(settings_env, monkeypatch):
 # --- off-loop file I/O (F11) --------------------------------------------
 
 
-def _spy_on_read_text(monkeypatch) -> list[int]:
-    """Record the thread identity `Path.read_text` actually runs on."""
-    thread_ids: list[int] = []
+def _spy_on_read_text(monkeypatch) -> list[Path]:
+    """Record every `Path.read_text` call: a whole-file read."""
+    reads: list[Path] = []
     real_read_text = Path.read_text
 
     def spy(self: Path, *args: object, **kwargs: object) -> str:
-        thread_ids.append(threading.get_ident())
+        reads.append(self)
         return real_read_text(self, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", spy)
-    return thread_ids
+    return reads
 
 
 def _spy_on_open(monkeypatch) -> list[int]:
-    """Record the thread identity the builtin `open` (what `_read_span` uses) runs on."""
+    """Record the thread identity the builtin `open` (what `_read_spans` uses) runs on."""
     thread_ids: list[int] = []
     real_open = builtins.open
 
@@ -385,7 +385,8 @@ def _spy_on_open(monkeypatch) -> list[int]:
 
 async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
     """F11: a hit's file is read via `asyncio.to_thread`, not directly on the
-    event loop thread that is also running the rest of the server."""
+    event loop thread that is also running the rest of the server. With colgrep's
+    own range exact, the one span read is the whole of it (`open`, as `expand`)."""
     target = tmp_path / "real_source.py"
     target.write_text("def real_func():\n    return 42\n")
 
@@ -396,7 +397,7 @@ async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path,
                 "qualified_name": "real_source.py::real_func",
                 "file": str(target),
                 "line": 1,
-                "end_line": 1,
+                "end_line": 2,
                 "language": "python",
                 "unit_type": "function",
                 "signature": "def real_func()",
@@ -410,7 +411,7 @@ async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path,
     monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
 
     main_thread_id = threading.get_ident()
-    read_thread_ids = _spy_on_read_text(monkeypatch)
+    read_thread_ids = _spy_on_open(monkeypatch)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("search", {"query": "real func"})
@@ -421,41 +422,81 @@ async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path,
     assert all(tid != main_thread_id for tid in read_thread_ids)
 
 
-async def test_fill_file_cache_reads_each_distinct_file_at_most_once(tmp_path, monkeypatch):
-    """F11: the caching behaviour that used to live inside `hit_from_raw`
-    (read each file at most once per call) now belongs to `_fill_file_cache`,
-    the async helper that populates `file_cache` before `hit_from_raw` runs."""
+async def test_read_units_reads_each_distinct_file_once_for_all_its_spans(tmp_path, monkeypatch):
+    """F11: `_read_units` is the one async step before the pure builders: a file
+    is opened once however many spans (and leaders) of it are wanted."""
     target = tmp_path / "config.py"
-    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n")
+    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n\nclass Settings:\n    k: int = 15\n")
+    other = tmp_path / "other.py"
+    other.write_text("x = 1\n")
 
-    read_calls: list[Path] = []
-    real_read_text = Path.read_text
+    opened: list[str] = []
+    real_open = builtins.open
 
-    def spy(self: Path, *args: object, **kwargs: object) -> str:
-        read_calls.append(self)
-        return real_read_text(self, *args, **kwargs)
+    def spy(file: object, *args: object, **kwargs: object):
+        opened.append(str(file))
+        return real_open(file, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "read_text", spy)
+    monkeypatch.setattr(builtins, "open", spy)
 
-    raw_hits = [
-        {"unit": {"file": str(target)}, "score": 1.0},
-        {"unit": {"file": str(target)}, "score": 0.5},  # same file, second hit
-    ]
-    file_cache: dict[str, str] = {}
-    await _fill_file_cache(raw_hits, file_cache)
+    wanted = _Wanted(
+        spans={(1, 2), (4, 5)}, leaders=[((1, 2), ["def parse_config(path: str) -> dict:", "    return {}"])]
+    )
+    reads = await _read_units({str(target): wanted, str(other): _Wanted(spans={(1, 1)})})
 
-    assert file_cache[str(target)] == "def parse_config(path: str) -> dict:\n    return {}\n"
-    assert len(read_calls) == 1  # only one actual read for two hits on the same file
+    assert opened.count(str(target)) == 1
+    assert reads[str(target)].spans == {
+        (1, 2): ["def parse_config(path: str) -> dict:\n", "    return {}\n"],
+        (4, 5): ["class Settings:\n", "    k: int = 15\n"],
+    }
+    assert reads[str(target)].text is None  # the leader held, so no whole-file read
+    assert reads[str(other)].spans == {(1, 1): ["x = 1\n"]}
 
-    # Mutate the cache in place: a second call must trust it, not re-read.
-    file_cache[str(target)] = "mutated"
-    await _fill_file_cache(raw_hits, file_cache)
-    assert len(read_calls) == 1
-    assert file_cache[str(target)] == "mutated"
+
+async def test_search_verifies_a_leader_by_its_span_without_reading_the_whole_file(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+    whole_reads = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    assert all(h["location_verified"] for h in r.structured_content["hits"])
+    assert whole_reads == []
+
+
+async def test_search_reads_an_edited_file_whole_once_to_relocate_its_leader(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text="new\nlines\n" + _NOTES)
+    whole_reads = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    assert f"{notes}:5-6" in [h["hit_id"] for h in r.structured_content["hits"]]
+    assert whole_reads == [notes]
+
+
+async def test_search_cut_reads_and_builds_only_the_surviving_units(settings_env, monkeypatch, tmp_path):
+    notes, tools = _matches_corpus(tmp_path, monkeypatch)
+    spans_read: list[set] = []
+    real_read_spans = tools_search._read_spans
+
+    def spy(file: str, spans):
+        spans = list(spans)
+        spans_read.append({(Path(file).name, *s) for s in spans})
+        return real_read_spans(file, spans)
+
+    monkeypatch.setattr(tools_search, "_read_spans", spy)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "limit": 2})
+
+    assert [h["hit_id"] for h in r.structured_content["hits"]] == [f"{notes}:3-4", f"{tools}:1-2"]
+    # Only the two survivors' ranges were read: the cut units' (6-7, 9-10) never were.
+    assert sorted(span for group in spans_read for span in group) == [("notes.md", 3, 4), ("tools.py", 1, 2)]
 
 
 async def test_expand_reads_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
-    """F11, mirrored for `expand`. `expand` reads its span via `_read_span`'s
+    """F11, mirrored for `expand`. `expand` reads its span via `_read_spans`'s
     builtin `open`, not `Path.read_text`, so the spy target follows."""
     target = tmp_path / "code.py"
     target.write_text("x = 1\ny = 2\ndef f():\n    return 1\nz = 3\n")
@@ -491,6 +532,16 @@ async def test_expand_happy_path_reads_exact_span(settings_env, tmp_path):
     assert unit.code == "def f():\n    return 1"
     assert unit.truncated is False
     assert f"```{hit_id}" in r.content[0].text
+
+
+async def test_expand_returns_lines_without_their_terminators(settings_env, tmp_path):
+    target = tmp_path / "crlf.txt"
+    target.write_bytes(b"a\r\n\r\nb\r\nlast")
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": [f"{target}:1-2", f"{target}:3-9"]})
+
+    assert [u["code"] for u in r.structured_content["units"]] == ["a\n", "b\nlast"]
 
 
 async def test_expand_truncates_to_max_lines(settings_env, tmp_path):
