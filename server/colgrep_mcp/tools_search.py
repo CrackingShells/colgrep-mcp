@@ -251,6 +251,15 @@ def _read_spans(file: str, spans: Iterable[Span]) -> dict[Span, list[str]]:
     return {span: head[start:end] for span, (start, end) in bounds.items()}
 
 
+async def _read_spans_or_error(file: str, spans: Iterable[Span]) -> dict[Span, list[str]] | OSError:
+    """`_read_spans` in a worker thread, an unreadable file returned rather than raised so
+    `expand` can attach it to each of that file's ids."""
+    try:
+        return await asyncio.to_thread(_read_spans, file, spans)
+    except OSError as exc:
+        return exc
+
+
 @dataclass
 class _Wanted:
     """What one hit file must give back: the ranges to read, and each result's
@@ -881,9 +890,20 @@ async def expand(
     """
     # No adapter/lock involved: expand reads the filesystem directly, so
     # `ctx` (required for MCPServer's context injection) goes unused here.
+    parsed = [(hit_id, _HIT_ID_RE.match(hit_id)) for hit_id in hit_ids]
+    wanted: dict[str, set[Span]] = {}
+    for _, match in parsed:
+        if match:
+            wanted.setdefault(match.group(1), set()).add((int(match.group(2)), int(match.group(3))))
+    # One pass per file however many of its ids were given (several units of one
+    # file is the common case, since `search` yields one hit per matched unit),
+    # off the event loop (F11): a hit's file can be arbitrarily large, and this
+    # handler otherwise never awaits.
+    files = list(wanted)
+    reads = dict(zip(files, await asyncio.gather(*(_read_spans_or_error(f, wanted[f]) for f in files)), strict=True))
+
     units: list[ExpandedUnit] = []
-    for hit_id in hit_ids:
-        match = _HIT_ID_RE.match(hit_id)
+    for hit_id, match in parsed:
         if not match:
             units.append(
                 ExpandedUnit(
@@ -896,20 +916,17 @@ async def expand(
             )
             continue
 
-        file, line_s, end_s = match.group(1), match.group(2), match.group(3)
-        line, end_line = int(line_s), int(end_s)
-        try:
-            # Off the event loop (F11): a hit's file can be arbitrarily
-            # large, and this handler otherwise never awaits.
-            selected = (await asyncio.to_thread(_read_spans, file, [(line, end_line)]))[(line, end_line)]
-        except OSError as exc:
+        file, line, end_line = match.group(1), int(match.group(2)), int(match.group(3))
+        read = reads[file]
+        if isinstance(read, OSError):
             units.append(
                 ExpandedUnit(
-                    hit_id=hit_id, file=file, line=line, end_line=end_line, error=f"could not read {file}: {exc}"
+                    hit_id=hit_id, file=file, line=line, end_line=end_line, error=f"could not read {file}: {read}"
                 )
             )
             continue
 
+        selected = read[(line, end_line)]
         was_truncated = len(selected) > max_lines
         if was_truncated:
             selected = selected[:max_lines]

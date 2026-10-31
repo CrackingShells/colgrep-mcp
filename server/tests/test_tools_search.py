@@ -534,6 +534,51 @@ async def test_expand_happy_path_reads_exact_span(settings_env, tmp_path):
     assert f"```{hit_id}" in r.content[0].text
 
 
+async def test_expand_reads_a_file_once_for_all_its_ids_and_answers_in_input_order(settings_env, tmp_path, monkeypatch):
+    target = tmp_path / "ten.txt"
+    target.write_text("".join(f"line {n}\n" for n in range(1, 11)))
+    opened: list[str] = []
+    real_open = builtins.open
+
+    def spy(file: object, *args: object, **kwargs: object):
+        opened.append(str(file))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", spy)
+
+    # Out of order, one span overlapping another, one not touching the rest.
+    ids = [f"{target}:6-8", f"{target}:2-3", f"{target}:7-9", f"{target}:10-10"]
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": ids})
+
+    units = r.structured_content["units"]
+    assert [u["hit_id"] for u in units] == ids
+    assert [u["code"] for u in units] == [
+        "line 6\nline 7\nline 8",
+        "line 2\nline 3",
+        "line 7\nline 8\nline 9",
+        "line 10",
+    ]
+    assert opened.count(str(target)) == 1
+
+
+async def test_expand_errors_stay_per_id_when_ids_share_a_file(settings_env, tmp_path):
+    real = tmp_path / "real.txt"
+    real.write_text("only\n")
+    missing = tmp_path / "missing.txt"
+    ids = [f"{missing}:1-2", "not a hit id", f"{missing}:3-4", f"{real}:1-1"]
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": ids})
+
+    units = r.structured_content["units"]
+    assert [u["hit_id"] for u in units] == ids
+    assert units[0]["error"].startswith(f"could not read {missing}")
+    assert units[2]["error"].startswith(f"could not read {missing}")
+    assert units[1]["error"].startswith(f"[{Code.BAD_HIT_ID}]")
+    assert (units[3]["code"], units[3]["error"]) == ("only", None)
+
+
 async def test_expand_returns_lines_without_their_terminators(settings_env, tmp_path):
     target = tmp_path / "crlf.txt"
     target.write_bytes(b"a\r\n\r\nb\r\nlast")
