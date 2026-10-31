@@ -44,9 +44,7 @@ Knowledge-acquisition loop, not a one-shot lookup: run one broad `search`
 listing; if the first pass didn't land on the real implementation, run one
 or two narrower hybrid searches adding `pattern` for an identifier you now
 know; `expand` at most a handful of the hits that actually answer the
-question — one file can list several hits (each matched function or
-markdown section is its own), so expand the one that answers rather than
-reading the file whole; answer citing `file:line` from hits whose `location_verified` is
+question; answer citing `file:line` from hits whose `location_verified` is
 true (cite the file only when it is false). Never shell grep instead of the
 first broad search.
 

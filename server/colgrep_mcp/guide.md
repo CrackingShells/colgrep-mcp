@@ -7,16 +7,10 @@ new session; skim it again if a result looks wrong.
 
 colgrep indexes **code units**, not lines: functions, methods, classes,
 markdown sections, and plain-text blocks. A hit is one unit, never an
-arbitrary line range you picked. 18+ languages plus Markdown and plain text.
+arbitrary line range you picked; a file yields one hit per unit that
+matched, ranked with every other file's. 18+ languages plus Markdown and plain text.
 A unit's `code`/`snippet` is that unit's full extracted body — expect
 complete functions and classes, not fragments.
-
-colgrep groups its results by file; `search` lists every unit that matched
-in a file as a hit of its own, ranked by score with the hits of every other
-file. One file can therefore show several hits — three sections of one note,
-two functions of one module — and the answer may sit in a file's second or
-third hit, not its first. Those later hits carry `name`, `score` and a
-snippet, but no `unit_type` or `signature` (colgrep reports none for them).
 
 Search is **hybrid** by default: keyword match (FTS5 full-text) and semantic
 match (ColBERT late-interaction embeddings) are fused into one ranked list.
@@ -85,8 +79,7 @@ Example: `query="where retries are scheduled", pattern="backoff"`.
 
 ## Result size
 
-`limit` caps the number of ranked **units** returned across all files, not
-lines or files:
+`limit` caps the number of ranked **units** returned, not lines:
 
 - Omit `limit` (`None`) **together with `pattern`** for an exhaustive
   result set — every unit matching the regex is returned, nothing is
@@ -118,22 +111,22 @@ what `expand(hit_ids=[...])` expects. Copy `hit_id`s straight from a result
 into `expand`.
 
 `location_verified` tells you whether those line numbers are trustworthy.
-colgrep 1.6 itself reports wrong `line`/`end_line` for most units, so the
-server re-locates each unit by matching its source text in the file. `true`
-means the lines were confirmed against the file on disk; `false` means the
-file changed since indexing (or the match was ambiguous) and the numbers
-are colgrep's unverified values — cite the file, not the line, and `expand`
-to see what is really there. A file's later hits have no source text to
-match; they are `true` when that file's first hit was located exactly where
-colgrep put it.
+The server checks a file's best unit against its source text in the file,
+and trusts the file's other units when that unit sits exactly where colgrep
+put it and the file is unchanged since this search refreshed the index
+(never with `skip_index_update=true`). `true` means the lines were
+confirmed against the file on disk; `false` means the file changed since
+indexing (or the match was ambiguous) — cite the file, not the line, and
+`expand` to see what is really there. Such a unit, unless it is its file's
+best, carries no snippet.
 
 `score` is **relative within one query's result set only**. Do not compare
 scores across two different `search` calls, and do not treat a score as a
 confidence percentage — it ranks candidates against each other, nothing
 more.
 
-A result carries `truncated=true` when `limit` cut matched units, or when
-the server's text budget dropped hits from the compact text listing. `structured_content`
+A result carries `truncated=true` when the server cut units past `limit`,
+or when its text budget dropped hits from the compact text listing. `structured_content`
 still carries every hit's metadata even when the text was cut; when you see
 `truncated=true` and need more, call `expand` on the `hit_id`s you have, or
 re-run with a larger or omitted `limit` rather than assuming those were the
