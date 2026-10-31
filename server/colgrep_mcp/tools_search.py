@@ -112,6 +112,75 @@ def hit_from_raw(
     )
 
 
+def hits_from_raw(
+    raw: RawHit,
+    snippet_lines: int,
+    include_code: bool,
+    file_cache: dict[str, str],
+    base_path: Path | None = None,
+) -> list[SearchHit]:
+    """Build one `SearchHit` per unit colgrep matched in one raw result's file.
+
+    colgrep collapses its results to one per file (`collapse_by_file`,
+    `colgrep/src/index/mod.rs`): `unit` is the best unit, with its range
+    widened over every matched unit of the file, and since 1.8 `matches`
+    lists each matched unit's own `{line, end_line, name, score}`, best
+    first, whenever there are two or more. Showing only the leader hid an
+    answer sitting in a file's second-best markdown section, so the agent
+    read the whole file instead (`__reports__/match_lines/`). The leader
+    goes through `hit_from_raw` unchanged; output without `matches`
+    (colgrep 1.6, or a single matched unit) yields that one hit.
+
+    The other units arrive without `code`, so `locate_unit` cannot check
+    them one by one. Their ranges are trusted (`location_verified`) only
+    when the leader was located exactly at its own `matches[0]` range,
+    which shows this file on disk still agrees with the index's line
+    numbers, and the range lies inside the file. Snippet and `code` come
+    from `file_cache`, already read for the leader: no further I/O. Such a
+    hit has no `qualified_name`, `unit_type` or `signature`, since colgrep
+    reports none for it.
+    """
+    leader = hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path)
+    matches = raw.get("matches") or []
+    if len(matches) < 2:
+        return [leader]
+
+    file_lines = file_cache.get(leader.file, "").splitlines()
+    first = matches[0]
+    trusted = leader.location_verified and (
+        int(first.get("line") or 0),
+        int(first.get("end_line") or 0),
+    ) == (leader.line, leader.end_line)
+
+    hits = [leader]
+    seen = {leader.hit_id}
+    for match in matches[1:]:
+        line = int(match.get("line") or 1)
+        end_line = int(match.get("end_line") or line)
+        hit_id = f"{leader.file}:{line}-{end_line}"
+        if hit_id in seen:
+            continue
+        seen.add(hit_id)
+        body = file_lines[line - 1 : end_line]
+        hits.append(
+            SearchHit(
+                hit_id=hit_id,
+                file=leader.file,
+                line=line,
+                end_line=end_line,
+                name=match.get("name") or "",
+                qualified_name="",
+                unit_type="",
+                language=leader.language,
+                score=float(match.get("score") or 0.0),
+                snippet="\n".join(body[:snippet_lines]) if body else None,
+                code="\n".join(body) if include_code and body else None,
+                location_verified=trusted and 1 <= line <= end_line <= len(file_lines),
+            )
+        )
+    return hits
+
+
 async def _read_file_off_loop(file: str) -> str:
     """`Path(file).read_text(errors="replace")`, run in a worker thread.
 
@@ -152,10 +221,12 @@ def _search_header(result: SearchResult) -> str:
 
 
 def _hit_block(hit: SearchHit) -> str:
-    head = (
-        f"{hit.file}:{hit.line}-{hit.end_line}  score={hit.score:.2f}  "
-        f"{hit.unit_type} {hit.name} — {hit.signature or ''}"
-    )
+    # A non-leader unit (`hits_from_raw`) has no unit_type or signature: skip
+    # the empty parts rather than print their separators.
+    kind = " ".join(part for part in (hit.unit_type, hit.name) if part)
+    head = f"{hit.file}:{hit.line}-{hit.end_line}  score={hit.score:.2f}  {kind}"
+    if hit.signature:
+        head = f"{head} — {hit.signature}"
     if not hit.snippet:
         return head
     indented = "\n".join(f"  {line}" for line in hit.snippet.splitlines())
@@ -397,20 +468,22 @@ def _file_hits_from_raw(raw_hits: list[RawHit], base_path: Path | None) -> list[
     `SearchHit`, `hit_id` string, snippet or `locate_unit` call is built.
     Hits arrive best-score-first (R05), so the first hit seen for a file sets
     `best_score`; `top_units` is capped at 5, same as the previous fold.
+    A raw hit carrying colgrep 1.8's `matches` counts each matched unit, as
+    `search` lists them (`hits_from_raw`): the leader's own name, then the
+    other units' names.
     """
     by_file: dict[str, FileHit] = {}
     for raw in raw_hits:
         unit = raw.get("unit") or {}
         file = _resolve_hit_file(unit.get("file") or "", base_path)
         score = float(raw.get("score") or 0.0)
-        name = unit.get("name") or ""
+        names = [unit.get("name") or ""] + [m.get("name") or "" for m in (raw.get("matches") or [])[1:]]
         existing = by_file.get(file)
         if existing is None:
-            by_file[file] = FileHit(file=file, best_score=score, hits=1, top_units=[name])
+            by_file[file] = FileHit(file=file, best_score=score, hits=len(names), top_units=names[:5])
         else:
-            existing.hits += 1
-            if len(existing.top_units) < 5:
-                existing.top_units.append(name)
+            existing.hits += len(names)
+            existing.top_units.extend(names[: 5 - len(existing.top_units)])
     return list(by_file.values())
 
 
@@ -434,8 +507,15 @@ async def _do_search(
     snippet_lines: int,
     include_code: bool,
 ) -> SearchResult:
-    """`search`'s body: run the adapter, then convert every raw hit into a
-    `SearchHit` (locate, snippet, `hit_id`) via `hit_from_raw`.
+    """`search`'s body: run the adapter, then convert every raw hit into one
+    `SearchHit` per matched unit (locate, snippet, `hit_id`) via
+    `hits_from_raw`.
+
+    Units are ranked by score across files and `limit` caps units, not
+    files. colgrep's `-k limit` returns the top `limit` files by their best
+    unit, and every unit outside them scores at most the last file's best,
+    so those files already hold the top `limit` units; the cut below drops
+    the rest and sets `truncated`.
 
     `find_files` no longer routes through here (R01 §C6): it calls
     `_run_adapter_search` directly and folds raw hits straight into
@@ -466,7 +546,15 @@ async def _do_search(
     base_path = outcome.resolved[0]
     file_cache: dict[str, str] = {}
     await _fill_file_cache(outcome.raw_hits, file_cache, base_path=base_path)
-    hits = [hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path) for raw in outcome.raw_hits]
+    hits = [
+        hit
+        for raw in outcome.raw_hits
+        for hit in hits_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path)
+    ]
+    hits.sort(key=lambda hit: hit.score, reverse=True)  # stable: colgrep's order breaks ties
+    limited = limit is not None and len(hits) > limit
+    if limited:
+        hits = hits[:limit]
 
     notes: list[str] = []
     if not hits:
@@ -488,7 +576,7 @@ async def _do_search(
         paths=[str(p) for p in outcome.resolved],
         hits=hits,
         total=len(hits),
-        truncated=False,
+        truncated=limited,
         elapsed_ms=outcome.elapsed_ms,
         index_updated=outcome.index_updated,
         notes=notes,
@@ -545,8 +633,10 @@ async def search(
     Prefer this over shell grep for any question about what, where or how
     code does something. Pass `pattern` (a regex) to narrow via hybrid
     keyword+semantic ranking when you know an identifier; omit `limit`
-    for an exhaustive listing. Each hit carries a `hit_id` — pass it to
-    `expand` to read the full source instead of opening the whole file.
+    for an exhaustive listing. Each hit is one unit, and a file yields one
+    hit per unit that matched in it, ranked with the rest; `limit` counts
+    units. Each hit carries a `hit_id` — pass it to `expand` to read the
+    full source instead of opening the whole file.
     """
     settings = get_settings(ctx)
     result = await _do_search(

@@ -598,6 +598,116 @@ async def test_search_location_verified_false_when_file_lacks_the_code(settings_
     assert hit["hit_id"] == f"{target}:7-9"
 
 
+# --- colgrep 1.8.x `matches`: one hit per matched unit ----------------------
+
+_NOTES = (
+    "# Wave 05\n\n## Logistics\nRoutine scheduling.\n\n"
+    "## Escalation\n- **PI decision:** switch to a subagent.\n\n## Closing\nWave closed.\n"
+)
+
+
+def _unit(file: Path, name: str, line: int, end_line: int, code: str, unit_type: str = "section") -> dict:
+    return {
+        "name": name,
+        "qualified_name": f"{file.name}::{name}",
+        "file": str(file),
+        "line": line,
+        "end_line": end_line,
+        "language": "markdown" if unit_type == "section" else "python",
+        "unit_type": unit_type,
+        "signature": None,
+        "code": code,
+    }
+
+
+def _matches_corpus(tmp_path: Path, monkeypatch, notes_text: str = _NOTES) -> tuple[Path, Path]:
+    """Three matched sections of `notes.md` and one function of `tools.py`, as
+    per-unit hits in score order, which `FAKE_COLGREP_MATCHES=1` folds per file
+    the way colgrep 1.8.x does."""
+    notes = tmp_path / "notes.md"
+    notes.write_text(notes_text)
+    tools = tmp_path / "tools.py"
+    tools.write_text('def escalate():\n    return "subagent"\n')
+    fixture = [
+        {"unit": _unit(notes, "Logistics", 3, 4, "## Logistics\nRoutine scheduling.\n"), "score": 1.2},
+        {
+            "unit": _unit(tools, "escalate", 1, 2, 'def escalate():\n    return "subagent"\n', "function"),
+            "score": 1.0,
+        },
+        {
+            "unit": _unit(notes, "Escalation", 6, 7, "## Escalation\n- **PI decision:** switch to a subagent.\n"),
+            "score": 0.9,
+        },
+        {"unit": _unit(notes, "Closing", 9, 10, "## Closing\nWave closed.\n"), "score": 0.1},
+    ]
+    fixture_path = tmp_path / "matches_hits.json"
+    fixture_path.write_text(json.dumps(fixture))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+    monkeypatch.setenv("FAKE_COLGREP_MATCHES", "1")
+    return notes, tools
+
+
+async def test_search_yields_every_matched_unit_ranked_across_files(settings_env, monkeypatch, tmp_path):
+    notes, tools = _matches_corpus(tmp_path, monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "PI decision on the escalation"})
+        hits = r.structured_content["hits"]
+        e = await c.call_tool("expand", {"hit_ids": [hits[2]["hit_id"]]})
+
+    assert [h["hit_id"] for h in hits] == [f"{notes}:3-4", f"{tools}:1-2", f"{notes}:6-7", f"{notes}:9-10"]
+    assert [h["score"] for h in hits] == pytest.approx([1.2, 1.0, 0.9, 0.1])
+    assert all(h["location_verified"] for h in hits)
+    assert r.structured_content["total"] == 4
+    assert r.structured_content["truncated"] is False
+    second = hits[2]
+    assert (second["name"], second["unit_type"], second["language"]) == ("Escalation", "", "markdown")
+    assert "PI decision" in second["snippet"]
+    assert f"{notes}:6-7  score=0.90  Escalation\n" in r.content[0].text
+    assert e.structured_content["units"][0]["code"] == "## Escalation\n- **PI decision:** switch to a subagent."
+
+
+async def test_search_limit_counts_units_not_files(settings_env, monkeypatch, tmp_path):
+    notes, tools = _matches_corpus(tmp_path, monkeypatch)
+    argv_file = tmp_path / "argv.json"
+    monkeypatch.setenv("FAKE_COLGREP_ARGV_FILE", str(argv_file))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "PI decision on the escalation", "limit": 2})
+
+    argv = json.loads(argv_file.read_text())
+    assert argv[argv.index("-k") + 1] == "2"
+    assert [h["hit_id"] for h in r.structured_content["hits"]] == [f"{notes}:3-4", f"{tools}:1-2"]
+    assert r.structured_content["truncated"] is True
+
+
+async def test_search_other_units_unverified_when_file_moved_since_indexing(settings_env, monkeypatch, tmp_path):
+    # Two lines added on top since indexing: the leader is re-located at 5-6,
+    # so colgrep's ranges for the other sections no longer fit the file.
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text="new\nlines\n" + _NOTES)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "PI decision on the escalation"})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"]}
+    assert by_id[f"{notes}:5-6"]["location_verified"] is True
+    assert by_id[f"{notes}:6-7"]["location_verified"] is False
+    assert by_id[f"{notes}:9-10"]["location_verified"] is False
+    assert any(n.startswith(f"[{Code.LOCATION_UNVERIFIED}]") for n in r.structured_content["notes"])
+
+
+async def test_find_files_counts_each_matched_unit(settings_env, monkeypatch, tmp_path):
+    notes, tools = _matches_corpus(tmp_path, monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("find_files", {"query": "PI decision on the escalation"})
+
+    files = r.structured_content["files"]
+    assert [f["file"] for f in files] == [str(notes), str(tools)]
+    assert (files[0]["hits"], files[0]["top_units"]) == (3, ["Logistics", "Escalation", "Closing"])
+    assert (files[1]["hits"], files[1]["top_units"]) == (1, ["escalate"])
+
+
 # --- token budget (R01 §Token-budget invariant) ----------------------------
 
 

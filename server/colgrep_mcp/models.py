@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field
 
 
 class SearchHit(BaseModel):
+    """One matched unit. A file yields one hit per unit colgrep matched in it; the
+    units after its best carry no `qualified_name`, `unit_type` or `signature`."""
+
     hit_id: str = Field(description="Self-describing id: '<absolute file>:<line>-<end_line>'. Pass to `expand`.")
     file: str
     line: int
