@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A stand-in for the colgrep CLI used by the test-suite.
 
-Emulates the subset of colgrep 1.6 surface the adapter drives:
+Emulates the subset of colgrep 1.8 surface the adapter drives:
   --version | --stats | settings | status PATH | init [-y] PATH | clear PATH
   [search] [--json] [-k N] [-e PAT] [flags...] QUERY [PATH...]
 Environment knobs:
