@@ -977,6 +977,29 @@ async def test_duplicate_ranges_in_matches_count_once(settings_env, monkeypatch,
     assert (first["hits"], first["top_units"]) == (2, ["Logistics", "Escalation"])
 
 
+async def test_a_file_returned_twice_by_overlapping_paths_counts_each_unit_once(settings_env, monkeypatch, tmp_path):
+    # colgrep collapses to one result per file within a search path only, so a search over nested
+    # paths returns the file once per path, the second time with a different set of units.
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+    again = {
+        "unit": _unit(notes, "Escalation", 6, 10, "## Escalation\n- **PI decision:** switch to a subagent.\n"),
+        "score": 0.9,
+        "matches": [_match(6, 7, "Escalation", 0.9), _match(9, 10, "Closing", 0.1)],
+    }
+    fixture_path = tmp_path / "matches_hits.json"
+    fixture_path.write_text(json.dumps([*json.loads(fixture_path.read_text()), again]))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        searched = await c.call_tool("search", {"query": "escalation", "limit": 4})
+        found = await c.call_tool("find_files", {"query": "escalation"})
+
+    ids = [h["hit_id"] for h in searched.structured_content["hits"]]
+    assert sorted(ids) == sorted(set(ids)) and len(ids) == 4  # 3 units of notes.md, 1 of tools.py
+    assert searched.structured_content["truncated"] is False
+    first = found.structured_content["files"][0]
+    assert (first["file"], first["hits"], first["top_units"]) == (str(notes), 3, ["Logistics", "Escalation", "Closing"])
+
+
 # --- token budget (R01 §Token-budget invariant) ----------------------------
 
 

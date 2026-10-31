@@ -606,11 +606,14 @@ def _file_hits_from_raw(raw_hits: list[RawHit], base_path: Path | None) -> list[
     raw code) count but are not listed in `top_units`.
     """
     by_file: dict[str, FileHit] = {}
+    seen: set[tuple[str, int, int, str]] = set()
     for raw in raw_hits:
         unit = raw.get("unit") or {}
         file = _resolve_hit_file(unit.get("file") or "", base_path)
         score = float(raw.get("score") or 0.0)
-        matches = unit_matches(raw)
+        # Overlapping search paths return a file once per path (`_do_search`): count a unit once.
+        matches = [m for m in unit_matches(raw) if (file, *m.identity) not in seen]
+        seen.update((file, *m.identity) for m in matches)
         names = [m.name for m in matches if m.name]
         existing = by_file.get(file)
         if existing is None:
@@ -687,8 +690,21 @@ async def _do_search(
     files = [_resolve_hit_file((raw.get("unit") or {}).get("file") or "", base_path) for raw in raws]
     ranked = [(ri, mi) for ri, units in enumerate(matches) for mi in range(len(units))]
     ranked.sort(key=lambda unit: -matches[unit[0]][unit[1]].score)  # stable: colgrep's order breaks ties
-    limited = limit is not None and len(ranked) > limit
-    keep = ranked[:limit] if limited else ranked
+    # colgrep collapses to one result per file only within one search path, so overlapping paths
+    # return a file twice: keep each unit's best-scored sighting, stopping once `limit` is passed.
+    # The name is part of the key because before 1.8.4 colgrep's per-unit ranges were unreliable
+    # enough for two units of a file to report the same one (R05 D1).
+    seen: set[tuple[str, int, int, str]] = set()
+    unique: list[tuple[int, int]] = []
+    for ri, mi in ranked:
+        unit = (files[ri], *matches[ri][mi].identity)
+        if unit not in seen:
+            seen.add(unit)
+            unique.append((ri, mi))
+            if limit is not None and len(unique) > limit:
+                break
+    limited = limit is not None and len(unique) > limit
+    keep = unique[:limit] if limited else unique
 
     reads = await _read_units(_plan_reads(raws, files, matches, keep))
     indexes: dict[int, list[int]] = {}

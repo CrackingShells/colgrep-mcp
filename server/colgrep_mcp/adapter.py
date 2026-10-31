@@ -85,6 +85,11 @@ class UnitMatch(NamedTuple):
     def span(self) -> tuple[int, int]:
         return (self.line, self.end_line)
 
+    @property
+    def identity(self) -> tuple[int, int, str]:
+        """What names the same unit when a file is returned twice."""
+        return (self.line, self.end_line, self.name)
+
 
 def _wire_match(entry: Any) -> UnitMatch | None:
     """A `matches` entry as a `UnitMatch`, or `None` when it is malformed or
