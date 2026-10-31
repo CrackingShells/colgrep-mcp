@@ -28,7 +28,7 @@ from pydantic import Field
 
 from .adapter import RawHit, SearchRequest, UnitMatch, unit_matches
 from .errors import Code, note, tool_error, translate_adapter_errors
-from .locate import locate_unit, span_holds
+from .locate import locate_unit, span_holds, split_lines
 from .locks import project_lock
 from .logging_utils import safe_log
 from .models import ExpandedUnit, ExpandResult, FileHit, FileResult, SearchHit, SearchResult
@@ -113,7 +113,7 @@ def hit_from_raw(
     unit = raw.get("unit") or {}
     file = _resolve_hit_file(unit.get("file") or "", base_path)
     code = unit.get("code") or ""
-    code_lines = code.splitlines()
+    code_lines = split_lines(code)
 
     held = read.spans.get(leader.span)
     if held is not None and span_holds(leader.line, leader.end_line, held, code_lines):
@@ -123,7 +123,7 @@ def hit_from_raw(
     else:
         line, end_line, verified = leader.line, leader.end_line, False
 
-    snippet = "\n".join(code_lines[:snippet_lines]) if code_lines else None
+    snippet = "\n".join(line.removesuffix("\r") for line in code_lines[:snippet_lines]) if code_lines else None
 
     return SearchHit(
         hit_id=f"{file}:{line}-{end_line}",
@@ -327,7 +327,7 @@ def _plan_reads(
     plan: dict[str, _Wanted] = {}
     for ri in {ri for ri, _ in keep}:
         lead = matches[ri][0]
-        code_lines = ((raws[ri].get("unit") or {}).get("code") or "").splitlines()
+        code_lines = split_lines((raws[ri].get("unit") or {}).get("code") or "")
         wanted = plan.setdefault(files[ri], _Wanted())
         if code_lines:
             wanted.leaders.append((lead.span, code_lines))

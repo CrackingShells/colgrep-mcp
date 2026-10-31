@@ -662,6 +662,42 @@ async def test_search_location_verified_true_when_file_contains_the_code(setting
     assert hit["hit_id"] == f"{target}:4-5"
 
 
+async def test_search_counts_lines_on_newline_alone_so_expand_agrees(settings_env, monkeypatch, tmp_path):
+    """A form feed breaks a line for `str.splitlines` but not for colgrep or `expand`: the file
+    changed since indexing, so `locate_unit` finds the unit, and the range it reports must be
+    the one `expand` reads back as the unit."""
+    target = tmp_path / "ff.md"
+    target.write_text("intro\n\x0c\n\n\n## Alpha\na1\na2\n\n## Beta\nb1\n")
+    unit = _unit(target, "Alpha", 4, 6, "## Alpha\na1\na2\n")
+    fixture_path = tmp_path / "ff_hits.json"
+    fixture_path.write_text(json.dumps([{"unit": unit, "score": 1.0}]))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "alpha"})
+        hit = r.structured_content["hits"][0]
+        e = await c.call_tool("expand", {"hit_ids": [hit["hit_id"]]})
+
+    assert (hit["line"], hit["end_line"], hit["location_verified"]) == (5, 7, True)
+    assert e.structured_content["units"][0]["code"] == "## Alpha\na1\na2"
+
+
+async def test_search_still_verifies_a_crlf_unit(settings_env, monkeypatch, tmp_path):
+    target = tmp_path / "crlf.md"
+    target.write_bytes(b"x\r\n\r\n## Alpha\r\na1\r\n")
+    unit = _unit(target, "Alpha", 1, 2, "## Alpha\r\na1\r\n")
+    fixture_path = tmp_path / "crlf_hits.json"
+    fixture_path.write_text(json.dumps([{"unit": unit, "score": 1.0}]))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "alpha"})
+
+    hit = r.structured_content["hits"][0]
+    assert (hit["line"], hit["end_line"], hit["location_verified"]) == (3, 4, True)
+    assert hit["snippet"] == "## Alpha\na1"
+
+
 async def test_search_location_verified_false_when_file_lacks_the_code(settings_env, monkeypatch, tmp_path):
     target = tmp_path / "stale_source.py"
     target.write_text("# this file no longer contains the indexed unit\n")
