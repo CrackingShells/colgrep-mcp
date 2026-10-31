@@ -113,7 +113,7 @@ def main(argv):
 
     args = [a for a in argv if a != "--color" and a != "never"]
     if "--version" in args:
-        print("colgrep 1.6.2")
+        print("colgrep 1.8.5")
         return 0
     store = os.environ.get("FAKE_COLGREP_STORE")
     if "--stats" in args:

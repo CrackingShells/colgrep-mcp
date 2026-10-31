@@ -261,9 +261,24 @@ async def test_doctor_ok(settings_env):
     doc = result.structured_content
     assert doc["ok"] is True
     assert doc["problems"] == []
-    assert doc["version"] == "colgrep 1.6.2"
+    assert doc["version"] == "colgrep 1.8.5"
     assert doc["colgrep_path"] is not None
     assert doc["root_source"] == "env"
+
+
+@pytest.mark.parametrize(
+    ("version", "too_old"),
+    [
+        ("colgrep 1.8.4", False),
+        ("colgrep 1.8.5+cs.1", False),
+        ("colgrep 1.10.0", False),
+        ("colgrep 1.8.3", True),
+        ("colgrep 1.6.2", True),
+        ("colgrep (unknown build)", False),
+    ],
+)
+def test_doctor_flags_a_colgrep_older_than_the_minimum(version, too_old):
+    assert (tools_index._version_problem(version) is not None) is too_old
 
 
 async def test_doctor_bogus_binary(monkeypatch, tmp_path):

@@ -170,7 +170,7 @@ def test_argv_rejects_query_starting_with_dash():
 async def test_version_via_fake_binary(fake_colgrep_bin):
     adapter = ColgrepAdapter(binary=fake_colgrep_bin, timeout_s=10)
     version = await adapter.version()
-    assert version == "colgrep 1.6.2"
+    assert version == "colgrep 1.8.5"
 
 
 async def test_run_prepends_color_never(fake_colgrep_bin, tmp_path, monkeypatch):
