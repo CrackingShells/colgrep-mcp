@@ -7,7 +7,9 @@ from __future__ import annotations
 import asyncio
 import builtins
 import json
+import os
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -19,7 +21,7 @@ from colgrep_mcp.errors import HINTS, Code
 from colgrep_mcp.locks import project_lock
 from colgrep_mcp.models import ExpandResult, FileResult, SearchResult
 from colgrep_mcp.server import build
-from colgrep_mcp.tools_search import _fill_file_cache
+from colgrep_mcp.tools_search import _read_units, _Wanted
 
 _FAKE_RAW_HIT = {
     "unit": {
@@ -314,17 +316,17 @@ async def test_find_files_groups_hits_by_file_preserving_score_order(settings_en
 
 async def test_find_files_does_not_read_hit_files(settings_env, monkeypatch):
     """R01 §C5: `find_files` never exposes `line`/`hit_id`, so `_do_search`
-    must call it with `locate=False` and skip `_fill_file_cache` entirely — that
-    used to cost up to 300 file reads (plus a `locate_unit` pass each) per call
-    for output nothing downstream reads."""
+    must skip `_read_units` entirely — that used to cost up to 300 file reads
+    (plus a `locate_unit` pass each) per call for output nothing downstream
+    reads."""
     calls: list[None] = []
-    real_fill_file_cache = tools_search._fill_file_cache
+    real_read_units = tools_search._read_units
 
-    async def spy(*args: object, **kwargs: object) -> None:
+    async def spy(*args: object, **kwargs: object) -> dict:
         calls.append(None)
-        return await real_fill_file_cache(*args, **kwargs)
+        return await real_read_units(*args, **kwargs)
 
-    monkeypatch.setattr(tools_search, "_fill_file_cache", spy)
+    monkeypatch.setattr(tools_search, "_read_units", spy)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("find_files", {"query": "config parsing"})
@@ -357,21 +359,21 @@ async def test_find_files_never_builds_search_hits(settings_env, monkeypatch):
 # --- off-loop file I/O (F11) --------------------------------------------
 
 
-def _spy_on_read_text(monkeypatch) -> list[int]:
-    """Record the thread identity `Path.read_text` actually runs on."""
-    thread_ids: list[int] = []
+def _spy_on_read_text(monkeypatch) -> list[Path]:
+    """Record every `Path.read_text` call: a whole-file read."""
+    reads: list[Path] = []
     real_read_text = Path.read_text
 
     def spy(self: Path, *args: object, **kwargs: object) -> str:
-        thread_ids.append(threading.get_ident())
+        reads.append(self)
         return real_read_text(self, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", spy)
-    return thread_ids
+    return reads
 
 
 def _spy_on_open(monkeypatch) -> list[int]:
-    """Record the thread identity the builtin `open` (what `_read_span` uses) runs on."""
+    """Record the thread identity the builtin `open` (what `_read_spans` uses) runs on."""
     thread_ids: list[int] = []
     real_open = builtins.open
 
@@ -385,7 +387,8 @@ def _spy_on_open(monkeypatch) -> list[int]:
 
 async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
     """F11: a hit's file is read via `asyncio.to_thread`, not directly on the
-    event loop thread that is also running the rest of the server."""
+    event loop thread that is also running the rest of the server. With colgrep's
+    own range exact, the one span read is the whole of it (`open`, as `expand`)."""
     target = tmp_path / "real_source.py"
     target.write_text("def real_func():\n    return 42\n")
 
@@ -396,7 +399,7 @@ async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path,
                 "qualified_name": "real_source.py::real_func",
                 "file": str(target),
                 "line": 1,
-                "end_line": 1,
+                "end_line": 2,
                 "language": "python",
                 "unit_type": "function",
                 "signature": "def real_func()",
@@ -410,7 +413,7 @@ async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path,
     monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
 
     main_thread_id = threading.get_ident()
-    read_thread_ids = _spy_on_read_text(monkeypatch)
+    read_thread_ids = _spy_on_open(monkeypatch)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("search", {"query": "real func"})
@@ -421,41 +424,81 @@ async def test_search_reads_hit_files_off_the_event_loop(settings_env, tmp_path,
     assert all(tid != main_thread_id for tid in read_thread_ids)
 
 
-async def test_fill_file_cache_reads_each_distinct_file_at_most_once(tmp_path, monkeypatch):
-    """F11: the caching behaviour that used to live inside `hit_from_raw`
-    (read each file at most once per call) now belongs to `_fill_file_cache`,
-    the async helper that populates `file_cache` before `hit_from_raw` runs."""
+async def test_read_units_reads_each_distinct_file_once_for_all_its_spans(tmp_path, monkeypatch):
+    """F11: `_read_units` is the one async step before the pure builders: a file
+    is opened once however many spans (and leaders) of it are wanted."""
     target = tmp_path / "config.py"
-    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n")
+    target.write_text("def parse_config(path: str) -> dict:\n    return {}\n\nclass Settings:\n    k: int = 15\n")
+    other = tmp_path / "other.py"
+    other.write_text("x = 1\n")
 
-    read_calls: list[Path] = []
-    real_read_text = Path.read_text
+    opened: list[str] = []
+    real_open = builtins.open
 
-    def spy(self: Path, *args: object, **kwargs: object) -> str:
-        read_calls.append(self)
-        return real_read_text(self, *args, **kwargs)
+    def spy(file: object, *args: object, **kwargs: object):
+        opened.append(str(file))
+        return real_open(file, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "read_text", spy)
+    monkeypatch.setattr(builtins, "open", spy)
 
-    raw_hits = [
-        {"unit": {"file": str(target)}, "score": 1.0},
-        {"unit": {"file": str(target)}, "score": 0.5},  # same file, second hit
-    ]
-    file_cache: dict[str, str] = {}
-    await _fill_file_cache(raw_hits, file_cache)
+    wanted = _Wanted(
+        spans={(1, 2), (4, 5)}, leaders=[((1, 2), ["def parse_config(path: str) -> dict:", "    return {}"])]
+    )
+    reads = await _read_units({str(target): wanted, str(other): _Wanted(spans={(1, 1)})})
 
-    assert file_cache[str(target)] == "def parse_config(path: str) -> dict:\n    return {}\n"
-    assert len(read_calls) == 1  # only one actual read for two hits on the same file
+    assert opened.count(str(target)) == 1
+    assert reads[str(target)].spans == {
+        (1, 2): ["def parse_config(path: str) -> dict:\n", "    return {}\n"],
+        (4, 5): ["class Settings:\n", "    k: int = 15\n"],
+    }
+    assert reads[str(target)].text is None  # the leader held, so no whole-file read
+    assert reads[str(other)].spans == {(1, 1): ["x = 1\n"]}
 
-    # Mutate the cache in place: a second call must trust it, not re-read.
-    file_cache[str(target)] = "mutated"
-    await _fill_file_cache(raw_hits, file_cache)
-    assert len(read_calls) == 1
-    assert file_cache[str(target)] == "mutated"
+
+async def test_search_verifies_a_leader_by_its_span_without_reading_the_whole_file(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+    whole_reads = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    assert all(h["location_verified"] for h in r.structured_content["hits"])
+    assert whole_reads == []
+
+
+async def test_search_reads_an_edited_file_whole_once_to_relocate_its_leader(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text="new\nlines\n" + _NOTES)
+    whole_reads = _spy_on_read_text(monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    assert f"{notes}:5-6" in [h["hit_id"] for h in r.structured_content["hits"]]
+    assert whole_reads == [notes]
+
+
+async def test_search_cut_reads_and_builds_only_the_surviving_units(settings_env, monkeypatch, tmp_path):
+    notes, tools = _matches_corpus(tmp_path, monkeypatch)
+    spans_read: list[set] = []
+    real_read_spans = tools_search._read_spans_from
+
+    def spy(f, spans):
+        spans = list(spans)
+        spans_read.append({(Path(f.name).name, *s) for s in spans})
+        return real_read_spans(f, spans)
+
+    monkeypatch.setattr(tools_search, "_read_spans_from", spy)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "limit": 2})
+
+    assert [h["hit_id"] for h in r.structured_content["hits"]] == [f"{notes}:3-4", f"{tools}:1-2"]
+    # Only the two survivors' ranges were read: the cut units' (6-7, 9-10) never were.
+    assert sorted(span for group in spans_read for span in group) == [("notes.md", 3, 4), ("tools.py", 1, 2)]
 
 
 async def test_expand_reads_files_off_the_event_loop(settings_env, tmp_path, monkeypatch):
-    """F11, mirrored for `expand`. `expand` reads its span via `_read_span`'s
+    """F11, mirrored for `expand`. `expand` reads its span via `_read_spans`'s
     builtin `open`, not `Path.read_text`, so the spy target follows."""
     target = tmp_path / "code.py"
     target.write_text("x = 1\ny = 2\ndef f():\n    return 1\nz = 3\n")
@@ -491,6 +534,61 @@ async def test_expand_happy_path_reads_exact_span(settings_env, tmp_path):
     assert unit.code == "def f():\n    return 1"
     assert unit.truncated is False
     assert f"```{hit_id}" in r.content[0].text
+
+
+async def test_expand_reads_a_file_once_for_all_its_ids_and_answers_in_input_order(settings_env, tmp_path, monkeypatch):
+    target = tmp_path / "ten.txt"
+    target.write_text("".join(f"line {n}\n" for n in range(1, 11)))
+    opened: list[str] = []
+    real_open = builtins.open
+
+    def spy(file: object, *args: object, **kwargs: object):
+        opened.append(str(file))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", spy)
+
+    # Out of order, one span overlapping another, one not touching the rest.
+    ids = [f"{target}:6-8", f"{target}:2-3", f"{target}:7-9", f"{target}:10-10"]
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": ids})
+
+    units = r.structured_content["units"]
+    assert [u["hit_id"] for u in units] == ids
+    assert [u["code"] for u in units] == [
+        "line 6\nline 7\nline 8",
+        "line 2\nline 3",
+        "line 7\nline 8\nline 9",
+        "line 10",
+    ]
+    assert opened.count(str(target)) == 1
+
+
+async def test_expand_errors_stay_per_id_when_ids_share_a_file(settings_env, tmp_path):
+    real = tmp_path / "real.txt"
+    real.write_text("only\n")
+    missing = tmp_path / "missing.txt"
+    ids = [f"{missing}:1-2", "not a hit id", f"{missing}:3-4", f"{real}:1-1"]
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": ids})
+
+    units = r.structured_content["units"]
+    assert [u["hit_id"] for u in units] == ids
+    assert units[0]["error"].startswith(f"could not read {missing}")
+    assert units[2]["error"].startswith(f"could not read {missing}")
+    assert units[1]["error"].startswith(f"[{Code.BAD_HIT_ID}]")
+    assert (units[3]["code"], units[3]["error"]) == ("only", None)
+
+
+async def test_expand_returns_lines_without_their_terminators(settings_env, tmp_path):
+    target = tmp_path / "crlf.txt"
+    target.write_bytes(b"a\r\n\r\nb\r\nlast")
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("expand", {"hit_ids": [f"{target}:1-2", f"{target}:3-9"]})
+
+    assert [u["code"] for u in r.structured_content["units"]] == ["a\n", "b\nlast"]
 
 
 async def test_expand_truncates_to_max_lines(settings_env, tmp_path):
@@ -564,6 +662,42 @@ async def test_search_location_verified_true_when_file_contains_the_code(setting
     assert hit["hit_id"] == f"{target}:4-5"
 
 
+async def test_search_counts_lines_on_newline_alone_so_expand_agrees(settings_env, monkeypatch, tmp_path):
+    """A form feed breaks a line for `str.splitlines` but not for colgrep or `expand`: the file
+    changed since indexing, so `locate_unit` finds the unit, and the range it reports must be
+    the one `expand` reads back as the unit."""
+    target = tmp_path / "ff.md"
+    target.write_text("intro\n\x0c\n\n\n## Alpha\na1\na2\n\n## Beta\nb1\n")
+    unit = _unit(target, "Alpha", 4, 6, "## Alpha\na1\na2\n")
+    fixture_path = tmp_path / "ff_hits.json"
+    fixture_path.write_text(json.dumps([{"unit": unit, "score": 1.0}]))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "alpha"})
+        hit = r.structured_content["hits"][0]
+        e = await c.call_tool("expand", {"hit_ids": [hit["hit_id"]]})
+
+    assert (hit["line"], hit["end_line"], hit["location_verified"]) == (5, 7, True)
+    assert e.structured_content["units"][0]["code"] == "## Alpha\na1\na2"
+
+
+async def test_search_still_verifies_a_crlf_unit(settings_env, monkeypatch, tmp_path):
+    target = tmp_path / "crlf.md"
+    target.write_bytes(b"x\r\n\r\n## Alpha\r\na1\r\n")
+    unit = _unit(target, "Alpha", 1, 2, "## Alpha\r\na1\r\n")
+    fixture_path = tmp_path / "crlf_hits.json"
+    fixture_path.write_text(json.dumps([{"unit": unit, "score": 1.0}]))
+    monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "alpha"})
+
+    hit = r.structured_content["hits"][0]
+    assert (hit["line"], hit["end_line"], hit["location_verified"]) == (3, 4, True)
+    assert hit["snippet"] == "## Alpha\na1"
+
+
 async def test_search_location_verified_false_when_file_lacks_the_code(settings_env, monkeypatch, tmp_path):
     target = tmp_path / "stale_source.py"
     target.write_text("# this file no longer contains the indexed unit\n")
@@ -620,30 +754,40 @@ def _unit(file: Path, name: str, line: int, end_line: int, code: str, unit_type:
     }
 
 
-def _matches_corpus(tmp_path: Path, monkeypatch, notes_text: str = _NOTES) -> tuple[Path, Path]:
-    """Three matched sections of `notes.md` and one function of `tools.py`, as
-    per-unit hits in score order, which `FAKE_COLGREP_MATCHES=1` folds per file
-    the way colgrep 1.8.x does."""
+def _match(line: int, end_line: int, name: str, score: float) -> dict:
+    return {"line": line, "end_line": end_line, "name": name, "score": score}
+
+
+def _matches_corpus(
+    tmp_path: Path, monkeypatch, notes_text: str = _NOTES, notes_matches: list[dict] | None = None
+) -> tuple[Path, Path]:
+    """Literal colgrep 1.8.4+ results (one per file, best first): `notes.md` led by
+    its `Logistics` section with `unit` widened over the three matched sections
+    and `matches` listing each, then `tools.py` with its one function."""
     notes = tmp_path / "notes.md"
     notes.write_text(notes_text)
     tools = tmp_path / "tools.py"
     tools.write_text('def escalate():\n    return "subagent"\n')
+    leader = _unit(notes, "Logistics", 3, 10, "## Logistics\nRoutine scheduling.\n")
     fixture = [
-        {"unit": _unit(notes, "Logistics", 3, 4, "## Logistics\nRoutine scheduling.\n"), "score": 1.2},
+        {
+            "unit": leader,
+            "score": 1.2,
+            "matches": notes_matches
+            or [
+                _match(3, 4, "Logistics", 1.2),
+                _match(6, 7, "Escalation", 0.9),
+                _match(9, 10, "Closing", 0.1),
+            ],
+        },
         {
             "unit": _unit(tools, "escalate", 1, 2, 'def escalate():\n    return "subagent"\n', "function"),
             "score": 1.0,
         },
-        {
-            "unit": _unit(notes, "Escalation", 6, 7, "## Escalation\n- **PI decision:** switch to a subagent.\n"),
-            "score": 0.9,
-        },
-        {"unit": _unit(notes, "Closing", 9, 10, "## Closing\nWave closed.\n"), "score": 0.1},
     ]
     fixture_path = tmp_path / "matches_hits.json"
     fixture_path.write_text(json.dumps(fixture))
     monkeypatch.setenv("FAKE_COLGREP_HITS", str(fixture_path))
-    monkeypatch.setenv("FAKE_COLGREP_MATCHES", "1")
     return notes, tools
 
 
@@ -706,6 +850,189 @@ async def test_find_files_counts_each_matched_unit(settings_env, monkeypatch, tm
     assert [f["file"] for f in files] == [str(notes), str(tools)]
     assert (files[0]["hits"], files[0]["top_units"]) == (3, ["Logistics", "Escalation", "Closing"])
     assert (files[1]["hits"], files[1]["top_units"]) == (1, ["escalate"])
+
+
+def _touch_after_search_starts(path: Path) -> None:
+    """Give `path` a modification time no search started now can have indexed."""
+    future = time.time_ns() + 3_600 * 10**9
+    os.utime(path, ns=(future, future))
+
+
+async def test_search_units_of_a_file_modified_after_the_search_began_are_unverified_without_text(
+    settings_env, monkeypatch, tmp_path
+):
+    # A line added under the best section after colgrep's refresh: the best unit still sits
+    # at its own range, but every later section has moved, so colgrep's ranges for them
+    # hold other lines.
+    text = _NOTES.replace("Routine scheduling.\n", "Routine scheduling.\nAdded.\n")
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text=text)
+    _touch_after_search_starts(notes)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"]}
+    assert by_id[f"{notes}:3-4"]["location_verified"] is True
+    for stale in (f"{notes}:6-7", f"{notes}:9-10"):
+        assert by_id[stale]["location_verified"] is False
+        assert by_id[stale]["snippet"] is None and by_id[stale]["code"] is None
+
+
+async def test_search_units_are_unverified_when_the_index_refresh_was_skipped(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "skip_index_update": True, "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"] if h["file"] == str(notes)}
+    assert by_id[f"{notes}:3-4"]["location_verified"] is True  # the best unit is checked by its code
+    for other in (f"{notes}:6-7", f"{notes}:9-10"):
+        assert by_id[other]["location_verified"] is False
+        assert by_id[other]["snippet"] is None and by_id[other]["code"] is None
+
+
+async def test_search_unlocatable_leader_keeps_its_own_range(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text="nothing\nof the\nindexed text\n")
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    leader, *others = [h for h in r.structured_content["hits"] if h["file"] == str(notes)]
+    # colgrep's `unit` spans 3-10 over every matched section; the leader's own range is 3-4.
+    assert (leader["hit_id"], leader["location_verified"]) == (f"{notes}:3-4", False)
+    assert [h["hit_id"] for h in others] == [f"{notes}:6-7", f"{notes}:9-10"]
+
+
+async def test_search_include_code_returns_a_verified_units_own_lines(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"]}
+    assert by_id[f"{notes}:6-7"]["code"] == "## Escalation\n- **PI decision:** switch to a subagent."
+    assert by_id[f"{notes}:3-4"]["code"] == "## Logistics\nRoutine scheduling.\n"
+
+
+async def test_search_one_entry_matches_is_a_lone_unit(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_matches=[_match(3, 4, "Logistics", 1.2)])
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    assert [h["hit_id"] for h in r.structured_content["hits"] if h["file"] == str(notes)] == [f"{notes}:3-4"]
+
+
+async def test_search_trusts_every_unit_of_an_unedited_file_whatever_its_first_line_says(
+    settings_env, monkeypatch, tmp_path
+):
+    # A wording check would fail all three: a chunk of a long section starts mid-body, a name can
+    # end in a dot (so its last dotted segment is empty), and documents have no name at all.
+    text = (
+        "# Wave 05\n\n## Logistics\nRoutine scheduling.\n\n"
+        "Escalation continued: a long section's second chunk.\n- **PI decision:** switch to a subagent.\n"
+        "## Title doc..Next steps.\nWave closed.\n"
+    )
+    notes, _ = _matches_corpus(
+        tmp_path,
+        monkeypatch,
+        notes_text=text,
+        notes_matches=[
+            _match(3, 4, "Logistics", 1.2),
+            _match(6, 7, "Escalation", 0.9),
+            _match(8, 9, "Title doc..Next steps.", 0.5),
+            _match(1, 2, "", 0.1),
+        ],
+    )
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"] if h["file"] == str(notes)}
+    assert all(h["location_verified"] for h in by_id.values())
+    assert by_id[f"{notes}:6-7"]["snippet"].startswith("Escalation continued")
+    assert by_id[f"{notes}:8-9"]["code"] == "## Title doc..Next steps.\nWave closed."
+    assert by_id[f"{notes}:1-2"]["snippet"] == "# Wave 05\n"
+    assert not any(n.startswith(f"[{Code.LOCATION_UNVERIFIED}]") for n in r.structured_content["notes"])
+
+
+async def test_search_leader_is_the_unit_whose_code_colgrep_sent_when_scores_tie(settings_env, monkeypatch, tmp_path):
+    # colgrep orders tied scores by line, so `matches[0]` is Logistics although `unit` (and its
+    # code) is Escalation: the leader must be Escalation, or it would carry Logistics' name over
+    # Escalation's text and the file's other unit would be listed twice.
+    notes, _ = _matches_corpus(
+        tmp_path,
+        monkeypatch,
+        notes_matches=[_match(3, 4, "Logistics", 0.9), _match(6, 7, "Escalation", 0.9), _match(9, 10, "Closing", 0.1)],
+    )
+    raws = json.loads((tmp_path / "matches_hits.json").read_text())
+    raws[0]["unit"] = _unit(notes, "Escalation", 3, 10, "## Escalation\n- **PI decision:** switch to a subagent.\n")
+    raws[0]["score"] = 0.9
+    (tmp_path / "matches_hits.json").write_text(json.dumps(raws))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "limit": 4, "include_code": True})
+
+    hits = [h for h in r.structured_content["hits"] if h["file"] == str(notes)]
+    ids = [h["hit_id"] for h in r.structured_content["hits"]]
+    assert len(ids) == len(set(ids))
+    leader = hits[0]
+    assert (leader["hit_id"], leader["name"], leader["qualified_name"]) == (
+        f"{notes}:6-7",
+        "Escalation",
+        f"{notes.name}::Escalation",
+    )
+    assert leader["location_verified"] is True
+    assert {h["hit_id"]: h["name"] for h in hits} == {
+        f"{notes}:6-7": "Escalation",
+        f"{notes}:3-4": "Logistics",
+        f"{notes}:9-10": "Closing",
+    }
+    assert all(h["location_verified"] for h in hits)
+
+
+async def test_duplicate_ranges_in_matches_count_once(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(
+        tmp_path,
+        monkeypatch,
+        notes_matches=[
+            _match(3, 4, "Logistics", 1.2),
+            _match(6, 7, "Escalation", 0.9),
+            _match(6, 7, "Escalation", 0.4),
+        ],
+    )
+
+    async with Client(build(), raise_exceptions=True) as c:
+        searched = await c.call_tool("search", {"query": "escalation"})
+        found = await c.call_tool("find_files", {"query": "escalation"})
+
+    hits = [h for h in searched.structured_content["hits"] if h["file"] == str(notes)]
+    assert [(h["hit_id"], h["score"]) for h in hits] == [(f"{notes}:3-4", 1.2), (f"{notes}:6-7", 0.9)]
+    first = found.structured_content["files"][0]
+    assert (first["hits"], first["top_units"]) == (2, ["Logistics", "Escalation"])
+
+
+async def test_a_file_returned_twice_by_overlapping_paths_counts_each_unit_once(settings_env, monkeypatch, tmp_path):
+    # colgrep collapses to one result per file within a search path only, so a search over nested
+    # paths returns the file once per path, the second time with a different set of units.
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+    again = {
+        "unit": _unit(notes, "Escalation", 6, 10, "## Escalation\n- **PI decision:** switch to a subagent.\n"),
+        "score": 0.9,
+        "matches": [_match(6, 7, "Escalation", 0.9), _match(9, 10, "Closing", 0.1)],
+    }
+    fixture_path = tmp_path / "matches_hits.json"
+    fixture_path.write_text(json.dumps([*json.loads(fixture_path.read_text()), again]))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        searched = await c.call_tool("search", {"query": "escalation", "limit": 4})
+        found = await c.call_tool("find_files", {"query": "escalation"})
+
+    ids = [h["hit_id"] for h in searched.structured_content["hits"]]
+    assert sorted(ids) == sorted(set(ids)) and len(ids) == 4  # 3 units of notes.md, 1 of tools.py
+    assert searched.structured_content["truncated"] is False
+    first = found.structured_content["files"][0]
+    assert (first["file"], first["hits"], first["top_units"]) == (str(notes), 3, ["Logistics", "Escalation", "Closing"])
 
 
 # --- token budget (R01 §Token-budget invariant) ----------------------------
