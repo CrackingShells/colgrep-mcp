@@ -718,6 +718,87 @@ async def test_find_files_counts_each_matched_unit(settings_env, monkeypatch, tm
     assert (files[1]["hits"], files[1]["top_units"]) == (1, ["escalate"])
 
 
+async def test_search_unit_after_an_edit_below_the_leader_is_unverified_without_text(
+    settings_env, monkeypatch, tmp_path
+):
+    # A line added under the best section: the leader still sits at its own range,
+    # but every later section has moved, so colgrep's ranges for them hold other lines.
+    text = _NOTES.replace("Routine scheduling.\n", "Routine scheduling.\nAdded.\n")
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text=text)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"]}
+    assert by_id[f"{notes}:3-4"]["location_verified"] is True
+    for stale in (f"{notes}:6-7", f"{notes}:9-10"):
+        assert by_id[stale]["location_verified"] is False
+        assert by_id[stale]["snippet"] is None and by_id[stale]["code"] is None
+
+
+async def test_search_unlocatable_leader_keeps_its_own_range(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text="nothing\nof the\nindexed text\n")
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    leader, *others = [h for h in r.structured_content["hits"] if h["file"] == str(notes)]
+    # colgrep's `unit` spans 3-10 over every matched section; the leader's own range is 3-4.
+    assert (leader["hit_id"], leader["location_verified"]) == (f"{notes}:3-4", False)
+    assert [h["hit_id"] for h in others] == [f"{notes}:6-7", f"{notes}:9-10"]
+
+
+async def test_search_unit_without_a_name_is_never_verified(settings_env, monkeypatch, tmp_path):
+    # colgrep names no document or raw-code unit, so nothing ties its range to the file.
+    notes, _ = _matches_corpus(
+        tmp_path, monkeypatch, notes_matches=[_match(3, 4, "Logistics", 1.2), _match(6, 7, "", 0.9)]
+    )
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
+
+    nameless = next(h for h in r.structured_content["hits"] if h["hit_id"] == f"{notes}:6-7")
+    assert nameless["location_verified"] is False
+    assert nameless["snippet"] is None and nameless["code"] is None
+
+
+async def test_search_include_code_returns_a_verified_units_own_lines(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"]}
+    assert by_id[f"{notes}:6-7"]["code"] == "## Escalation\n- **PI decision:** switch to a subagent."
+    assert by_id[f"{notes}:3-4"]["code"] == "## Logistics\nRoutine scheduling.\n"
+
+
+async def test_search_one_entry_matches_is_a_lone_unit(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_matches=[_match(3, 4, "Logistics", 1.2)])
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation"})
+
+    assert [h["hit_id"] for h in r.structured_content["hits"] if h["file"] == str(notes)] == [f"{notes}:3-4"]
+
+
+async def test_search_heading_with_a_dot_stays_verified(settings_env, monkeypatch, tmp_path):
+    text = "# Wave 05\n\n## Logistics\nRoutine scheduling.\n\n## v1.8 notes\nShip it.\n"
+    notes, _ = _matches_corpus(
+        tmp_path,
+        monkeypatch,
+        notes_text=text,
+        notes_matches=[_match(3, 4, "Logistics", 1.2), _match(6, 7, "v1.8 notes", 0.9)],
+    )
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "release notes"})
+
+    dotted = next(h for h in r.structured_content["hits"] if h["hit_id"] == f"{notes}:6-7")
+    assert dotted["location_verified"] is True
+    assert dotted["snippet"] == "## v1.8 notes\nShip it."
+
+
 async def test_duplicate_ranges_in_matches_count_once(settings_env, monkeypatch, tmp_path):
     notes, _ = _matches_corpus(
         tmp_path,

@@ -3,6 +3,7 @@ R05 D1 `hit_id`/`location_verified`)."""
 
 from __future__ import annotations
 
+from colgrep_mcp.adapter import unit_matches
 from colgrep_mcp.models import FileHit, FileResult, SearchHit, SearchResult
 from colgrep_mcp.tools_search import (
     _file_block,
@@ -41,7 +42,7 @@ def test_hit_from_raw_locates_true_lines_when_file_readable(tmp_path):
     # `hit_from_raw` is pure/I/O-free (F11): the async caller (`_fill_file_cache`)
     # is responsible for populating `file_cache` before this runs.
     file_cache = {str(target): target.read_text()}
-    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
+    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache=file_cache)
 
     assert (hit.line, hit.end_line, hit.location_verified) == (3, 4, True)
     assert hit.hit_id == f"{target}:3-4"
@@ -50,7 +51,7 @@ def test_hit_from_raw_locates_true_lines_when_file_readable(tmp_path):
 def test_hit_from_raw_falls_back_when_file_unreadable():
     raw = _raw_hit(line=7, end_line=9)
 
-    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache={})
+    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache={})
 
     assert (hit.line, hit.end_line, hit.location_verified) == (7, 9, False)
     assert hit.hit_id == "/nonexistent/src/config.py:7-9"
@@ -64,7 +65,7 @@ def test_hit_from_raw_never_touches_disk_itself(tmp_path):
     raw = _raw_hit(file=str(missing_path), line=1, end_line=1)
 
     file_cache = {str(missing_path): "def parse_config(path: str) -> dict:\n    return {}\n"}
-    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache=file_cache)
+    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache=file_cache)
 
     assert (hit.line, hit.end_line, hit.location_verified) == (1, 2, True)
 
@@ -72,18 +73,18 @@ def test_hit_from_raw_never_touches_disk_itself(tmp_path):
 def test_hit_from_raw_snippet_truncated_and_code_gated():
     raw = _raw_hit(code="line1\nline2\nline3\nline4\n")
 
-    hit = hit_from_raw(raw, snippet_lines=2, include_code=False, file_cache={})
+    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=2, include_code=False, file_cache={})
     assert hit.snippet == "line1\nline2"
     assert hit.code is None
 
-    hit_full = hit_from_raw(raw, snippet_lines=2, include_code=True, file_cache={})
+    hit_full = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=2, include_code=True, file_cache={})
     assert hit_full.code == "line1\nline2\nline3\nline4\n"
 
 
 def test_hit_from_raw_tolerant_of_missing_optional_fields():
     raw = {"unit": {"file": "/nonexistent/a.py"}, "score": 0.5}
 
-    hit = hit_from_raw(raw, snippet_lines=6, include_code=False, file_cache={})
+    hit = hit_from_raw(raw, unit_matches(raw)[0], snippet_lines=6, include_code=False, file_cache={})
 
     assert hit.name == ""
     assert hit.signature is None
@@ -135,6 +136,16 @@ def test_render_search_text_includes_header_and_hit_block_uncapped():
     assert "/proj/f1.py:1-1  score=1.00  function unit_1 — def unit_1()" in text
     assert "  def unit_1():" in text  # snippet indented two spaces
     assert "more hits" not in text
+
+
+def test_hit_block_head_has_no_dangling_separator_without_signature():
+    """A unit with no signature (a markdown section, any non-best unit) ends its
+    head at the name, and one with no `unit_type` starts it at the name."""
+    typed = _hit(1).model_copy(update={"signature": None})
+    bare = typed.model_copy(update={"unit_type": "", "name": "Escalation", "snippet": None})
+
+    assert _hit_block(typed).splitlines()[0] == "/proj/f1.py:1-1  score=1.00  function unit_1"
+    assert _hit_block(bare) == "/proj/f1.py:1-1  score=1.00  Escalation"
 
 
 def test_render_search_text_budget_exactly_at_boundary_includes_hit():

@@ -24,7 +24,7 @@ from mcp.server.mcpserver import Context
 from mcp.types import CallToolResult, TextContent
 from pydantic import Field
 
-from .adapter import RawHit, SearchRequest, unit_matches
+from .adapter import RawHit, SearchRequest, UnitMatch, unit_matches
 from .errors import Code, note, tool_error, translate_adapter_errors
 from .locate import locate_unit
 from .locks import project_lock
@@ -59,56 +59,103 @@ def _resolve_hit_file(file: str, base_path: Path | None) -> str:
 
 def hit_from_raw(
     raw: RawHit,
+    leader: UnitMatch,
     snippet_lines: int,
     include_code: bool,
     file_cache: dict[str, str],
     base_path: Path | None = None,
 ) -> SearchHit:
-    """Build a `SearchHit` from one raw colgrep JSON hit (`{"unit": {...}, "score": ...}`).
+    """Build the `SearchHit` of one raw colgrep result's best unit (`{"unit": {...}, "score": ...}`).
 
-    Re-derives `line`/`end_line` via `locate_unit` (R05 D1: colgrep's reported
-    values are frequently wrong) so `hit_id` is built from trustworthy
-    locations. Pure and I/O-free: `file_cache` must already hold every hit
-    file's text (or `""` for an unreadable one) — the async caller fills it
-    via `_fill_file_cache` (off the event loop, R05 F11) before this runs, so
-    an unreadable file still degrades to an empty text rather than raise,
-    which makes `locate_unit` fall back to the reported line/end_line with
-    `verified=False`. `base_path` (the first path the search ran against)
-    resolves a relative `unit.file` to absolute (F13) before `hit_id` is built.
+    `leader` is that unit's own `UnitMatch` (`adapter.unit_matches(raw)[0]`):
+    `unit.line..end_line` is widened over every matched unit of the file, so
+    only `leader`'s range is the unit's, and the one to fall back to. Re-derives
+    `line`/`end_line` via `locate_unit` (R05 D1: colgrep's reported values are
+    frequently wrong), starting from that range, so `hit_id` is built from
+    trustworthy locations and an unlocatable unit keeps its own range instead
+    of one overlapping its siblings. Pure and I/O-free: `file_cache` must
+    already hold every hit file's text (or `""` for an unreadable one) — the
+    async caller fills it via `_fill_file_cache` (off the event loop, R05 F11)
+    before this runs, so an unreadable file degrades to an empty text rather
+    than raise, which makes `locate_unit` fall back with `verified=False`.
+    `base_path` (the first path the search ran against) resolves a relative
+    `unit.file` to absolute (F13) before `hit_id` is built.
+
+    `name` is colgrep's display name for the unit, `Class.method` included;
+    `qualified_name`, `unit_type` and `signature` come from `unit`.
 
     Tolerant of missing/None optional fields (R03 §Hit JSON Schema): only
     `unit`/`score` are assumed present, everything else defaults to an empty
     string or `None`.
     """
     unit = raw.get("unit") or {}
-    score = float(raw.get("score") or 0.0)
     file = _resolve_hit_file(unit.get("file") or "", base_path)
     code = unit.get("code") or ""
-    reported_line = int(unit.get("line") or 1)
-    reported_end = int(unit.get("end_line") or reported_line)
 
-    file_text = file_cache.get(file, "")
-
-    line, end_line, verified = locate_unit(file_text, code, reported_line, reported_end)
-    hit_id = f"{file}:{line}-{end_line}"
+    line, end_line, verified = locate_unit(file_cache.get(file, ""), code, leader.line, leader.end_line)
 
     code_lines = code.splitlines()
     snippet = "\n".join(code_lines[:snippet_lines]) if code_lines else None
 
     return SearchHit(
-        hit_id=hit_id,
+        hit_id=f"{file}:{line}-{end_line}",
         file=file,
         line=line,
         end_line=end_line,
-        name=unit.get("name") or "",
+        name=leader.name,
         qualified_name=unit.get("qualified_name") or "",
         unit_type=unit.get("unit_type") or "",
         language=unit.get("language") or "",
         signature=unit.get("signature"),
-        score=score,
+        score=leader.score,
         snippet=snippet,
         code=code if include_code and code else None,
         location_verified=verified,
+    )
+
+
+def _sibling_hit(
+    leader: SearchHit,
+    match: UnitMatch,
+    body: list[str],
+    leader_exact: bool,
+    snippet_lines: int,
+    include_code: bool,
+) -> SearchHit:
+    """The `SearchHit` of a file's non-leader unit, whose `code` colgrep does not send.
+
+    `body` is the lines the file holds at the unit's range. Nothing here can
+    check them against the unit's code, so the range is trusted
+    (`location_verified`) only on two grounds. The leader was located exactly
+    at its own range (`leader_exact`), so the file still agrees with the
+    index's line numbers there; and the last dotted segment of the unit's
+    display name occurs in the range's first line, so an edit between the two
+    units has not moved this one. A heading that holds a dot (`v1.8 notes`)
+    still passes, an unnamed unit (documents and raw code have an empty name,
+    `UnitMatch`) never does. An untrusted unit gets no snippet and no code,
+    for text at a moved range would sit under another unit's name. It has no
+    `qualified_name`, `unit_type` or `signature`, since colgrep reports none
+    for it.
+    """
+    trusted = (
+        leader_exact
+        and len(body) == match.end_line - match.line + 1
+        and bool(match.name)
+        and match.name.rsplit(".", 1)[-1] in body[0]
+    )
+    return SearchHit(
+        hit_id=f"{leader.file}:{match.line}-{match.end_line}",
+        file=leader.file,
+        line=match.line,
+        end_line=match.end_line,
+        name=match.name,
+        qualified_name="",
+        unit_type="",
+        language=leader.language,
+        score=match.score,
+        snippet="\n".join(body[:snippet_lines]) if trusted and body else None,
+        code="\n".join(body) if trusted and include_code else None,
+        location_verified=trusted,
     )
 
 
@@ -122,58 +169,25 @@ def hits_from_raw(
     """Build one `SearchHit` per unit colgrep matched in one raw result's file.
 
     colgrep collapses its results to one per file (`collapse_by_file`,
-    `colgrep/src/index/mod.rs`): `unit` is the best unit, with its range
-    widened over every matched unit of the file, and since 1.8 `matches`
-    lists each matched unit's own `{line, end_line, name, score}`, best
-    first, whenever there are two or more. Showing only the leader hid an
-    answer sitting in a file's second-best markdown section, so the agent
-    read the whole file instead (`__reports__/match_lines/`). The leader
-    goes through `hit_from_raw` unchanged; output without `matches`
-    (colgrep 1.6, or a single matched unit) yields that one hit.
-
-    The other units arrive without `code`, so `locate_unit` cannot check
-    them one by one. Their ranges are trusted (`location_verified`) only
-    when the leader was located exactly at its own `matches[0]` range,
-    which shows this file on disk still agrees with the index's line
-    numbers, and the range lies inside the file. Snippet and `code` come
-    from `file_cache`, already read for the leader: no further I/O. Such a
-    hit has no `qualified_name`, `unit_type` or `signature`, since colgrep
-    reports none for it.
+    `colgrep/src/index/mod.rs`) and since 1.8.4 `unit_matches` lists each
+    matched unit's own range and name. Showing only the best hid an answer
+    sitting in a file's second-best markdown section, so the agent read the
+    whole file instead (OBS-M). The best unit goes through `hit_from_raw`; the
+    others through `_sibling_hit`, their text read from `file_cache`, already
+    filled for the leader: no further I/O. Output without `matches` (colgrep
+    1.6, or a single matched unit) yields that one hit.
     """
-    leader = hit_from_raw(raw, snippet_lines, include_code, file_cache, base_path=base_path)
     matches = unit_matches(raw)
+    leader = hit_from_raw(raw, matches[0], snippet_lines, include_code, file_cache, base_path=base_path)
     if len(matches) < 2:
         return [leader]
 
     file_lines = file_cache.get(leader.file, "").splitlines()
-    first = matches[0]
-    trusted = leader.location_verified and (first.line, first.end_line) == (leader.line, leader.end_line)
-
-    hits = [leader]
-    seen = {leader.hit_id}
-    for match in matches[1:]:
-        hit_id = f"{leader.file}:{match.line}-{match.end_line}"
-        if hit_id in seen:
-            continue
-        seen.add(hit_id)
-        body = file_lines[match.line - 1 : match.end_line]
-        hits.append(
-            SearchHit(
-                hit_id=hit_id,
-                file=leader.file,
-                line=match.line,
-                end_line=match.end_line,
-                name=match.name,
-                qualified_name="",
-                unit_type="",
-                language=leader.language,
-                score=match.score,
-                snippet="\n".join(body[:snippet_lines]) if body else None,
-                code="\n".join(body) if include_code and body else None,
-                location_verified=trusted and match.end_line <= len(file_lines),
-            )
-        )
-    return hits
+    leader_exact = leader.location_verified and (leader.line, leader.end_line) == (matches[0].line, matches[0].end_line)
+    return [leader] + [
+        _sibling_hit(leader, m, file_lines[m.line - 1 : m.end_line], leader_exact, snippet_lines, include_code)
+        for m in matches[1:]
+    ]
 
 
 async def _read_file_off_loop(file: str) -> str:

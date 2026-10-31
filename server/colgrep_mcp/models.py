@@ -23,9 +23,11 @@ class SearchHit(BaseModel):
     code: str | None = Field(default=None, description="Full unit source; only when include_code=true.")
     location_verified: bool = Field(
         default=False,
-        description="True when `line`/`end_line` were re-derived via locate_unit and matched exactly "
-        "(R05 D1: colgrep's own line/end_line are frequently wrong). False means the reported "
-        "values are an unverified fallback.",
+        description="True when `line`/`end_line` were checked against the file (R05 D1: colgrep's own "
+        "line/end_line are frequently wrong). A file's best unit is checked by finding its code there; "
+        "each other unit of the file only when the best sits exactly at colgrep's range for it and this "
+        "unit's name occurs in the range's first line. False means colgrep's range, unchecked; such a "
+        "non-best unit has no snippet or code.",
     )
 
 
