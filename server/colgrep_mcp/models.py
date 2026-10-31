@@ -24,10 +24,11 @@ class SearchHit(BaseModel):
     location_verified: bool = Field(
         default=False,
         description="True when `line`/`end_line` were checked against the file (R05 D1: colgrep's own "
-        "line/end_line are frequently wrong). A file's best unit is checked by finding its code there; "
-        "each other unit of the file only when the best sits exactly at colgrep's range for it and this "
-        "unit's name occurs in the range's first line. False means colgrep's range, unchecked; such a "
-        "non-best unit has no snippet or code.",
+        "line/end_line were frequently wrong). A file's best unit is checked by finding its code there. "
+        "Each other unit of the file is trusted when the best sits exactly at colgrep's range for it, this "
+        "search refreshed colgrep's index (not `skip_index_update`), and the file was not modified after "
+        "the search began: colgrep then indexed the file as it is. False means colgrep's range, "
+        "unchecked; such a non-best unit has no snippet or code.",
     )
 
 

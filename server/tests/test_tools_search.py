@@ -7,7 +7,9 @@ from __future__ import annotations
 import asyncio
 import builtins
 import json
+import os
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -478,14 +480,14 @@ async def test_search_reads_an_edited_file_whole_once_to_relocate_its_leader(set
 async def test_search_cut_reads_and_builds_only_the_surviving_units(settings_env, monkeypatch, tmp_path):
     notes, tools = _matches_corpus(tmp_path, monkeypatch)
     spans_read: list[set] = []
-    real_read_spans = tools_search._read_spans
+    real_read_spans = tools_search._read_spans_from
 
-    def spy(file: str, spans):
+    def spy(f, spans):
         spans = list(spans)
-        spans_read.append({(Path(file).name, *s) for s in spans})
-        return real_read_spans(file, spans)
+        spans_read.append({(Path(f.name).name, *s) for s in spans})
+        return real_read_spans(f, spans)
 
-    monkeypatch.setattr(tools_search, "_read_spans", spy)
+    monkeypatch.setattr(tools_search, "_read_spans_from", spy)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("search", {"query": "escalation", "limit": 2})
@@ -814,13 +816,21 @@ async def test_find_files_counts_each_matched_unit(settings_env, monkeypatch, tm
     assert (files[1]["hits"], files[1]["top_units"]) == (1, ["escalate"])
 
 
-async def test_search_unit_after_an_edit_below_the_leader_is_unverified_without_text(
+def _touch_after_search_starts(path: Path) -> None:
+    """Give `path` a modification time no search started now can have indexed."""
+    future = time.time_ns() + 3_600 * 10**9
+    os.utime(path, ns=(future, future))
+
+
+async def test_search_units_of_a_file_modified_after_the_search_began_are_unverified_without_text(
     settings_env, monkeypatch, tmp_path
 ):
-    # A line added under the best section: the leader still sits at its own range,
-    # but every later section has moved, so colgrep's ranges for them hold other lines.
+    # A line added under the best section after colgrep's refresh: the best unit still sits
+    # at its own range, but every later section has moved, so colgrep's ranges for them
+    # hold other lines.
     text = _NOTES.replace("Routine scheduling.\n", "Routine scheduling.\nAdded.\n")
     notes, _ = _matches_corpus(tmp_path, monkeypatch, notes_text=text)
+    _touch_after_search_starts(notes)
 
     async with Client(build(), raise_exceptions=True) as c:
         r = await c.call_tool("search", {"query": "escalation", "include_code": True})
@@ -830,6 +840,19 @@ async def test_search_unit_after_an_edit_below_the_leader_is_unverified_without_
     for stale in (f"{notes}:6-7", f"{notes}:9-10"):
         assert by_id[stale]["location_verified"] is False
         assert by_id[stale]["snippet"] is None and by_id[stale]["code"] is None
+
+
+async def test_search_units_are_unverified_when_the_index_refresh_was_skipped(settings_env, monkeypatch, tmp_path):
+    notes, _ = _matches_corpus(tmp_path, monkeypatch)
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "skip_index_update": True, "include_code": True})
+
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"] if h["file"] == str(notes)}
+    assert by_id[f"{notes}:3-4"]["location_verified"] is True  # the best unit is checked by its code
+    for other in (f"{notes}:6-7", f"{notes}:9-10"):
+        assert by_id[other]["location_verified"] is False
+        assert by_id[other]["snippet"] is None and by_id[other]["code"] is None
 
 
 async def test_search_unlocatable_leader_keeps_its_own_range(settings_env, monkeypatch, tmp_path):
@@ -842,20 +865,6 @@ async def test_search_unlocatable_leader_keeps_its_own_range(settings_env, monke
     # colgrep's `unit` spans 3-10 over every matched section; the leader's own range is 3-4.
     assert (leader["hit_id"], leader["location_verified"]) == (f"{notes}:3-4", False)
     assert [h["hit_id"] for h in others] == [f"{notes}:6-7", f"{notes}:9-10"]
-
-
-async def test_search_unit_without_a_name_is_never_verified(settings_env, monkeypatch, tmp_path):
-    # colgrep names no document or raw-code unit, so nothing ties its range to the file.
-    notes, _ = _matches_corpus(
-        tmp_path, monkeypatch, notes_matches=[_match(3, 4, "Logistics", 1.2), _match(6, 7, "", 0.9)]
-    )
-
-    async with Client(build(), raise_exceptions=True) as c:
-        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
-
-    nameless = next(h for h in r.structured_content["hits"] if h["hit_id"] == f"{notes}:6-7")
-    assert nameless["location_verified"] is False
-    assert nameless["snippet"] is None and nameless["code"] is None
 
 
 async def test_search_include_code_returns_a_verified_units_own_lines(settings_env, monkeypatch, tmp_path):
@@ -878,21 +887,37 @@ async def test_search_one_entry_matches_is_a_lone_unit(settings_env, monkeypatch
     assert [h["hit_id"] for h in r.structured_content["hits"] if h["file"] == str(notes)] == [f"{notes}:3-4"]
 
 
-async def test_search_heading_with_a_dot_stays_verified(settings_env, monkeypatch, tmp_path):
-    text = "# Wave 05\n\n## Logistics\nRoutine scheduling.\n\n## v1.8 notes\nShip it.\n"
+async def test_search_trusts_every_unit_of_an_unedited_file_whatever_its_first_line_says(
+    settings_env, monkeypatch, tmp_path
+):
+    # A wording check would fail all three: a chunk of a long section starts mid-body, a name can
+    # end in a dot (so its last dotted segment is empty), and documents have no name at all.
+    text = (
+        "# Wave 05\n\n## Logistics\nRoutine scheduling.\n\n"
+        "Escalation continued: a long section's second chunk.\n- **PI decision:** switch to a subagent.\n"
+        "## Title doc..Next steps.\nWave closed.\n"
+    )
     notes, _ = _matches_corpus(
         tmp_path,
         monkeypatch,
         notes_text=text,
-        notes_matches=[_match(3, 4, "Logistics", 1.2), _match(6, 7, "v1.8 notes", 0.9)],
+        notes_matches=[
+            _match(3, 4, "Logistics", 1.2),
+            _match(6, 7, "Escalation", 0.9),
+            _match(8, 9, "Title doc..Next steps.", 0.5),
+            _match(1, 2, "", 0.1),
+        ],
     )
 
     async with Client(build(), raise_exceptions=True) as c:
-        r = await c.call_tool("search", {"query": "release notes"})
+        r = await c.call_tool("search", {"query": "escalation", "include_code": True})
 
-    dotted = next(h for h in r.structured_content["hits"] if h["hit_id"] == f"{notes}:6-7")
-    assert dotted["location_verified"] is True
-    assert dotted["snippet"] == "## v1.8 notes\nShip it."
+    by_id = {h["hit_id"]: h for h in r.structured_content["hits"] if h["file"] == str(notes)}
+    assert all(h["location_verified"] for h in by_id.values())
+    assert by_id[f"{notes}:6-7"]["snippet"].startswith("Escalation continued")
+    assert by_id[f"{notes}:8-9"]["code"] == "## Title doc..Next steps.\nWave closed."
+    assert by_id[f"{notes}:1-2"]["snippet"] == "# Wave 05\n"
+    assert not any(n.startswith(f"[{Code.LOCATION_UNVERIFIED}]") for n in r.structured_content["notes"])
 
 
 async def test_duplicate_ranges_in_matches_count_once(settings_env, monkeypatch, tmp_path):
