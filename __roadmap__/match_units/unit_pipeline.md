@@ -2,14 +2,14 @@
 
 **Goal**: Rebuild `search`'s hit construction as one output-proportional pipeline: adapter JSON → `unit_matches` → rank and cut to `limit` → read only the surviving spans → build hits. Every unit keeps its own verified range and name.
 **Pre-conditions**:
-- [ ] Task branch `task/match-units-pipeline` is cut from `claude/happy-hamilton-e15dcd` at the commit that adds this roadmap
-- [ ] `cd server && uv run pytest -q` is green in the task worktree before any edit
+- [x] Task branch `task/match-units-pipeline` is cut from `claude/happy-hamilton-e15dcd` at the commit that adds this roadmap
+- [x] `cd server && uv run pytest -q` is green in the task worktree before any edit
 **Success Gates**:
-- ⬜ `cd server && uv run pytest -q && uv run ruff check && uv run ruff format --check && uv run cz check --rev-range claude/happy-hamilton-e15dcd..HEAD` passes [run]
-- ⬜ Only `adapter.py` reads `matches`: within `server/colgrep_mcp/`, only `adapter.py` contains the string `"matches"` [run]
-- ⬜ `FAKE_COLGREP_MATCHES` no longer appears under `server/` [run]
+- ✅ `cd server && uv run pytest -q && uv run ruff check && uv run ruff format --check && uv run cz check --rev-range claude/happy-hamilton-e15dcd..HEAD` passes [run]
+- ✅ Only `adapter.py` reads `matches`: within `server/colgrep_mcp/`, only `adapter.py` contains the string `"matches"` [run]
+- ✅ `FAKE_COLGREP_MATCHES` no longer appears under `server/` [run]
 - ⬜ Every new contract test named in steps 1–4 fails when `server/colgrep_mcp/` is checked out at c4c291a, and the report lists them [run]
-- ⬜ The bodies of commits 3 and 4 carry median-of-5 before/after tables, or the commit is typed `refactor` and the report says why [run]
+- ✅ The bodies of commits 3 and 4 carry median-of-5 before/after tables, or the commit is typed `refactor` and the report says why [run]
 **References**: [R01 §Verdict on c4c291a, §Target design](~/.claude/plans/now-switching-you-to-tidy-glade.md) — the nine findings this leaf answers (rows 1–7, 9) and the design it implements
 
 ## Step 1: Normalise colgrep results to leader-first unit matches

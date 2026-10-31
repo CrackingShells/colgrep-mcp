@@ -2,12 +2,12 @@
 
 **Goal**: Declare colgrep 1.8.4 the soft minimum through `doctor`, and state the one-hit-per-unit rule by editing the guide in place rather than appending to it.
 **Pre-conditions**:
-- [ ] The roadmap commit is on `claude/happy-hamilton-e15dcd`
+- [x] The roadmap commit is on `claude/happy-hamilton-e15dcd`
 **Success Gates**:
-- ⬜ `cd server && uv run pytest -q tests/test_tools_index.py tests/test_adapter.py` passes [run]
-- ⬜ `git diff main..HEAD -- skills/` is empty [run]
-- ⬜ `git diff --numstat main..HEAD -- server/colgrep_mcp/guide.md` adds no more than 4 lines net [run]
-- ⬜ `AGENTS.md` names `OBS-M` and points it at `__reports__/match_lines/00-observation_markdown_match_lines_v0.md` [run]
+- ✅ `cd server && uv run pytest -q tests/test_tools_index.py tests/test_adapter.py` passes [run]
+- ✅ `git diff main..HEAD -- skills/` is empty [run]
+- ✅ `git diff --numstat main..HEAD -- server/colgrep_mcp/guide.md` adds no more than 4 lines net [run]
+- ✅ `AGENTS.md` names `OBS-M` and points it at `__reports__/match_lines/00-observation_markdown_match_lines_v0.md` [run]
 **References**: [R01 §Documentation, §Minimum colgrep 1.8.4](~/.claude/plans/now-switching-you-to-tidy-glade.md) — what to revert, what to rewrite, how strict the minimum is
 
 ## Step 1: Report a colgrep older than 1.8.4 in doctor

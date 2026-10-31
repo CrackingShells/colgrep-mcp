@@ -11,22 +11,22 @@ PR #18 (commit c4c291a on `claude/happy-hamilton-e15dcd`) made `search` yield on
 `search` builds only the units it returns, from one normaliser of colgrep's results. Every unit keeps its own verified range and name, and the docs state that rule without accretion.
 
 ## Pre-conditions
-- [ ] `claude/happy-hamilton-e15dcd` is at c4c291a or later, with the gates green
-- [ ] `colgrep --version` reports 1.8.4 or newer on this machine (for the verifier's real-binary probe)
+- [x] `claude/happy-hamilton-e15dcd` is at c4c291a or later, with the gates green
+- [x] `colgrep --version` reports 1.8.4 or newer on this machine (for the verifier's real-binary probe)
 
 ## Success Gates
-- ⬜ `cd server && uv run pytest -q && uv run ruff check && uv run ruff format --check && uv run cz check --rev-range main..HEAD` passes on the integration branch [run]
-- ⬜ Only `adapter.py` reads `matches`: within `server/colgrep_mcp/`, only `adapter.py` contains the string `"matches"` [run]
-- ⬜ `git diff main..HEAD -- skills/` is empty [run]
-- ⬜ The verifier's real-binary probe passes: the wave-05 105-156 hit is verified and expands to line 138 [behavioral]
+- ✅ `cd server && uv run pytest -q && uv run ruff check && uv run ruff format --check && uv run cz check --rev-range main..HEAD` passes on the integration branch [run]
+- ✅ Only `adapter.py` reads `matches`: within `server/colgrep_mcp/`, only `adapter.py` contains the string `"matches"` [run]
+- ✅ `git diff main..HEAD -- skills/` is empty [run]
+- ✅ The verifier's real-binary probe passes: the wave-05 105-156 hit is verified and expands to line 138 [behavioral]
 - ⬜ PR #18 CI is green [run]
 
 ## Status
 ```mermaid
 graph TD
-    unit_pipeline[Unit Pipeline]:::planned
-    doctor_and_docs[Doctor and Docs]:::planned
-    verify[Verification]:::planned
+    unit_pipeline[Unit Pipeline]:::done
+    doctor_and_docs[Doctor and Docs]:::done
+    verify[Verification]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -37,9 +37,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `unit_pipeline.md` | 📄 Leaf Task | ⬜ Planned |
-| `doctor_and_docs.md` | 📄 Leaf Task | ⬜ Planned |
-| `verify/` | 📁 Directory | ⬜ Planned |
+| `unit_pipeline.md` | 📄 Leaf Task | ✅ Done |
+| `doctor_and_docs.md` | 📄 Leaf Task | ✅ Done |
+| `verify/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

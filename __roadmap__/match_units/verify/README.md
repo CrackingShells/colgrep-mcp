@@ -7,15 +7,15 @@ Runs after `unit_pipeline`. It is the named adversarial review for this campaign
 Either break the pipeline's location and trust rules or show, probe by probe, that they hold.
 
 ## Pre-conditions
-- [ ] `unit_pipeline` has reported, with its gates green
+- [x] `unit_pipeline` has reported, with its gates green
 
 ## Success Gates
-- ⬜ Every attack in `adversarial_review` is marked broken or held, and each broken one is fixed or explicitly accepted by the coordinator [behavioral]
+- ✅ Every attack in `adversarial_review` is marked broken or held, and each broken one is fixed or explicitly accepted by the coordinator [behavioral]
 
 ## Status
 ```mermaid
 graph TD
-    adversarial_review[Adversarial Review]:::planned
+    adversarial_review[Adversarial Review]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -26,7 +26,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `adversarial_review.md` | 📄 Leaf Task | ⬜ Planned |
+| `adversarial_review.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

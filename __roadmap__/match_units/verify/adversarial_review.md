@@ -2,12 +2,12 @@
 
 **Goal**: Find what is wrong in `unit_pipeline` before it merges: silent location and trust failures, the class of bug a green suite does not show.
 **Pre-conditions**:
-- [ ] `unit_pipeline` has reported, with its gates green on `task/match-units-pipeline`
-- [ ] `colgrep --version` reports 1.8.4 or newer, and the scratch copy of a notes corpus named in the verifier's brief exists outside this repository
+- [x] `unit_pipeline` has reported, with its gates green on `task/match-units-pipeline`
+- [x] `colgrep --version` reports 1.8.4 or newer, and the scratch copy of a notes corpus named in the verifier's brief exists outside this repository
 **Success Gates**:
-- ⬜ A findings list in which each attack below is marked broken (with a reproducer) or held (with the probe that tried to break it) [behavioral]
-- ⬜ The real-binary probe: the wave-05 105-156 hit is `location_verified` and `expand` returns line 138 [run]
-- ⬜ The share of leaders verified by exact span versus whole-file fallback, over 3–5 statera queries, is reported [run]
+- ✅ A findings list in which each attack below is marked broken (with a reproducer) or held (with the probe that tried to break it) [behavioral]
+- ✅ The real-binary probe: the wave-05 105-156 hit is `location_verified` and `expand` returns line 138 [run]
+- ✅ The share of leaders verified by exact span versus whole-file fallback, over 3–5 statera queries, is reported [run]
 **References**: [R01 §Verdict on c4c291a, §Target design](~/.claude/plans/now-switching-you-to-tidy-glade.md) — the rules under attack
 
 ## Step 1: Attack the pipeline and probe the real binary
