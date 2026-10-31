@@ -956,6 +956,41 @@ async def test_search_trusts_every_unit_of_an_unedited_file_whatever_its_first_l
     assert not any(n.startswith(f"[{Code.LOCATION_UNVERIFIED}]") for n in r.structured_content["notes"])
 
 
+async def test_search_leader_is_the_unit_whose_code_colgrep_sent_when_scores_tie(settings_env, monkeypatch, tmp_path):
+    # colgrep orders tied scores by line, so `matches[0]` is Logistics although `unit` (and its
+    # code) is Escalation: the leader must be Escalation, or it would carry Logistics' name over
+    # Escalation's text and the file's other unit would be listed twice.
+    notes, _ = _matches_corpus(
+        tmp_path,
+        monkeypatch,
+        notes_matches=[_match(3, 4, "Logistics", 0.9), _match(6, 7, "Escalation", 0.9), _match(9, 10, "Closing", 0.1)],
+    )
+    raws = json.loads((tmp_path / "matches_hits.json").read_text())
+    raws[0]["unit"] = _unit(notes, "Escalation", 3, 10, "## Escalation\n- **PI decision:** switch to a subagent.\n")
+    raws[0]["score"] = 0.9
+    (tmp_path / "matches_hits.json").write_text(json.dumps(raws))
+
+    async with Client(build(), raise_exceptions=True) as c:
+        r = await c.call_tool("search", {"query": "escalation", "limit": 4, "include_code": True})
+
+    hits = [h for h in r.structured_content["hits"] if h["file"] == str(notes)]
+    ids = [h["hit_id"] for h in r.structured_content["hits"]]
+    assert len(ids) == len(set(ids))
+    leader = hits[0]
+    assert (leader["hit_id"], leader["name"], leader["qualified_name"]) == (
+        f"{notes}:6-7",
+        "Escalation",
+        f"{notes.name}::Escalation",
+    )
+    assert leader["location_verified"] is True
+    assert {h["hit_id"]: h["name"] for h in hits} == {
+        f"{notes}:6-7": "Escalation",
+        f"{notes}:3-4": "Logistics",
+        f"{notes}:9-10": "Closing",
+    }
+    assert all(h["location_verified"] for h in hits)
+
+
 async def test_duplicate_ranges_in_matches_count_once(settings_env, monkeypatch, tmp_path):
     notes, _ = _matches_corpus(
         tmp_path,

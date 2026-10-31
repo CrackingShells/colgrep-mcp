@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, NamedTuple
 
+from .locate import split_lines
 from .models import IndexBuildResult, IndexInfo, IndexStatus
 from .textparse import parse_index_summary, parse_settings, parse_stats, parse_status
 
@@ -121,6 +122,12 @@ def unit_matches(raw: RawHit) -> list[UnitMatch]:
     leader: the result then falls back to its own `unit`, like an absent or
     one-entry `matches` (colgrep 1.6, a lone matched unit). `name` is the
     display name (`Class.method`), empty for documents and raw code.
+
+    `absorb_matches` breaks score ties by line, so `matches[0]` can be a unit
+    other than `unit`, the one whose `code` is sent. Among the entries tied
+    with the first, the leader is the one whose line count is `code`'s and
+    whose name is `unit`'s display name (`UnitMatch::of`); with none, or
+    without `code`, it is `matches[0]`.
     """
     unit = raw.get("unit") or {}
     score = float(raw.get("score") or 0.0)
@@ -144,9 +151,22 @@ def unit_matches(raw: RawHit) -> list[UnitMatch]:
             best[key] = match
         elif match.score > best[key].score:
             best[key] = best[key]._replace(score=match.score)
-    leader, *rest = best.values()
+    first = next(iter(best.values()))
+    leader = next((m for m in best.values() if m.score == first.score and _is_unit(m, unit)), first)
+    rest = [m for m in best.values() if m is not leader]
     rest.sort(key=lambda m: m.score, reverse=True)
     return [leader, *rest]
+
+
+def _is_unit(match: UnitMatch, unit: dict[str, Any]) -> bool:
+    """Whether `match` is the unit `unit` describes: same line count as its
+    `code`, same display name (`UnitMatch::of` in colgrep's `index/mod.rs`)."""
+    name = unit.get("name") or ""
+    if unit.get("unit_type") in ("document", "raw_code"):
+        name = ""
+    elif unit.get("parent_class"):
+        name = f"{unit['parent_class']}.{name}"
+    return match.end_line - match.line + 1 == len(split_lines(unit.get("code") or "")) and match.name == name
 
 
 def _require_absolute(path: Path, what: str) -> None:
