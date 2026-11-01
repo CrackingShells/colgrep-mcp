@@ -5,6 +5,26 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.6.0 (2026-11-01)
+
+### Added
+
+- **index**: report a colgrep older than 1.8.4 in doctor
+- **search**: yield one hit per unit colgrep matched in a file
+
+### Changed
+
+- **search**: read each file's expanded spans in one pass
+- **search**: build only surviving units and verify leaders by exact span
+
+### Fixed
+
+- **adapter**: pick the unit whose code colgrep sent as the leader on a score tie
+- **search**: drop a unit seen twice across overlapping search paths
+- **search**: count lines on \n alone wherever ranges are derived
+- **search**: trust a file's other units through this search's index refresh
+- **search**: keep each unit to its own verified range and name
+
 ## v0.5.2 (2026-09-16)
 
 ### Fixed
