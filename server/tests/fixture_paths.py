@@ -1,7 +1,7 @@
 """Absolute path stand-ins for the suite's simulated "fake project".
 
 `fake_colgrep.py` never touches these on disk (a hit file that cannot be
-read degrades to `""` in `_fill_file_cache`/`_read_file_off_loop`), but real
+read degrades to an unverified hit in `_read_units`), but real
 code checks `pathlib.Path.is_absolute()` against them: the adapter's own
 absolute-path guard on `status`/`clear`/`search`, and
 `tools_search._resolve_hit_file`'s "already absolute, don't rebase" check.

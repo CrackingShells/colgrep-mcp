@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """A stand-in for the colgrep CLI used by the test-suite.
 
-Emulates the subset of colgrep 1.6 surface the adapter drives:
+Emulates the subset of colgrep 1.8 surface the adapter drives:
   --version | --stats | settings | status PATH | init [-y] PATH | clear PATH
   [search] [--json] [-k N] [-e PAT] [flags...] QUERY [PATH...]
 Environment knobs:
   FAKE_COLGREP_EXIT       force this exit code (stderr gets "forced failure")
-  FAKE_COLGREP_HITS       path to a JSON fixture (default: fixtures/hits_small.json)
+  FAKE_COLGREP_HITS       path to a JSON fixture (default: fixtures/hits_small.json),
+                          answered as written: colgrep returns one result per file
+                          (`collapse_by_file`), so `-k N` counts files, and a
+                          fixture lists a file's matched units in `matches` itself
+                          (colgrep 1.8.4+ shape)
   FAKE_COLGREP_SLEEP      seconds to sleep before answering (timeout tests)
   FAKE_COLGREP_INDEXED    "0" -> `status` reports no index
   FAKE_COLGREP_ARGV_FILE  path to write argv (as a JSON list) to, for adapter tests
@@ -86,7 +90,7 @@ def main(argv):
 
     args = [a for a in argv if a != "--color" and a != "never"]
     if "--version" in args:
-        print("colgrep 1.6.2")
+        print("colgrep 1.8.5")
         return 0
     store = os.environ.get("FAKE_COLGREP_STORE")
     if "--stats" in args:

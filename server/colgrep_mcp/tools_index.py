@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import re
 import shutil
 import time
 from pathlib import Path
@@ -39,6 +40,28 @@ from .server import READ_ONLY_TOOL, get_adapter, get_settings, register_tool
 #: (R05 D2: colgrep emits no per-file progress, only a final summary line).
 #: A module constant so tests can monkeypatch it down for fast heartbeat assertions.
 HEARTBEAT_S = 5.0
+
+#: The first colgrep whose `--json` lists every matched unit of a file
+#: (`SearchResult.matches`, upstream 1af6b16). An older binary still works,
+#: but `search` then sees one unit per file and locates it by reading the
+#: whole file, so `doctor` reports it rather than `search` refusing it.
+MIN_COLGREP = (1, 8, 4)
+_VERSION_RE = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+
+
+def _version_problem(version: str) -> str | None:
+    """A `doctor` problem when `colgrep --version` is older than `MIN_COLGREP`.
+
+    Compares the first `x.y.z` as integers, so `1.8.5+cs.1` passes and `1.10.0`
+    is newer than `1.8.4`; output with no `x.y.z` is not judged.
+    """
+    found = _VERSION_RE.search(version)
+    if found is None or tuple(int(part) for part in found.groups()) >= MIN_COLGREP:
+        return None
+    return (
+        f"colgrep {found.group(0)} is older than 1.8.4: search sees only each file's best unit "
+        "and locates it by reading the whole file; upgrade colgrep to 1.8.4 or newer"
+    )
 
 
 class Confirm(BaseModel):
@@ -322,6 +345,8 @@ async def doctor(*, ctx: Context) -> CallToolResult:
         problems.append(f"colgrep binary not found: {exc}")
     except ColgrepError as exc:
         problems.append(f"colgrep --version failed: {exc}")
+    if version is not None and (too_old := _version_problem(version)):
+        problems.append(too_old)
 
     settings_map: dict[str, str] = {}
     try:

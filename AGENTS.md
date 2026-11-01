@@ -114,6 +114,7 @@ reports, `OBS-*` observation reports from a reviewer pass.
 | `OBS-H` | `__reports__/repo_health/01-observation_review_v0.md` |
 | `OBS-C` | `__reports__/consistency/01-observation_review_v0.md` |
 | `OBS-D` | `__reports__/dev_plugin/02-observation_review_v0.md` |
+| `OBS-M` | `__reports__/match_lines/00-observation_markdown_match_lines_v0.md` |
 | `PH` | `__reports__/repo_health/00-findings_launch_placeholders_v0.md` |
 | `CI` | `__reports__/repo_health/03-findings_ci_matrix_v0.md` |
 | `RI` | `__reports__/repo_health/04-findings_remote_install_v0.md` |

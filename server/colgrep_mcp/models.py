@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field
 
 
 class SearchHit(BaseModel):
+    """One matched unit. A file yields one hit per unit colgrep matched in it; the
+    units after its best carry no `qualified_name`, `unit_type` or `signature`."""
+
     hit_id: str = Field(description="Self-describing id: '<absolute file>:<line>-<end_line>'. Pass to `expand`.")
     file: str
     line: int
@@ -20,9 +23,12 @@ class SearchHit(BaseModel):
     code: str | None = Field(default=None, description="Full unit source; only when include_code=true.")
     location_verified: bool = Field(
         default=False,
-        description="True when `line`/`end_line` were re-derived via locate_unit and matched exactly "
-        "(R05 D1: colgrep's own line/end_line are frequently wrong). False means the reported "
-        "values are an unverified fallback.",
+        description="True when `line`/`end_line` were checked against the file (R05 D1: colgrep's own "
+        "line/end_line were frequently wrong). A file's best unit is checked by finding its code there. "
+        "Each other unit of the file is trusted when the best sits exactly at colgrep's range for it, this "
+        "search refreshed colgrep's index (not `skip_index_update`), and the file was not modified after "
+        "the search began: colgrep then indexed the file as it is. False means colgrep's range, "
+        "unchecked; such a non-best unit has no snippet or code.",
     )
 
 

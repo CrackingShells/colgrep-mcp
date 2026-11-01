@@ -12,7 +12,7 @@ One directory installs as a **Claude Code plugin**, an **[Agent Plugins 1.0](htt
 
 | Dependency | Why | Install |
 |:--|:--|:--|
-| `colgrep` ≥ 1.6 | does the indexing and ranking | `cargo install colgrep` or see the [next-plaid README](https://github.com/lightonai/next-plaid) |
+| `colgrep` ≥ 1.8.4 | does the indexing and ranking | `cargo install colgrep` or see the [next-plaid README](https://github.com/lightonai/next-plaid) |
 | `uv` | `uvx` fetches the server from PyPI and caches it on first launch | [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
 | Python ≥ 3.11 | fetched automatically by `uv` if missing | — |
 
