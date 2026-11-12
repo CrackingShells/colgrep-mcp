@@ -18,6 +18,7 @@ from mcp.server.mcpserver import Context
 
 from .config import Settings
 from .errors import Code, tool_error
+from .probe import _probe_record  # noqa: F401 - PROBE_ENV is exported via probe.PROBE_ENV
 from .server import get_settings
 
 
@@ -106,4 +107,9 @@ async def resolve_target_paths(ctx: Context, paths: list[str] | None) -> list[Pa
     """`resolve_paths` for a tool call, fetching client roots only when they can matter."""
     settings = get_settings(ctx)
     roots = await client_roots(ctx) if _roots_can_matter(paths, settings) else None
+
+    # Probe hook: best-effort dump of the resolution outcome (maintainer-policy
+    # section *One idiom per concern*: use ``safe_log`` on failure).
+    _probe_record(ctx, paths, settings, roots)
+
     return resolve_paths(paths, settings, roots)
