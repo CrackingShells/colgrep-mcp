@@ -32,8 +32,8 @@ Decide, from measured per-harness evidence, which rungs of the resolution ladder
 ## Status
 ```mermaid
 graph TD
-    probe_instrumentation[Probe instrumentation for workspace signals]:::planned
-    protocol_survey[Workspace-channel protocol survey]:::planned
+    probe_instrumentation[Probe instrumentation for workspace signals]:::inprogress
+    protocol_survey[Workspace-channel protocol survey]:::inprogress
     evidence[Harness evidence collection]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
@@ -45,8 +45,8 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `probe_instrumentation.md` | 📄 Leaf Task | ⬜ Planned |
-| `protocol_survey.md` | 📄 Leaf Task | ⬜ Planned |
+| `probe_instrumentation.md` | 📄 Leaf Task | 🔄 In Progress |
+| `protocol_survey.md` | 📄 Leaf Task | 🔄 In Progress |
 | `evidence/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
