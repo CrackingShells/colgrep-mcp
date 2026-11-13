@@ -77,6 +77,6 @@ Caption: verifier's exploitation chain (lever 1b + lever 3); every matrix cell v
 
 - ../../__reports__/workspace_discovery/02-gap_analysis_calibrated_probe_v0.md — gap analysis built on these findings
 - ../../__roadmap__/workspace_discovery/README.md — campaign debt note this supersedes
-- ../../server/colgrep_mcp/probe.py — defect region 1, 1c, 2b, 6
-- ../../server/tests/test_probe.py — defect region 3
-- ../../server/tests/e2e/probe_workspace.py — defect regions 1b, 5
+- ../../server/colgrep_mcp/probe.py — defect region 1, 1c, 2b, 6 (file withdrawn at c7c6377; review against the tagged history at ca3cb40 for these fixes)
+- ../../server/tests/test_probe.py — defect region 3 (withdrawn c7c6377)
+- ../../server/tests/e2e/probe_workspace.py — defect regions 1b, 5 (withdrawn c7c6377)

@@ -76,4 +76,4 @@ Caption: rung provenance for each measured channel; only Station 2 is dynamic, a
 - ../../__roadmap__/workspace_discovery/README.md (campaign gates, ownership)
 - ../../__reports__/workspace_discovery/00-architecture_v0.md (R01 law and matrix contract)
 - ../../server/colgrep_mcp/paths.py (in-fleet client_roots self-claim)
-- ../../server/colgrep_mcp/probe.py (dump schema keys to be confirmed at R03)
+- ../../server/colgrep_mcp/probe.py (dump schema keys to be confirmed at R03; file withdrawn at c7c6377 pending the hardening fix, see 02-gap_analysis_calibrated_probe_v0.md)
