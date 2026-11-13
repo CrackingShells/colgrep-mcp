@@ -52,8 +52,13 @@ _PROBE_INTERNAL_NAMES = frozenset(
 
 
 def capture_pure(snap: dict[str, Any]) -> str:
-    """Serialise *snap* to one JSONL line with sorted, deterministic keys."""
-    return json.dumps(snap, sort_keys=True, ensure_ascii=False)
+    """Serialise *snap* to one JSONL line with sorted, deterministic keys.
+
+    ``default=str`` coerces a value with no native JSON encoding so the record
+    stays a witness (lever 2b: an unmappable snapshot value must not turn into
+    a ``TypeError`` that escapes the never-raise boundary).
+    """
+    return json.dumps(snap, sort_keys=True, ensure_ascii=False, default=str)
 
 
 def _try_dump(obj: Any) -> Any:

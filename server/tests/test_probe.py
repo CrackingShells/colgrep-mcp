@@ -232,6 +232,94 @@ async def test_tool_column_names_the_actual_tool(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# test_record_never_raises_on_hostile_snapshot (lever 2b kill)
+# ---------------------------------------------------------------------------
+
+
+class _ExplodingStr:
+    """An object whose ``str()`` raises — the worst case for serialisation."""
+
+    def __str__(self) -> str:  # pragma: no cover - never reached, must raise
+        raise RuntimeError("cannot stringify")
+
+
+def test_record_never_raises_on_hostile_snapshot(tmp_path, monkeypatch):
+    """record() is total: a non-JSON-serializable snapshot value must never
+    raise.  A coercible value becomes a coerced record (a witness); a value
+    whose str() itself fails is swallowed.  Both leave the caller untouched."""
+    probe_dir = tmp_path / "probe"
+    monkeypatch.setenv("COLGREP_MCP_PROBE", str(probe_dir))
+
+    # 1. Coercible but non-serializable: coerced to a string witness.
+    class _Coercible:
+        def model_dump(self):
+            return {"answer": 42}
+
+        def __str__(self) -> str:
+            return "coerced-witness"
+
+    ctx = SimpleNamespace(
+        request_context=SimpleNamespace(
+            initialize=None,
+            meta=_Coercible(),
+            session=SimpleNamespace(),
+        )
+    )
+    # Must not raise.
+    record(ctx=ctx, raw_paths=None, settings_root=None, roots=None, resolved_root=tmp_path, resolved_source="env")
+    ledger = probe_dir / "colgrep_probe.jsonl"
+    assert ledger.exists()
+    snap = json.loads(ledger.read_text().strip().splitlines()[0])
+    # request_meta came from model_dump of the _Coercible object.
+    assert snap["request_meta"] == {"answer": 42}
+
+    # 2. A value whose str() raises must be swallowed, never raised.
+    hostile_ctx = SimpleNamespace(
+        request_context=SimpleNamespace(
+            initialize=_ExplodingStr(),
+            meta=None,
+            session=SimpleNamespace(),
+        )
+    )
+    record(
+        ctx=hostile_ctx, raw_paths=None, settings_root=None, roots=None, resolved_root=tmp_path, resolved_source="env"
+    )  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# test_tool_call_survives_probe_rename (lever 2b, end-to-end)
+# ---------------------------------------------------------------------------
+
+
+async def test_tool_call_survives_probe_rename(tmp_path, monkeypatch):
+    """A real tool call through resolve_target_paths survives even when the
+    probe encounters a hostile snapshot value.  Regression: the original
+    capture_pure sat outside the never-raise boundary, so a TypeError from
+    serialising a hostile value propagated up through the resolve path and
+    broke the very tool call the docstring promises never to break."""
+    probe_dir = tmp_path / "probe"
+    monkeypatch.setenv("COLGREP_MCP_PROBE", str(probe_dir))
+    monkeypatch.setenv("COLGREP_MCP_ROOT", str(tmp_path))
+
+    # A request_ctx whose _meta carries a value with no JSON encoding and a
+    # str() that raises — the worst non-serializable case.
+    mock_settings = Settings(root=tmp_path)
+    mock_lifespan = SimpleNamespace(settings=mock_settings)
+    mock_request_ctx = SimpleNamespace(
+        lifespan_context=mock_lifespan,
+        meta=_ExplodingStr(),
+        session=SimpleNamespace(),
+    )
+    ctx = SimpleNamespace(request_context=mock_request_ctx)
+
+    from colgrep_mcp.paths import resolve_target_paths
+
+    # The tool call must complete with the correct resolved path, not raise.
+    result = await resolve_target_paths(ctx, None)
+    assert result == [tmp_path.resolve()]
+
+
+# ---------------------------------------------------------------------------
 # test_roots_error_distinct_from_empty (lever 6 / gap defect 6)
 # ---------------------------------------------------------------------------
 
