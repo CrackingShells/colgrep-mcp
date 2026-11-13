@@ -21,7 +21,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from colgrep_mcp.config import Settings
-from colgrep_mcp.probe import _classify_roots, capture_pure, record
+from colgrep_mcp.probe import _classify_roots, capture_pure, diff_record, forge_record, record
 
 pytestmark = pytest.mark.anyio
 
@@ -322,8 +322,6 @@ async def test_tool_call_survives_probe_rename(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # test_roots_error_distinct_from_empty (lever 6 / gap defect 6)
 # ---------------------------------------------------------------------------
-
-
 def test_roots_error_distinct_from_empty(tmp_path):
     """A failed round-trip classifies as ``error``; a genuine zero-root answer
     classifies as ``empty``; a present pin or returned roots classify as
@@ -336,3 +334,73 @@ def test_roots_error_distinct_from_empty(tmp_path):
     assert _classify_roots(settings_root=None, roots=None, roots_error=True) == "error"
     # empty: a client genuinely answered with zero roots.
     assert _classify_roots(settings_root=None, roots=None, roots_error=False) == "empty"
+
+
+# ---------------------------------------------------------------------------
+# test_calibration_whistles_on_fabrication (calibration oracle)
+# ---------------------------------------------------------------------------
+
+
+def test_calibration_whistles_on_fabrication():
+    """diff_record must be silent on a truthful record and whistle on a
+    fabricated one — e.g. a stub-authoring a `init_capabilities` the harness
+    never sent (lever 1b / gap defect 1).  The stub's canonical fabrication
+    (FORGED_SAMPLE) must be caught verbatim."""
+    from colgrep_mcp.probe import FORGED_SAMPLE
+
+    var = "init_capabilities"
+    true_record = forge_record(**{var: {"protocolVersion": "2026-07-28"}}, request_meta={"workspace": "/x"})
+    # A truthful record diffs empty.
+    assert diff_record(true_record, true_record) == []
+
+    # A fabricated record — the stub's hardcode-lie — must whistle.
+    fabricated = dict(true_record)
+    fabricated[var] = {"protocolVersion": "NONE"}  # stub wrote this, never the harness
+    gaps = diff_record(true_record, fabricated)
+    assert gaps, "diff_record must whistle on a fabricated record"
+    assert any(var in g for g in gaps), f"fabrication must be named, got {gaps}"
+
+    # The stub's exact fabrication is a fabricated init_capabilities too.
+    forged_gaps = diff_record(forge_record(**{var: {"protocolVersion": "2026-07-28"}}), FORGED_SAMPLE)
+    assert forged_gaps, "diff_record must whistle on FORGED_SAMPLE verbatim"
+
+
+# ---------------------------------------------------------------------------
+# test_no_probe_side_effects (rewritten: reads the real ledger)
+# ---------------------------------------------------------------------------
+
+
+def test_no_probe_side_effects(tmp_path, monkeypatch):
+    """Regression against the real ledger `colgrep_probe.jsonl` (the old test
+    asserted dead filenames and re-read only the env, so it could never see a
+    fabricated record — lever 3).  A truthful probe writes a record that
+    matches forge_record ground truth on every signal column and names the
+    calling tool, never "record"."""
+    probe_dir = tmp_path / "probe"
+    monkeypatch.setenv("COLGREP_MCP_PROBE", str(probe_dir))
+
+    record(
+        ctx=_simple_ctx(),
+        raw_paths=["/some/path"],
+        settings_root=tmp_path,
+        roots=None,
+        resolved_root=tmp_path.resolve(),
+        resolved_source="env",
+    )
+
+    ledger = probe_dir / "colgrep_probe.jsonl"
+    assert ledger.exists(), "the real ledger colgrep_probe.jsonl must have been written"
+    actual = json.loads(ledger.read_text().strip())
+
+    # The tool column must never be the fabricated "record".
+    assert actual["tool"] != "record", "probe fabricated the tool column as 'record'"
+
+    expected = forge_record(
+        tool="test_no_probe_side_effects",
+        raw_paths=["/some/path"],
+        roots_list={"static": "declared", "items": []},
+        resolved={"root": str(tmp_path.resolve()), "source": "env"},
+    )
+    signal_cols = ("tool", "raw_paths", "init_capabilities", "request_meta", "roots_list", "resolved")
+    gaps = diff_record({k: expected[k] for k in signal_cols}, {k: actual[k] for k in signal_cols})
+    assert not gaps, f"probe record diverges from ground truth: {gaps}"

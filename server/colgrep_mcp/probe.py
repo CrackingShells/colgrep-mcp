@@ -28,6 +28,29 @@ from pathlib import Path
 from typing import Any
 
 PROBE_ENV = "COLGREP_MCP_PROBE"
+
+# Canonical stub-authored record (lever 1b): the exact fabricated line the stub
+# driver used to write, whose `init_capabilities`/`roots_list` values a running
+# harness never sent.  The calibration oracle (forge_record/diff_record) must
+# whistle on this verbatim fabrication.
+FORGED_SAMPLE: dict[str, Any] = {
+    "ts": "2026-01-01T00:00:00+00:00",
+    "server_pid": 1,
+    "tool": "doctor",
+    "raw_paths": None,
+    "env": {
+        "COLGREP_MCP_ROOT": None,
+        "COLGREP_MCP_BINARY": None,
+        "spawn_env_digest": None,
+    },
+    "init_capabilities": {"protocolVersion": "NONE"},
+    "request_meta": None,
+    "roots_list": {"static": "empty", "items": []},
+    "resolved": {"root": "", "source": "cwd"},
+    "cwd": "/stub/cwd",
+    "provenance": "stub",
+}
+
 _LOG = logging.getLogger("colgrep_mcp")
 
 # Functions that live inside the probe/resolve machinery and must never be
@@ -218,3 +241,44 @@ def _probe_record(
         roots_error=roots_error,
         tool=tool,
     )
+
+
+def forge_record(**overrides: Any) -> dict[str, Any]:
+    """Build a ground-truth record from an explicit snapshot (calibration).
+
+    No frame reading, no ``os.environ`` reading — every field is either the
+    static default or an explicit ``**overrides`` value, so a harness can
+    construct the record a *truthful* probe *should* have written and differ
+    it against the ledger to catch a probe that lies.
+    """
+    record_obj: dict[str, Any] = {
+        "ts": "2026-01-01T00:00:00+00:00",
+        "server_pid": 1,
+        "tool": "search",
+        "raw_paths": None,
+        "env": {
+            "COLGREP_MCP_ROOT": None,
+            "COLGREP_MCP_BINARY": None,
+            "spawn_env_digest": None,
+        },
+        "init_capabilities": None,
+        "request_meta": None,
+        "roots_list": {"static": "empty", "items": []},
+        "resolved": {"root": "/truth/root", "source": "cwd"},
+        "cwd": "/truth/cwd",
+    }
+    record_obj.update(overrides)
+    return record_obj
+
+
+def diff_record(expected: dict[str, Any], actual: dict[str, Any]) -> list[str]:
+    """Field-level disagreements between *expected* truth and *actual*.
+
+    Returns a list of disagreement strings, one per field whose value
+    differs; empty when the two records agree on every key.
+    """
+    disagreements: list[str] = []
+    for key in sorted(set(expected) | set(actual)):
+        if expected.get(key) != actual.get(key):
+            disagreements.append(f"{key}: expected {expected.get(key)!r}, got {actual.get(key)!r}")
+    return disagreements
