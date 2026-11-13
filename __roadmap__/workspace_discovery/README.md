@@ -1,14 +1,14 @@
 # workspace_discovery
 
 ## Context
-Level-lead campaign rooted at this repository: a tool call with no `paths` resolves its default root to the server process cwd (the plugin install tree) when `COLGREP_MCP_ROOT` is unset and the client sends no roots — silently searching the wrong project. This campaign measures which dynamic per-call workspace signals each target harness actually sends so the default can resolve per call (contract: `__reports__/workspace_discovery/00-architecture_v0.md` §Contracts). Produces probe instrumentation, raw harness artifacts, a protocol survey, and the findings + architecture reports that carry the ladder decision.
+Level-lead campaign rooted at this repository: a tool call with no `paths` resolves its default root to the server process cwd (the plugin install tree) when `COLGREP_MCP_ROOT` is unset and the client sends no roots — silently searching the wrong project. R03b's live wire probe measured both dynamic channels working per call; the sponsor fold of 2026-11-13 fixes the solution shape — the ladder `paths > dynamic (request _meta vendor keys + per-call client roots) > COLGREP_MCP_ROOT > fail+guidance naming an absolute paths entry` — implemented by `probe_hardening` then `resolution/per_call_resolution`.
 
 ## Reference Documents
 - [R01 Architecture Analysis (v0)](../../__reports__/workspace_discovery/00-architecture_v0.md) — resolution ladder, probe dump schema, harness measurement matrix, fail+guidance error model
 - [R02 Protocol survey (v0)](../../__reports__/workspace_discovery/01-findings_protocol_survey_v0.md) — per-call workspace channels on the MCP wire; written by the protocol_survey leaf
 
 ## Goal
-Decide, from measured per-harness evidence, which rungs of the resolution ladder (dynamic workspace signal > env pin > guarded cwd + fail+guidance) survive into `paths.py`, and publish the findings + architecture reports that carry that decision.
+Land the sponsor-folded per-call resolution ladder through two visits: `probe_hardening` (truth-source probe + calibration oracle) then `resolution/per_call_resolution` (meta/roots consumption, `COLGREP_MCP_ROOT` pin rung, fail+guidance).
 
 ## Pre-conditions
 - [x] Environment contract measured 2026-11-12: `cd server && uv run pytest -q` resolves imports to this worktree and exits 0; `command -v claude codex` both resolve
@@ -34,8 +34,10 @@ Decide, from measured per-harness evidence, which rungs of the resolution ladder
 ```mermaid
 graph TD
     probe_instrumentation[Probe instrumentation for workspace signals]:::done
-    protocol_survey[Workspace-channel protocol survey]:::inprogress
+    protocol_survey[Workspace-channel protocol survey]:::done
     evidence[Harness evidence collection]:::planned
+    probe_hardening[Harden probe: truth-source, never-raise, calibration oracle]:::amendment
+    resolution[Resolution ladder (solution)]:::planned
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -47,12 +49,15 @@ graph TD
 | Node | Type | Status |
 |:-----|:-----|:-------|
 | `probe_instrumentation.md` | 📄 Leaf Task | ✅ Done |
-| `protocol_survey.md` | 📄 Leaf Task | 🔄 In Progress |
+| `protocol_survey.md` | 📄 Leaf Task | ✅ Done |
 | `evidence/` | 📁 Directory | ⬜ Planned |
+| `probe_hardening.md` | 📄 Leaf Task | 🔵 Amendment |
+| `resolution/` | 📁 Directory | ⬜ Planned |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
 |:---|:---|:---|:---|:---|
+| A1 | 2026-11-13 | 02-gap_analysis_calibrated_probe_v0.md + 03-findings_live_probe_v0.md | ["probe_hardening", "resolution/per_call_resolution"] | UNSOUND probe remedy + sponsor fold: per-call `_meta`/roots discovery lands as the solution's dynamic rungs |
 
 ## Progress
 | Node | Branch | Commits | Notes |
