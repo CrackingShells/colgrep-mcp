@@ -18,6 +18,7 @@ from mcp.server.mcpserver import Context
 
 from .config import Settings
 from .errors import Code, tool_error
+from .probe import _probe_record  # noqa: F401 - PROBE_ENV is exported via probe.PROBE_ENV
 from .server import get_settings
 
 
@@ -60,6 +61,31 @@ def resolve_paths(paths: list[str] | None, settings: Settings, roots: list[Path]
     return resolved
 
 
+async def _client_roots(ctx: Context) -> tuple[list[Path] | None, bool]:
+    """`roots`, plus an ``errored`` flag distinguishing a failed round-trip
+    from a genuine zero-root answer (R05 M1, probe lever 6).
+
+    ``errored`` is True when the back-channel raised or was absent — the
+    probe's ``roots_list`` classifies that as ``error``, not ``empty``.
+    """
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result = await ctx.session.list_roots()
+    except Exception:
+        return None, True
+    if not result.roots:
+        return None, False
+    try:
+        # A root is a `file:` URI: `url2pathname` percent-decodes it (a root
+        # with a space arrives as `%20`) and, on Windows, turns the URI form
+        # `/C:/Users/x` into the drive-rooted path `C:\Users\x` — `Path()` on
+        # the raw `.path` did neither, so such roots resolved to nonsense.
+        return [Path(url2pathname(root.uri.path)) for root in result.roots if root.uri.path], False
+    except Exception:
+        return None, True
+
+
 async def client_roots(ctx: Context) -> list[Path] | None:
     """Best-effort client `roots` (R01 §Path resolution invariant, R05 M1).
 
@@ -68,22 +94,8 @@ async def client_roots(ctx: Context) -> list[Path] | None:
     with no back-channel; either way this degrades to `None` rather than
     fail the tool call, leaving `resolve_paths` to fall through to cwd.
     """
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            result = await ctx.session.list_roots()
-    except Exception:
-        return None
-    if not result.roots:
-        return None
-    try:
-        # A root is a `file:` URI: `url2pathname` percent-decodes it (a root
-        # with a space arrives as `%20`) and, on Windows, turns the URI form
-        # `/C:/Users/x` into the drive-rooted path `C:\Users\x` — `Path()` on
-        # the raw `.path` did neither, so such roots resolved to nonsense.
-        return [Path(url2pathname(root.uri.path)) for root in result.roots if root.uri.path]
-    except Exception:
-        return None
+    roots, _errored = await _client_roots(ctx)
+    return roots
 
 
 def _roots_can_matter(paths: list[str] | None, settings: Settings) -> bool:
@@ -105,5 +117,14 @@ def _roots_can_matter(paths: list[str] | None, settings: Settings) -> bool:
 async def resolve_target_paths(ctx: Context, paths: list[str] | None) -> list[Path]:
     """`resolve_paths` for a tool call, fetching client roots only when they can matter."""
     settings = get_settings(ctx)
-    roots = await client_roots(ctx) if _roots_can_matter(paths, settings) else None
+    if _roots_can_matter(paths, settings):
+        roots, roots_error = await _client_roots(ctx)
+    else:
+        roots, roots_error = None, False
+
+    # Probe hook: best-effort dump of the resolution outcome (maintainer-policy
+    # section *One idiom per concern*: use ``safe_log`` on failure).  Always
+    # inert when COLGREP_MCP_PROBE is unset; never alters the resolved result.
+    _probe_record(ctx, paths, settings, roots, roots_error=roots_error)
+
     return resolve_paths(paths, settings, roots)
