@@ -27,12 +27,13 @@ Decide, from measured per-harness evidence, which rungs of the resolution ladder
 - The probe never runs real `colgrep` search against this repository (stack-traps): harness runs trigger `doctor` only — read-only, no index writes. Probe artifacts live under `probe_data/` and are committed as evidence (batch-01 reports cite their paths); the only string sent to any harness API is the canned `TRIGGER_PROMPT` constant.
 - Consistency Checks that grep a Deliverable file are deliverable-dependent and exempt at authoring time (they run when the leaf executes); the baseline gates above were measured instead. Nothing may follow `(expected: PASS)` on a check line.
 - Hard stop for the dispatch window: 21:30 JST 2026-11-12. Whatever is green at the stop gets merged; whatever is not, reports as unfinished.
+- **Outstanding integration debt (2026-11-13, `ca3cb40`)**: the pledged adversarial verification of `probe_instrumentation` never produced a verdict — both dispatch rounds died with zero output to session suspension. That merge integrated on the implementer's branch plus the lead's own post-rebase re-verification only; the dump-only signature is NOT in hand and remains the pre-condition for any `evidence/` dispatch, at an escalated tier (campaign-lead: escalate the leaf, not the round). The `protocol_survey` leaf lost two dispatch rounds the same way and re-opens as a narrowed research question first (2026-07-28 revision / `roots/list` successor / `_meta` stamping), report assembled after.
 - Adversarial verification is pledged for `probe_instrumentation` (measurement semantics + silent-failure risk): a verifier signs the dump-only invariant before level-2 leaves run.
 
 ## Status
 ```mermaid
 graph TD
-    probe_instrumentation[Probe instrumentation for workspace signals]:::inprogress
+    probe_instrumentation[Probe instrumentation for workspace signals]:::done
     protocol_survey[Workspace-channel protocol survey]:::inprogress
     evidence[Harness evidence collection]:::planned
     classDef done       fill:#166534,color:#bbf7d0
@@ -45,7 +46,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `probe_instrumentation.md` | 📄 Leaf Task | 🔄 In Progress |
+| `probe_instrumentation.md` | 📄 Leaf Task | ✅ Done |
 | `protocol_survey.md` | 📄 Leaf Task | 🔄 In Progress |
 | `evidence/` | 📁 Directory | ⬜ Planned |
 
