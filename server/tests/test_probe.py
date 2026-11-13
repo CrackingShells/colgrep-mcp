@@ -404,3 +404,32 @@ def test_no_probe_side_effects(tmp_path, monkeypatch):
     signal_cols = ("tool", "raw_paths", "init_capabilities", "request_meta", "roots_list", "resolved")
     gaps = diff_record({k: expected[k] for k in signal_cols}, {k: actual[k] for k in signal_cols})
     assert not gaps, f"probe record diverges from ground truth: {gaps}"
+
+
+# ---------------------------------------------------------------------------
+# Gap-record tolerance and stub provenance (driver hygiene, lever 5 / defect 5)
+# ---------------------------------------------------------------------------
+
+
+def test_gap_records_validate_as_gaps(tmp_path):
+    """A validator call with a gap row ({"error": ...}) must return a named
+    gap verdict, never raise on snap['ts'] (lever 5 / gap defect 5)."""
+    from e2e import probe_workspace as driver
+
+    verdict = driver._validate_record('{"error": "harness not found: claude"}')
+    assert verdict == "gap"
+    assert driver._validate_record("not json at all") != "valid"
+    assert driver._validate_record("{}") != "valid"
+
+    # A file whose only row is a gap validates as OK (gaps report, not crash).
+    gap_file = tmp_path / "ledger.jsonl"
+    gap_file.write_text('{"error": "completed but no probe record written"}\n', encoding="utf-8")
+    assert driver.validate(gap_file) is True
+
+
+def test_stub_records_carry_provenance():
+    """Every stub-written record is stamped provenance: "stub" so a ledger
+    reader can separate stub synthesis from server-written rows (lever 1b)."""
+    from e2e import probe_workspace as driver
+
+    assert '"provenance": "stub"' in driver._STUB_SCRIPT
