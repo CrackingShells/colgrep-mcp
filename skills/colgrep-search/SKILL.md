@@ -138,3 +138,8 @@ truncation, and anti-patterns — read the `colgrep://guide` resource, or its
 packaged source at `../../server/colgrep_mcp/guide.md`. Read it once per
 session before composing a non-trivial query; this file is the index, that
 one is the reference.
+
+## Reporting problems
+
+`colgrep-mcp` is in active development. If any part of it proves wrong or misleads you,
+report it to `CrackingShells/colgrep-mcp` by following [CONTRIBUTING.md](CONTRIBUTING.md).
