@@ -33,6 +33,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOKS_DIR = REPO_ROOT / "hooks"
 SCRIPT = HOOKS_DIR / "colgrep_policy.py"
 PORTABLE_FILE = HOOKS_DIR / "hooks.json"
+
+#: The mirror for Agent Plugins v1 clients (VS Code, Copilot CLI): their loader
+#: reads a v1 plugin's hooks only from this path and interpolates only
+#: `${PLUGIN_ROOT}` there (R01 (hook_namespace) C1-C2).
+COPILOT_MIRROR = REPO_ROOT / "com.github.copilot" / "hooks" / "hooks.json"
 #: One file per event that not every harness knows, named after the event.
 EXTRA_FILES = sorted(p for p in HOOKS_DIR.glob("*.json") if p != PORTABLE_FILE)
 
@@ -329,6 +334,26 @@ def test_portable_file_names_only_events_every_harness_understands():
     assert {"SessionStart", "SubagentStart", "PreToolUse"} <= events
 
 
+def test_copilot_mirror_matches_the_portable_file():
+    """`com.github.copilot/hooks/hooks.json` is the same policy as `hooks/hooks.json`
+    with the root token swapped to `${PLUGIN_ROOT}` — that one is what a v1 loader
+    interpolates while Claude Code and Codex interpolate `${CLAUDE_PLUGIN_ROOT}`
+    (R01 (hook_namespace) C1-C2). Two hand-maintained copies of one policy either
+    agree byte for byte here or an edit drifts them silently; the description keys
+    are free prose and stay unpinned."""
+    root = _load(PORTABLE_FILE)["hooks"]
+    mirror = _load(COPILOT_MIRROR)["hooks"]
+    swapped = json.loads(json.dumps(root).replace("${CLAUDE_PLUGIN_ROOT}", "${PLUGIN_ROOT}"))
+    assert swapped != root, (
+        "hooks/hooks.json must still carry the CLAUDE_PLUGIN_ROOT root token, "
+        "else the swap is the identity and this comparison proves nothing"
+    )
+    assert mirror == swapped, (
+        "com.github.copilot/hooks/hooks.json must equal hooks/hooks.json with the root token swapped to PLUGIN_ROOT"
+    )
+    assert set(mirror) <= PORTABLE_EVENTS, f"non-portable events reach the v1 loader: {set(mirror) - PORTABLE_EVENTS}"
+
+
 def _kebab(event: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "-", event).lower()
 
@@ -386,6 +411,10 @@ def test_manifests_name_the_hook_files_per_ecosystem():
     assert claude["hooks"] == "./hooks/worktree-remove.json"
     assert codex_ext["hooks"] == "./hooks/hooks.json", "Codex: the field replaces default discovery, so name hooks.json"
     assert "hooks" not in agent, "Agent Plugins 1.0 defines no hooks component at its top level"
+    assert "com.github.copilot" not in agent.get("extensions", {}), (
+        "an extensions.com.github.copilot hooks path config could disclaim the default "
+        "com.github.copilot/hooks/ directory and point a v1 loader at nothing (R01 (hook_namespace) C4)"
+    )
 
 
 def test_hook_script_is_stdlib_only_and_never_imports_the_server():
