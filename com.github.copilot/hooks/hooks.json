@@ -1,0 +1,41 @@
+{
+  "description": "colgrep-mcp: the same search policy as hooks/hooks.json, for readers of the Agent Plugins v1 schema (VS Code, GitHub Copilot CLI), whose loader reads a v1 plugin's hooks only from com.github.copilot/hooks/hooks.json and interpolates PLUGIN_ROOT rather than CLAUDE_PLUGIN_ROOT (hook_namespace R01 C1-C2). The mirror's hooks block must stay byte-identical to hooks/hooks.json modulo that token swap \u2014 test_copilot_mirror_matches_the_portable_file pins it. Not here: WorktreeRemove, a Claude Code-only event whose file lives at hooks/worktree-remove.json and is named from .claude-plugin/plugin.json only, so a parser that knows no WorktreeRemove never sees it.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading the colgrep search policy"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 10,
+            "statusMessage": "Loading the colgrep search policy"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --quiet python \"${PLUGIN_ROOT}/hooks/colgrep_policy.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
