@@ -16,7 +16,7 @@ Every hook-capable harness loads the same policy from the path its own loader re
 
 ## Success Gates
 - ✅ `cd server && uv run pytest -q && uv run ruff check && uv run ruff format --check && uv run cz check --rev-range main..HEAD` passes on the integration branch [run]
-- ✅ `com.github.copilot/hooks/hooks.json` is byte-identical to `hooks/hooks.json` modulo `${PLUGIN_ROOT}` ↔ `${CLAUDE_PLUGIN_ROOT}`, its event set is exactly the portable ones, and removing it turns the suite red [run]
+- ✅ `com.github.copilot/hooks/hooks.json` is byte-identical to `hooks/hooks.json` modulo `${PLUGIN_ROOT}` ↔ `${CLAUDE_PLUGIN_ROOT}` (the `hooks` blocks, description keys free), every event it names is in the portable set, and removing it turns the suite red [run]
 - ✅ `plugin.json` gains no `hooks` key and `extensions["com.openai"].hooks` still names `./hooks/hooks.json` — Codex's contract is untouched [static]
 - ✅ `claude plugin validate . && claude plugin validate ./dev` pass, and the scratch-marketplace install probe in `verify/` ends green [run]
 - ⬜ A Copilot/VS Code session lists the three portable hooks for colgrep-mcp (a legacy notice about the root file may remain and is accepted) [behavioral]

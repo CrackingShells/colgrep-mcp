@@ -2,7 +2,7 @@
 
 **Goal**: Teach every reader where each loader finds the hooks, and record the warning text so the next agent recognises the trap before losing an hour.
 **Pre-conditions**:
-- [ ] `mirror_and_guards` has reported, with the mirror and its guards green
+- [ ] `R01` is committed; its §Contracts is the prose this leaf must stay equal to
 **Success Gates**:
 - ✅ README's Hooks and Troubleshooting sections name both paths and both tokens, with the v1 warning text verbatim [static]
 - ✅ `AGENTS.md` names `com.github.copilot/hooks/hooks.json` and `cd server && uv run pytest tests/test_dev_plugin.py -q` passes its line cap [run]
