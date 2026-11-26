@@ -29,6 +29,7 @@ linked section, don't re-derive the trap from scratch.
 | `claude -p` or `claude plugin eval` fails with an OAuth error | claude-code | `references/claude-code.md#oauth` |
 | `claude --plugin-dir . mcp list` says Connected but your edit is not in the server, or the plugin fails right after a bump | claude-code | `references/claude-code.md#uvx-pin` |
 | the plugin's hooks don't fire, or still run the old text, after an edit or an update; Codex lists them but never runs them | claude-code | `references/claude-code.md#plugin-hooks` |
+| a plugin declaring the Agent Plugins v1 `$schema` shows "Some hook files could not be loaded" in VS Code or the Copilot CLI and runs no hook from `hooks/` | claude-code | `references/claude-code.md#agent-plugins-hooks` |
 | `claude plugin list` shows the plugin `failed to load` with `Duplicate hooks file detected`, while `--plugin-dir` lists every hook | claude-code | `references/claude-code.md#hooks-manifest-duplicate` |
 | an implementer reports "leaf file missing", or its branch is based on `main` instead of the campaign branch | claude-code | `references/claude-code.md#agent-worktree` |
 | a subagent said it was watching CI or would follow up, and nothing happened | claude-code | `references/claude-code.md#worker-turn` |
