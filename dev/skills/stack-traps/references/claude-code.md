@@ -211,6 +211,42 @@ and `.venv`), `claude plugin install colgrep-mcp@<that-name>`, read
 `claude plugin list`, then uninstall and `claude plugin marketplace remove` it.
 `--plugin-dir` is not that check.
 
+## A v1 plugin shows "Some hook files could not be loaded" and its hooks never fire {#agent-plugins-hooks}
+
+**Symptom**: in VS Code or the GitHub Copilot CLI the session carries a
+permanent warning, "Some hook files could not be loaded", whose message names
+`"hooks/hooks.json" at the plugin root is no longer read; move it there` — and
+none of the plugin's hooks run there, while the MCP server itself connects fine
+and `claude plugin validate` and the Claude Code loaders see nothing wrong.
+
+**Cause**: the same root `plugin.json` declaring the Agent Plugins v1
+`$schema` is read by *several* loader families with different hook locations.
+Claude Code auto-loads `hooks/hooks.json` (`#hooks-manifest-duplicate`); Codex
+resolves `extensions["com.openai"].hooks`; but a v1 client whose namespace is
+`com.github.copilot` (VS Code, Copilot CLI) reads the hooks **only** from
+`com.github.copilot/hooks/hooks.json` and interpolates **only** `${PLUGIN_ROOT}`
+there — the root `hooks/hooks.json` is stale for it and a stale file draws the
+warning. hook_namespace R01 §Evidence; verified against Copilot CLI 1.0.82
+(PackmindHub/packmind `RenderPackageAsPluginUseCase.spec.ts`) and reported
+independently (cyberuni/universal-plugin plan github-67). Other v1 clients use
+their *own* reverse-DNS directory (Antigravity, Open Plugin: `.plugin/`), so a
+mirror made for one namespace does not fix another.
+
+**What to do**: mirror the portable hooks under
+`com.github.copilot/hooks/hooks.json` with `${PLUGIN_ROOT}` as the root token
+— same `hooks` block, one policy in two token spellings. Never move
+`hooks/hooks.json` and never name `./hooks/hooks.json` in the Claude manifest
+(`#hooks-manifest-duplicate`): Claude Code and Codex still need the root file
+exactly as it is, and `worktree-remove.json` must stay outside any namespace
+directory so a parser that knows no `WorktreeRemove` never meets it. Pin the
+mirror to the root file modulo the token swap
+(`test_copilot_mirror_matches_the_portable_file`) and pin `plugin.json` against
+an `extensions["com.github.copilot"]` hooks path config — set `exclusive`, it
+disclaims the default directory and reintroduces the bug through the one
+manifest route that bypasses the file. The warning text itself may survive
+while the root file exists; observe a session to see whether it does (it is
+costing nothing once the mirror is read).
+
 ## An implementer's worktree is based on `main`, not the campaign branch {#agent-worktree}
 
 **Symptom**: an implementer dispatched with the Agent tool reports "leaf file
