@@ -33,9 +33,9 @@ Every hook-capable harness loads the same policy from the path its own loader re
 ## Status
 ```mermaid
 graph TD
-    mirror_and_guards[Mirror and Guards]:::planned
-    docs_and_naming[Docs and Naming]:::planned
-    verify[Verify]:::planned
+    mirror_and_guards[Mirror and Guards]:::done
+    docs_and_naming[Docs and Naming]:::done
+    verify[Verify]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -46,9 +46,9 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `mirror_and_guards.md` | 📄 Leaf Task | ⬜ Planned |
-| `docs_and_naming.md` | 📄 Leaf Task | ⬜ Planned |
-| `verify/` | 📁 Directory | ⬜ Planned |
+| `mirror_and_guards.md` | 📄 Leaf Task | ✅ Done |
+| `docs_and_naming.md` | 📄 Leaf Task | ✅ Done |
+| `verify/` | 📁 Directory | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |

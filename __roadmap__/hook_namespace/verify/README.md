@@ -15,7 +15,7 @@ Break the shipped hook shape with each loader's own rules, or record, probe by p
 ## Status
 ```mermaid
 graph TD
-    loader_probes[Loader Probes]:::planned
+    loader_probes[Loader Probes]:::done
     classDef done       fill:#166534,color:#bbf7d0
     classDef inprogress fill:#854d0e,color:#fef08a
     classDef planned    fill:#374151,color:#e5e7eb
@@ -26,7 +26,7 @@ graph TD
 ## Nodes
 | Node | Type | Status |
 |:-----|:-----|:-------|
-| `loader_probes.md` | 📄 Leaf Task | ⬜ Planned |
+| `loader_probes.md` | 📄 Leaf Task | ✅ Done |
 
 ## Amendment Log
 | ID | Date | Source | Nodes Added | Rationale |
