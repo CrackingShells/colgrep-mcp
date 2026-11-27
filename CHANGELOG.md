@@ -5,6 +5,24 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.7.0 (2026-11-27)
+
+### Added
+
+- **search**: land the per-call resolution ladder with guided failure
+- **server**: resolve per-call roots without the first-call race
+- **server**: resolve the default root from per-call request meta
+
+### Fixed
+
+- **server**: give every concurrent first call the bounded root reassurance
+- **server**: drop client roots that name no directory from the ladder
+- **server**: honor absolute paths entries without consulting the ladder
+- **server**: keep the probe record truthful on meta roots and silent ladders
+- **tests**: stamp stub provenance and let gap rows round-trip the validator
+- **server**: make the probe record path survive hostile snapshots
+- **server**: make probe record columns reflect measured truth
+
 ## v0.6.1 (2026-11-27)
 
 ### Fixed
