@@ -188,3 +188,91 @@ def test_roots_error_falls_to_pin(tmp_path):
     # back-channel raised or was absent (probe lever 6: error != empty).
     root, source = default_root(Settings(root=pinned), None)
     assert root == pinned.resolve() and source == "env"
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — the ladder, the pin rung, and fail-with-guidance (R01 guarded-cwd)
+# ---------------------------------------------------------------------------
+
+
+def test_ladder_order_pins_each_rung(tmp_path, monkeypatch):
+    """The rung order `_meta > roots > COLGREP_MCP_ROOT > guarded-cwd` is the
+    single resolution idiom: each higher rung wins over every lower one, and
+    a silent-everything call under a plausible cwd uses the cwd."""
+    from colgrep_mcp.paths import default_root
+
+    stamped = tmp_path / "meta-ws"
+    stamped.mkdir()
+    rooted = tmp_path / "roots-ws"
+    rooted.mkdir()
+    pinned = tmp_path / "pin"
+    pinned.mkdir()
+    cwd_proj = tmp_path / "cwd-proj"
+    cwd_proj.mkdir()
+    (cwd_proj / "pyproject.toml").touch()
+
+    settings = Settings(root=pinned)
+    # meta beats roots, pin, and cwd.
+    assert default_root(settings, [rooted], stamped)[1] == "meta"
+    # roots beats pin and cwd (no meta).
+    assert default_root(settings, [rooted], None) == (rooted.resolve(), "roots")
+    # pin beats cwd (no meta, no roots).
+    assert default_root(settings, None, None) == (pinned.resolve(), "env")
+    # all silent under a plausible cwd uses the cwd.
+    monkeypatch.chdir(cwd_proj)
+    root, source = default_root(Settings(), None, None)
+    assert source == "cwd"
+    assert root == cwd_proj.resolve()
+
+
+def test_silence_fails_with_paths_guidance(tmp_path, monkeypatch):
+    """When every rung is silent and the working directory is not a plausible
+    project root, resolution raises `ROOT_UNRESOLVED` whose message names the
+    remedy verbatim: pass an absolute `paths` entry (R01 fail+guidance)."""
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from colgrep_mcp.errors import Code
+    from colgrep_mcp.paths import default_root
+
+    not_a_project = tmp_path / "not-a-project"
+    not_a_project.mkdir()
+    monkeypatch.chdir(not_a_project)
+
+    with pytest.raises(ToolError) as excinfo:
+        default_root(Settings(), None, None)
+
+    msg = str(excinfo.value)
+    assert Code.ROOT_UNRESOLVED in msg
+    assert "paths" in msg and "absolute" in msg
+
+
+def test_root_source_labels(tmp_path):
+    """Every ladder source is surfaced through the `root_source` label, and a
+    multi-root answer uses `roots[0]` (R01 multi-root policy)."""
+    from colgrep_mcp.paths import default_root
+
+    pinned = tmp_path / "pin"
+    pinned.mkdir()
+    first = tmp_path / "first"
+    first.mkdir()
+    second = tmp_path / "second"
+    second.mkdir()
+    stamped = tmp_path / "stamp"
+    stamped.mkdir()
+
+    assert default_root(Settings(), [first, second], None)[1] == "roots"
+    assert default_root(Settings(), [first, second], None)[0] == first.resolve()  # roots[0]
+    assert default_root(Settings(root=pinned), None, stamped)[1] == "meta"
+
+
+def test_guide_documents_ladder_and_remedy():
+    """The served guide's §Scoping pins the ladder order and the absolute-`paths`
+    remedy — the client-visible behaviour change of this leaf (maintainer-policy)."""
+    import importlib.resources
+
+    guide = importlib.resources.files("colgrep_mcp").joinpath("guide.md").read_text()
+    assert "## Scoping" in guide
+    assert "explicit paths" in guide and "_meta" in guide and "client roots" in guide
+    assert "COLGREP_MCP_ROOT" in guide
+    assert "ROOT_UNRESOLVED" in guide
+    assert "absolute `paths` entry" in guide

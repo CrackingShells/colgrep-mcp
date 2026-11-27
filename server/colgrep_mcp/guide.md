@@ -69,8 +69,24 @@ Example: `query="where retries are scheduled", pattern="backoff"`.
 
 ## Scoping
 
+When you omit `paths`, a search runs against a default project root resolved
+per call in this order (the resolution ladder):
+
+`explicit paths` → a workspace directory the harness sends in the request
+`_meta` → the harness's client roots → the `COLGREP_MCP_ROOT` environment
+pin → the server's working directory (only when that directory looks like a
+project root).
+
+If nothing above yields a usable root — no `_meta` stamp, no client roots, no
+`COLGREP_MCP_ROOT`, and the working directory is not a project — the call
+fails with code `ROOT_UNRESOLVED` rather than silently searching the wrong
+place. The remedy is to **pass an absolute `paths` entry** naming the project
+directory, which scopes the search explicitly and needs no inference.
+
 - `paths` — restrict to specific files or directories instead of the whole
-  project.
+  project. Relative entries resolve against the default root above; a single
+  absolute project directory is the reliable way to scope when the default
+  root cannot be inferred.
 - `include` — glob file filters, e.g. `["*.py", "*.rs"]`.
 - `exclude` — glob file exclusions.
 - `exclude_dir` — directory names or globs to skip, e.g.

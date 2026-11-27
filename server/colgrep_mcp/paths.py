@@ -116,15 +116,66 @@ def default_root_from_meta(meta: dict | None) -> Path | None:
     return None
 
 
+#: Marker files/dirs whose presence makes a directory count as a "plausible
+#: project root" — the one place the resolver will quietly accept the server
+#: cwd as a default when every higher rung is silent.  A cwd with none of
+#: these (e.g. a plugin install or harness tree) is not a project, so the
+#: ladder refuses it and raises `Code.ROOT_UNRESOLVED` with the `paths`
+#: remedy instead of silently scoping to a non-project (R01 guarded-cwd).
+_PROJECT_MARKERS: frozenset[str] = frozenset(
+    {
+        ".git",
+        "pyproject.toml",
+        "package.json",
+        "Cargo.toml",
+        "go.mod",
+        "pom.xml",
+        "requirements.txt",
+        "setup.py",
+        "setup.cfg",
+        "CMakeLists.txt",
+        "Makefile",
+        "README.md",
+        "workspace.json",
+    }
+)
+
+
+def _is_plausible_project_root(p: Path) -> bool:
+    """Whether *p* carries a project marker (R01 guarded-cwd condition)."""
+    try:
+        return any((p / marker).exists() for marker in _PROJECT_MARKERS)
+    except OSError:
+        return False
+
+
 def default_root(settings: Settings, roots: list[Path] | None, meta_root: Path | None = None) -> tuple[Path, str]:
-    """Return the default project root and the label of where it came from."""
+    """Return the default project root and the label of where it came from.
+
+    Ladder order (R01 §Proposed State; sponsor fold 2026-11-13): request
+    `_meta` stamp → per-call client roots → `COLGREP_MCP_ROOT` pin → guarded
+    server cwd.  When several client roots arrive, `roots[0]` is the default
+    (multi-root policy, surfaced via the `root_source` label).  When every
+    rung is silent *and* the server cwd is not a plausible project root,
+    raises `Code.ROOT_UNRESOLVED` naming the absolute-`paths`-entry remedy
+    (fail with guidance, R01 §Error model) — never silence, never a bare loud
+    fail.
+    """
     if meta_root is not None:
         return meta_root.expanduser().resolve(), "meta"
-    if settings.root is not None:
-        return settings.root.expanduser().resolve(), "env"
     if roots:
         return roots[0].expanduser().resolve(), "roots"
-    return Path.cwd().resolve(), "cwd"
+    if settings.root is not None:
+        return settings.root.expanduser().resolve(), "env"
+    cwd = Path.cwd().resolve()
+    if not _is_plausible_project_root(cwd):
+        raise tool_error(
+            Code.ROOT_UNRESOLVED,
+            "no default workspace resolved from request _meta, client roots, or "
+            "COLGREP_MCP_ROOT, and the working directory is not a project root — "
+            "pass an absolute paths entry",
+        )
+    return cwd, "cwd"
 
 
 def resolve_paths(
