@@ -268,7 +268,16 @@ async def _client_roots(ctx: Context) -> tuple[list[Path] | None, bool]:
         # with a space arrives as `%20`) and, on Windows, turns the URI form
         # `/C:/Users/x` into the drive-rooted path `C:\Users\x` — `Path()` on
         # the raw `.path` did neither, so such roots resolved to nonsense.
-        return [Path(url2pathname(root.uri.path)) for root in result.roots if root.uri.path], False
+        # A root that names no directory is unusable and excluded: pydantic
+        # normalizes a path-less `file:` URI to the truthy path `'/'`, which
+        # would silently scope a path-less call to the entire filesystem
+        # (close-out verifier F2). Excluded, it degrades to the zero-root
+        # class — never to a root the client never named.
+        return [
+            Path(url2pathname(root.uri.path))
+            for root in result.roots
+            if root.uri.path and root.uri.path.rstrip("/") != ""
+        ], False
     except Exception:
         return None, True
 

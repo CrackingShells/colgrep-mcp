@@ -298,3 +298,38 @@ async def test_named_remedy_is_itself_a_working_escape(tmp_path, monkeypatch):
     ctx = _meta_ctx(None)
     resolved = await resolve_target_paths(ctx, [str(not_a_project)])
     assert resolved == [not_a_project.resolve()]
+
+
+async def test_pathless_file_uri_root_never_scopes_the_filesystem(tmp_path, monkeypatch):
+    """A client root that names no directory must not become the filesystem
+    root (verifier F2): a path-less `file:` URI normalizes to path `'/'`, and
+    `'/'` scopes a path-less call to the entire disk — the silent wrong root
+    this campaign exists to prevent.  Such a root is unusable: it degrades to
+    the zero-root class and the ladder falls through to its guided failure."""
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from colgrep_mcp.errors import Code
+    from colgrep_mcp.paths import resolve_target_paths
+
+    monkeypatch.chdir(tmp_path)  # not a plausible project root
+
+    async def pathless_roots():
+        return ListRootsResult(roots=[Root(uri="file:")])
+
+    ctx = _meta_ctx(None)
+    ctx.session.list_roots = pathless_roots
+
+    with pytest.raises(ToolError) as excinfo:
+        await resolve_target_paths(ctx, None)
+    assert Code.ROOT_UNRESOLVED in str(excinfo.value)
+
+
+def test_classify_needs_usable_items_for_declared():
+    """`declared` means the client returned usable root items (verifier F3):
+    an empty list is never `declared`, or the ledger certifies roots the
+    client never sent."""
+    from colgrep_mcp.probe import _classify_roots
+
+    assert _classify_roots(None, [], False) == "empty"
+    assert _classify_roots(None, [], True) == "error"
+    assert _classify_roots(None, [Path("/ws")], False) == "declared"

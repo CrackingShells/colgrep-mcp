@@ -118,14 +118,14 @@ def _classify_roots(settings_root: Path | None, roots: list[Path] | None, roots_
     """Truth-source ``roots_list.static`` (lever 6 / gap defect 6).
 
     - ``declared``: a ``COLGREP_MCP_ROOT`` pin is present, or ``client_roots``
-      actually returned items.
+      actually returned usable items.
     - ``error``: the ``roots/list`` round-trip raised or the back-channel was
       absent — we could not ask, which is not the same as nothing sent.
-    - ``empty``: only when a client genuinely answered with zero roots.
+    - ``empty``: only when a client genuinely answered with zero usable roots.
     """
     if settings_root is not None:
         return "declared"
-    if roots is not None:
+    if roots:
         return "declared"
     if roots_error:
         return "error"
