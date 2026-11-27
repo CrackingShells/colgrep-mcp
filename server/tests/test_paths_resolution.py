@@ -24,26 +24,37 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from mcp.types import ListRootsResult, Root
 
 from colgrep_mcp.config import Settings
 
 pytestmark = pytest.mark.anyio
 
 
+async def _absent_roots():
+    """Default fake `session.list_roots`: a genuine zero-root answer."""
+    return ListRootsResult(roots=[])
+
+
 def _meta_ctx(meta, *, env_root: Path | None = None, session=None) -> SimpleNamespace:
     """A fake MCP `Context` shaped like the SDK's for `resolve_target_paths`.
 
     `get_settings` reads `ctx.request_context.lifespan_context.settings`;
-    `resolve_target_paths` reads `ctx.request_context.meta` (the `_meta` stamp)
-    and `ctx.request_context.session` for the roots round-trip.
+    the resolver reads the `_meta` stamp from `ctx.request_context.meta`; the
+    roots round-trip goes over `ctx.session` (the SDK's `Context.session`
+    property).  The same object is reachable through both paths so a fake can
+    drive the roots response.  ``session`` defaults to a genuine zero-root
+    responder; a test overrides ``ctx.session.list_roots`` to drive a race.
     """
     settings = Settings(root=env_root)
+    session = session if session is not None else SimpleNamespace(list_roots=_absent_roots)
     return SimpleNamespace(
+        session=session,
         request_context=SimpleNamespace(
             lifespan_context=SimpleNamespace(settings=settings),
             meta=meta,
-            session=session if session is not None else SimpleNamespace(),
-        )
+            session=session,
+        ),
     )
 
 
@@ -116,3 +127,64 @@ async def test_meta_resolves_through_resolve_target_paths(tmp_path):
     ctx = _meta_ctx({"com.example.workspace": str(stamped)})
     result = await resolve_target_paths(ctx, None)
     assert result == [stamped.resolve()]
+
+
+# ---------------------------------------------------------------------------
+# Step 2 — per-call client roots without the first-call race (rung 2b)
+# ---------------------------------------------------------------------------
+
+
+def _flaky_first_empty_root(ctx, root: Path):
+    """Give `ctx` a `session.list_roots` that answers the *first* call with an
+    empty set and the second with `root` — the R03b first-call race shape —
+    and return a counter recording how many `roots/list` round-trips ran."""
+    calls = {"n": 0}
+
+    async def list_roots():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return ListRootsResult(roots=[])
+        return ListRootsResult(roots=[Root(uri=root.as_uri())])
+
+    ctx.session.list_roots = list_roots
+    return calls
+
+
+async def test_first_call_roots_race_regression(tmp_path):
+    """The first `resolve` on a fresh connection must answer from the roots the
+    client actually sent, never from a premature cwd fallback (R03b: first
+    resolve empty -> `cwd`, second -> `roots`; a late root must win)."""
+    from colgrep_mcp import paths as paths_module
+    from colgrep_mcp.paths import resolve_target_paths
+
+    # Re-enter the freshly-connected state: once a non-first empty has turned
+    # the reassurance off, later calls must not keep re-asking (one round-trip
+    # per call steady state) — so re-arm it for the race the fix targets.
+    paths_module._FIRST_EMPTY_REASSURE = True
+    try:
+        project = tmp_path / "corpus"
+        project.mkdir()
+        ctx = _meta_ctx(None)
+        calls = _flaky_first_empty_root(ctx, project)
+
+        resolved = await resolve_target_paths(ctx, None)
+
+        assert calls["n"] == 2, "the first empty must be re-asked once (bounded reassurance)"
+        assert resolved == [project.resolve()], (
+            f"the late-arriving root must win over a premature cwd fallback; resolved {resolved}"
+        )
+    finally:
+        paths_module._FIRST_EMPTY_REASSURE = True
+
+
+def test_roots_error_falls_to_pin(tmp_path):
+    """A failed roots round-trip (`error`, not `empty`) falls to the
+    `COLGREP_MCP_ROOT` pin; it must never land on cwd when a pin is set."""
+    from colgrep_mcp.paths import default_root
+
+    pinned = tmp_path / "pin"
+    pinned.mkdir()
+    # roots = None is the `error`-classed form `_client_roots` returns when the
+    # back-channel raised or was absent (probe lever 6: error != empty).
+    root, source = default_root(Settings(root=pinned), None)
+    assert root == pinned.resolve() and source == "env"

@@ -159,6 +159,18 @@ def resolve_paths(
     return resolved
 
 
+#: R03b measured a fresh connection answering the *first* `roots/list` of call
+#: 1 with a provisional empty set, then producing the real root a moment later
+#: in the same call — and the pre-fix resolver fell to cwd on the first answer,
+#: losing the late root.  The fix gives the process's first empty roots answer
+#: one bounded reassurance round-trip before concluding "nothing sent", so that
+#: late-arriving answer is not beaten by a premature cwd fallback.  Once a call
+#: has concluded (empties turn this off on the very first), steady state snaps
+#: back to one round-trip per call.  Test harnesses reset this to re-enter the
+#: freshly-connected state.
+_FIRST_EMPTY_REASSURE = True
+
+
 async def _client_roots(ctx: Context) -> tuple[list[Path] | None, bool]:
     """`roots`, plus an ``errored`` flag distinguishing a failed round-trip
     from a genuine zero-root answer (R05 M1, probe lever 6).
@@ -166,11 +178,27 @@ async def _client_roots(ctx: Context) -> tuple[list[Path] | None, bool]:
     ``errored`` is True when the back-channel raised or was absent — the
     probe's ``roots_list`` classifies that as ``error``, not ``empty``.
     """
+    global _FIRST_EMPTY_REASSURE
+    result = None
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             result = await ctx.session.list_roots()
     except Exception:
+        return None, True
+
+    # First empty is provisional (see `_FIRST_EMPTY_REASSURE`): ask once more
+    # so a late-arriving root wins over a premature cwd fallback.
+    if result is not None and not result.roots and _FIRST_EMPTY_REASSURE:
+        _FIRST_EMPTY_REASSURE = False
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                result = await ctx.session.list_roots()
+        except Exception:
+            result = None
+
+    if result is None:
         return None, True
     if not result.roots:
         return None, False
