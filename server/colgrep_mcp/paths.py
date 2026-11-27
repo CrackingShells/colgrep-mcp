@@ -183,10 +183,19 @@ def resolve_paths(
 ) -> list[Path]:
     """Resolve user-supplied paths (or the default root) to existing absolute paths.
 
-    Relative paths are resolved against the default root. Raises ToolError listing
-    every path that does not exist, together with the root that was used.
+    Relative paths are resolved against the default root; a fully absolute
+    ``paths`` list is honored without consulting the ladder at all, so the
+    `ROOT_UNRESOLVED` remedy (an absolute `paths` entry) works in exactly the
+    scenario that names it. Raises ToolError listing every path that does not
+    exist, together with the root that was used.
     """
-    root, source = default_root(settings, roots, meta_root)
+    # The ladder settles only what inference owes: the default root for a
+    # path-less call, or the base for relative entries. Explicit absolute
+    # entries stand on their own and never need a default root.
+    root: Path | None = None
+    source = ""
+    if not paths or any(not Path(raw).expanduser().is_absolute() for raw in paths):
+        root, source = default_root(settings, roots, meta_root)
     if not paths:
         if not root.exists():
             raise tool_error(Code.PATH_NOT_FOUND, f"Default root {root} (from {source}) does not exist.")
@@ -203,9 +212,10 @@ def resolve_paths(
         else:
             missing.append(raw)
     if missing:
+        against = f" (relative paths are resolved against {root}, from {source})" if root is not None else ""
         raise tool_error(
             Code.PATH_NOT_FOUND,
-            f"Path(s) not found: {', '.join(missing)} (relative paths are resolved against {root}, from {source}).",
+            f"Path(s) not found: {', '.join(missing)}{against}.",
         )
     return resolved
 

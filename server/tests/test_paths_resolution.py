@@ -276,3 +276,25 @@ def test_guide_documents_ladder_and_remedy():
     assert "COLGREP_MCP_ROOT" in guide
     assert "ROOT_UNRESOLVED" in guide
     assert "absolute `paths` entry" in guide
+
+
+# ---------------------------------------------------------------------------
+# Close-out — verifier findings (F1–F4), each pinned fail-first
+# ---------------------------------------------------------------------------
+
+
+async def test_named_remedy_is_itself_a_working_escape(tmp_path, monkeypatch):
+    """Following the ROOT_UNRESOLVED remedy literally must work (verifier F1):
+    with the ladder silent, an explicit absolute `paths` entry naming an
+    existing directory scopes the call on its own — never re-raises the same
+    error the entry is the remedy for.  The absolute entry is the user
+    speaking; no inferred default root is needed to honor it."""
+    from colgrep_mcp.paths import resolve_target_paths
+
+    not_a_project = tmp_path / "not-a-project"
+    not_a_project.mkdir()
+    monkeypatch.chdir(not_a_project)  # every ladder rung silent
+
+    ctx = _meta_ctx(None)
+    resolved = await resolve_target_paths(ctx, [str(not_a_project)])
+    assert resolved == [not_a_project.resolve()]
