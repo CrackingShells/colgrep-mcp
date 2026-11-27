@@ -24,7 +24,7 @@ direction: new
 
 ### Harness × workspace-signal matrix (fleet rows, condensed from the probe matrix)
 
-Every gas cell is `—` (silence — gap record, no R01-schema fields emitted), or a measured
+Every gap cell is `—` (silence — gap record, no R01-schema fields emitted), or a measured
 row is absent from the raw store. No cell is inferred from R03b or any prior run.
 
 | harness | initialize capabilities | request `_meta` keys | `roots/list` verdict | successor (2026-07-28) | spawn env relevant vars | Resolution Picks | Notes |
