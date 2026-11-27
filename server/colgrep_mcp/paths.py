@@ -1,7 +1,9 @@
 """The only module that resolves a tool's target paths (R01 §Path resolution
 invariant, R01 §C2).
 
-Order: explicit argument → COLGREP_MCP_ROOT → first client root → server cwd.
+Order (the resolution ladder, R01 §Proposed State; sponsor-fold 2026-11-13):
+explicit argument → request `_meta` workspace stamp → per-call client roots →
+`COLGREP_MCP_ROOT` pin → guarded server cwd (or `ROOT_UNRESOLVED` guidance).
 
 `resolve_target_paths` is the entry point tools call; `resolve_paths` and
 `default_root` are the pure pieces underneath it, kept separate so they can
@@ -12,6 +14,7 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
+from urllib.parse import urlparse
 from urllib.request import url2pathname
 
 from mcp.server.mcpserver import Context
@@ -21,9 +24,102 @@ from .errors import Code, tool_error
 from .probe import _probe_record  # noqa: F401 - PROBE_ENV is exported via probe.PROBE_ENV
 from .server import get_settings
 
+#: Workspace-location keys read from a request `_meta` stamp, in priority
+#: order (R03b measured `_meta` vendor keys arriving verbatim on a stamped
+#: call).  The leading entries are the documented alias spellings of a host
+#: workspace folder; the final entry is the single documented primary key.
+#: One list, one idiom (`maintainer-policy`): a resolver reads this list and
+#: degrades silently on any absent or non-path value.
+META_WORKSPACE_KEYS: tuple[str, ...] = (
+    "com.visualstudio.code/workspaceFolder",
+    "com.visualstudio.code/workspace",
+    "com.example.workspace",
+)
 
-def default_root(settings: Settings, roots: list[Path] | None) -> tuple[Path, str]:
+
+def _request_meta(ctx: Context | None) -> dict | None:
+    """Best-effort extraction of the request `_meta` mapping (R03b).
+
+    Mirrors `probe.record`'s `getattr` spine so the two agree on what a stamp
+    looks like; never raises, never infers.  `meta` is an
+    `mcp_types.RequestParamsMeta` — a dict of vendor keys — or `None` when
+    the SDK did not surface one.
+    """
+    try:
+        request_ctx = getattr(ctx, "request_context", None) if ctx else None
+        meta = getattr(request_ctx, "meta", None) if request_ctx else None
+        if meta is None:
+            return None
+        dumped = meta.model_dump() if hasattr(meta, "model_dump") else meta
+        return dict(dumped) if isinstance(dumped, dict) else None
+    except Exception:
+        return None
+
+
+def _coerce_workspace_path(raw: str) -> Path | None:
+    """Coerce a `_meta` workspace value into an existing absolute directory.
+
+    Accepts a `file:` URI or a plain path; percent- and `~`-decodes it, and
+    returns `None` (silently) when it is relative, unparseable, or names no
+    existing directory, so a bad stamp degrades to the next ladder rung.
+    """
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        if raw.startswith("file:"):
+            raw = url2pathname(urlparse(raw).path)
+        # A trailing slash is fine; expand `~` homes before evaluating.
+        p = Path(raw).expanduser()
+        if not p.is_absolute():
+            return None
+        p = p.resolve()
+        return p if p.is_dir() else None
+    except Exception:
+        return None
+
+
+#: Sub-keys unwrapped when a `_meta` workspace value is itself a dict.
+_META_PATH_SUBKEYS: tuple[str, ...] = ("workspaceFolder", "root", "uri", "path")
+
+
+def _meta_to_path(value: object) -> Path | None:
+    """Coerce a single `_meta` workspace value into an existing directory or `None`."""
+    if isinstance(value, str):
+        return _coerce_workspace_path(value)
+    if isinstance(value, dict):
+        for key in _META_PATH_SUBKEYS:
+            sub = value.get(key)
+            if isinstance(sub, str):
+                path = _coerce_workspace_path(sub)
+                if path is not None:
+                    return path
+    return None
+
+
+def default_root_from_meta(meta: dict | None) -> Path | None:
+    """The workspace directory a request `_meta` stamp names (R03b), or `None`.
+
+    Walks `META_WORKSPACE_KEYS` in priority order and returns the first key
+    whose value coerces to an existing directory.  Absent or non-path values
+    degrade silently (never raise), falling through to the client-roots rung.
+    A dict-valued stamp is unwrapped under a small set of documented
+    sub-keys (`workspaceFolder`, `root`, `uri`, `path`) for hosts that nest.
+    """
+    if not meta:
+        return None
+    for key in META_WORKSPACE_KEYS:
+        value = meta.get(key)
+        path = _meta_to_path(value)
+        if path is not None:
+            return path
+    return None
+
+
+def default_root(settings: Settings, roots: list[Path] | None, meta_root: Path | None = None) -> tuple[Path, str]:
     """Return the default project root and the label of where it came from."""
+    if meta_root is not None:
+        return meta_root.expanduser().resolve(), "meta"
     if settings.root is not None:
         return settings.root.expanduser().resolve(), "env"
     if roots:
@@ -31,13 +127,15 @@ def default_root(settings: Settings, roots: list[Path] | None) -> tuple[Path, st
     return Path.cwd().resolve(), "cwd"
 
 
-def resolve_paths(paths: list[str] | None, settings: Settings, roots: list[Path] | None) -> list[Path]:
+def resolve_paths(
+    paths: list[str] | None, settings: Settings, roots: list[Path] | None, meta_root: Path | None = None
+) -> list[Path]:
     """Resolve user-supplied paths (or the default root) to existing absolute paths.
 
     Relative paths are resolved against the default root. Raises ToolError listing
     every path that does not exist, together with the root that was used.
     """
-    root, source = default_root(settings, roots)
+    root, source = default_root(settings, roots, meta_root)
     if not paths:
         if not root.exists():
             raise tool_error(Code.PATH_NOT_FOUND, f"Default root {root} (from {source}) does not exist.")
@@ -98,15 +196,18 @@ async def client_roots(ctx: Context) -> list[Path] | None:
     return roots
 
 
-def _roots_can_matter(paths: list[str] | None, settings: Settings) -> bool:
+def _roots_can_matter(paths: list[str] | None, settings: Settings, meta_root: Path | None = None) -> bool:
     """Whether `client_roots` could change what `resolve_paths` returns.
 
-    The client root is consulted only when no `COLGREP_MCP_ROOT` is set *and*
-    something still has to be resolved against a default root: no paths at
-    all, or at least one relative path. Under the Claude Code plugin the env
-    root is always set, so every `search` used to pay a `roots/list`
-    round-trip whose answer could not be used.
+    The client root is consulted only when no earlier rung has already
+    settled the default root *and* something still has to be resolved against
+    a default root: no paths at all, or at least one relative path.  Under
+    the Claude Code plugin the env root is always set, so every `search` used
+    to pay a `roots/list` round-trip whose answer could not be used.  A
+    request `_meta` stamp outranks roots, so it suppresses the round-trip too.
     """
+    if meta_root is not None:
+        return False
     if settings.root is not None:
         return False
     if not paths:
@@ -115,9 +216,15 @@ def _roots_can_matter(paths: list[str] | None, settings: Settings) -> bool:
 
 
 async def resolve_target_paths(ctx: Context, paths: list[str] | None) -> list[Path]:
-    """`resolve_paths` for a tool call, fetching client roots only when they can matter."""
+    """`resolve_paths` for a tool call, resolving the per-call default root.
+
+    Reads a request `_meta` workspace stamp (rung 2a) before consulting the
+    per-call client roots (rung 2b, only when the earlier rungs left the
+    default root unsettled).
+    """
     settings = get_settings(ctx)
-    if _roots_can_matter(paths, settings):
+    meta_root = default_root_from_meta(_request_meta(ctx))
+    if _roots_can_matter(paths, settings, meta_root):
         roots, roots_error = await _client_roots(ctx)
     else:
         roots, roots_error = None, False
@@ -127,4 +234,4 @@ async def resolve_target_paths(ctx: Context, paths: list[str] | None) -> list[Pa
     # inert when COLGREP_MCP_PROBE is unset; never alters the resolved result.
     _probe_record(ctx, paths, settings, roots, roots_error=roots_error)
 
-    return resolve_paths(paths, settings, roots)
+    return resolve_paths(paths, settings, roots, meta_root)
