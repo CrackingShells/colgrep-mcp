@@ -311,6 +311,6 @@ async def resolve_target_paths(ctx: Context, paths: list[str] | None) -> list[Pa
     # Probe hook: best-effort dump of the resolution outcome (maintainer-policy
     # section *One idiom per concern*: use ``safe_log`` on failure).  Always
     # inert when COLGREP_MCP_PROBE is unset; never alters the resolved result.
-    _probe_record(ctx, paths, settings, roots, roots_error=roots_error)
+    _probe_record(ctx, paths, settings, roots, meta_root=meta_root, roots_error=roots_error)
 
     return resolve_paths(paths, settings, roots, meta_root)

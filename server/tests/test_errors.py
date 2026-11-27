@@ -30,6 +30,7 @@ def test_code_enum_has_exactly_the_specified_members():
         "INDEX_COLD",
         "PATH_NOT_FOUND",
         "PROJECT_ROOT_MISMATCH",
+        "ROOT_UNRESOLVED",
         "CONFIRMATION_REQUIRED",
         "COLGREP_MISSING",
         "COLGREP_FAILED",
