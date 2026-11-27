@@ -137,7 +137,7 @@ def record(
     raw_paths: list[str] | None,
     settings_root: Path | None,
     roots: list[Path] | None,
-    resolved_root: Path,
+    resolved_root: Path | None,
     resolved_source: str,
     *,
     roots_error: bool = False,
@@ -195,7 +195,7 @@ def record(
             "init_capabilities": init_caps,
             "request_meta": req_meta,
             "roots_list": roots_list_data,
-            "resolved": {"root": str(resolved_root), "source": resolved_source},
+            "resolved": {"root": str(resolved_root) if resolved_root is not None else None, "source": resolved_source},
             "cwd": str(Path.cwd()),
         }
 
@@ -219,18 +219,29 @@ def _probe_record(
     settings: Any,
     roots: list[Path] | None,
     *,
+    meta_root: Path | None = None,
     roots_error: bool = False,
     tool: str | None = None,
 ) -> None:
     """Called from ``paths.resolve_target_paths`` after ``client_roots``.
 
     Reuses ``default_root`` (the pure function) to build the resolved output
-    — no second resolution pass, just a label walk.
+    — no second resolution pass, just a label walk.  The walk is inside the
+    total boundary and threads *meta_root*: when the ladder declines a root
+    (``Code.ROOT_UNRESOLVED``) the record reports ``unresolved`` instead of
+    raising, and when meta settled the root the record says ``meta`` — the
+    ledger must agree with the call it measures, and a dump-only probe must
+    never raise past the resolve call site.
     """
     from .paths import default_root
 
     settings_root = settings.root if hasattr(settings, "root") else getattr(settings, "root", None)
-    resolved_root, resolved_source = default_root(settings, roots)
+    resolved_root: Path | None = None
+    resolved_source = "unresolved"
+    try:
+        resolved_root, resolved_source = default_root(settings, roots, meta_root)
+    except Exception:
+        resolved_root, resolved_source = None, "unresolved"
     record(
         ctx,
         paths,

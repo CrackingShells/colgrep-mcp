@@ -40,6 +40,7 @@ class Code(StrEnum):
     BAD_HIT_ID = "BAD_HIT_ID"
     INDEX_STORE_UNKNOWN = "INDEX_STORE_UNKNOWN"
     INDEX_STORE_STALE = "INDEX_STORE_STALE"
+    ROOT_UNRESOLVED = "ROOT_UNRESOLVED"
 
 
 #: One imperative sentence per code, naming the tool/argument to reach for next.
@@ -67,6 +68,7 @@ HINTS: dict[Code, str] = {
     Code.BAD_HIT_ID: "Use `hit_id` values exactly as returned by `search`: `<abs file>:<line>-<end_line>`.",
     Code.INDEX_STORE_UNKNOWN: "Run `index_build` on a project that exists on disk so the store can be located; retry.",
     Code.INDEX_STORE_STALE: "Review them with `index_prune` (a dry run); rerun with `dry_run=false, confirm=true`.",
+    Code.ROOT_UNRESOLVED: "Pass an absolute `paths` entry naming the project directory to scope the search.",
 }
 
 

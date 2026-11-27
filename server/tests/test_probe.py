@@ -9,6 +9,11 @@ Tests:
   never "record" (lever 1 repair).
 - test_roots_error_distinct_from_empty: a failed round-trip is "error", a
   genuine zero-root answer is "empty" (lever 6 / gap defect 6).
+- test_probe_record_survives_unresolvable_ladder: the probe hook records an
+  unresolved outcome instead of raising when the ladder declines a root.
+- test_probe_record_reports_meta_source: a meta-sourced resolution is
+  recorded as "meta" (lead integration: probe re-derivation must agree with
+  the runtime ladder).
 """
 
 from __future__ import annotations
@@ -21,7 +26,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from colgrep_mcp.config import Settings
-from colgrep_mcp.probe import _classify_roots, capture_pure, diff_record, forge_record, record
+from colgrep_mcp.probe import PROBE_ENV, _classify_roots, capture_pure, diff_record, forge_record, record
 
 pytestmark = pytest.mark.anyio
 
@@ -433,3 +438,41 @@ def test_stub_records_carry_provenance():
     from e2e import probe_workspace as driver
 
     assert '"provenance": "stub"' in driver._STUB_SCRIPT
+
+
+# ---------------------------------------------------------------------------
+# Probe hook and the resolution ladder agree (lead tier-2 integration)
+# ---------------------------------------------------------------------------
+
+
+def test_probe_record_survives_unresolvable_ladder(tmp_path, monkeypatch):
+    """When every ladder rung is silent and cwd is not a project root, the
+    probe hook must record the unresolved outcome — never raise past the
+    resolve call site (the ladder's ROOT_UNRESOLVED belongs to the caller,
+    not to the dump-only probe)."""
+    from colgrep_mcp.probe import _probe_record
+
+    monkeypatch.setenv(PROBE_ENV, str(tmp_path / "probe"))
+    monkeypatch.chdir(tmp_path)  # no project markers => guarded-cwd declines
+
+    _probe_record(None, None, Settings(), None)  # must not raise
+
+    ledger = [json.loads(line) for line in (tmp_path / "probe" / "colgrep_probe.jsonl").read_text().splitlines()]
+    assert len(ledger) == 1
+    assert ledger[0]["resolved"] == {"root": None, "source": "unresolved"}
+
+
+def test_probe_record_reports_meta_source(tmp_path, monkeypatch):
+    """A meta-sourced resolution is recorded as source "meta": the probe's
+    re-derivation must thread meta_root through the same ladder the runtime
+    used, or the ledger contradicts the call it measures."""
+    from colgrep_mcp.probe import _probe_record
+
+    monkeypatch.setenv(PROBE_ENV, str(tmp_path / "probe"))
+    meta_root = tmp_path / "ws" / "proj"
+    meta_root.mkdir(parents=True)
+
+    _probe_record(None, None, Settings(), None, meta_root=meta_root)
+
+    ledger = [json.loads(line) for line in (tmp_path / "probe" / "colgrep_probe.jsonl").read_text().splitlines()]
+    assert ledger[0]["resolved"] == {"root": str(meta_root.resolve()), "source": "meta"}

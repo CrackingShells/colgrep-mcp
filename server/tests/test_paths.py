@@ -9,9 +9,12 @@ from colgrep_mcp.config import Settings
 from colgrep_mcp.paths import default_root, resolve_paths
 
 
-def test_default_root_prefers_env(tmp_path):
+def test_default_root_orders_meta_first_then_roots(tmp_path):
+    meta_root = tmp_path / "meta-root"
+    root, src = default_root(Settings(root=tmp_path), [Path("/elsewhere")], meta_root)
+    assert root == meta_root.resolve() and src == "meta"
     root, src = default_root(Settings(root=tmp_path), [Path("/elsewhere")])
-    assert root == tmp_path.resolve() and src == "env"
+    assert root == Path("/elsewhere").resolve() and src == "roots"
 
 
 def test_default_root_falls_back_to_roots_then_cwd(tmp_path):
