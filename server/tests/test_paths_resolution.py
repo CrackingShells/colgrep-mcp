@@ -333,3 +333,53 @@ def test_classify_needs_usable_items_for_declared():
     assert _classify_roots(None, [], False) == "empty"
     assert _classify_roots(None, [], True) == "error"
     assert _classify_roots(None, [Path("/ws")], False) == "declared"
+
+
+async def test_concurrent_first_calls_both_reassure_before_settling(tmp_path, monkeypatch):
+    """A pair of concurrent path-less first calls must both settle on the late
+    arriving root (verifier F4): the reassurance budget belongs to the
+    freshly-connected *state*, not to one winner of the first lock.  With the
+    budget spent by one caller, the other's premature emptiness conclusion
+    lands on a wrong project cwd — the silent wrong root this campaign
+    exists to prevent."""
+    import asyncio
+
+    from colgrep_mcp import paths as paths_module
+    from colgrep_mcp.paths import resolve_target_paths
+
+    project = tmp_path / "corpus"
+    project.mkdir()
+    bogus = tmp_path / "looks-like-project"
+    bogus.mkdir()
+    (bogus / "pyproject.toml").touch()
+    monkeypatch.chdir(bogus)  # a premature fallback lands on the WRONG project
+
+    class Flaky:
+        """Answers provisional-empty until the harness root lands (R03b)."""
+
+        def __init__(self, ready_after: int):
+            self.n = 0
+            self.ready_after = ready_after
+
+        async def list_roots(self):
+            self.n += 1
+            resp = [] if self.n <= self.ready_after else [Root(uri=project.as_uri())]
+            await asyncio.sleep(0)
+            return ListRootsResult(roots=resp)
+
+    session = Flaky(ready_after=2)
+    ctx_a, ctx_b = _meta_ctx(None), _meta_ctx(None)
+    ctx_a.session.list_roots = session.list_roots
+    ctx_b.session.list_roots = session.list_roots
+
+    paths_module._FIRST_EMPTY_REASSURE = True
+    try:
+        ra, rb = await asyncio.gather(
+            resolve_target_paths(ctx_a, None),
+            resolve_target_paths(ctx_b, None),
+        )
+    finally:
+        paths_module._FIRST_EMPTY_REASSURE = True
+
+    assert ra == [project.resolve()], f"caller A resolved {ra} — lost the late root to a premature fallback"
+    assert rb == [project.resolve()], f"caller B resolved {rb} — lost the late root to a premature fallback"

@@ -12,8 +12,10 @@ be tested without a request `Context`.
 
 from __future__ import annotations
 
+import asyncio
 import warnings
 from pathlib import Path
+from threading import Lock
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
@@ -223,13 +225,37 @@ def resolve_paths(
 #: R03b measured a fresh connection answering the *first* `roots/list` of call
 #: 1 with a provisional empty set, then producing the real root a moment later
 #: in the same call — and the pre-fix resolver fell to cwd on the first answer,
-#: losing the late root.  The fix gives the process's first empty roots answer
-#: one bounded reassurance round-trip before concluding "nothing sent", so that
-#: late-arriving answer is not beaten by a premature cwd fallback.  Once a call
-#: has concluded (empties turn this off on the very first), steady state snaps
-#: back to one round-trip per call.  Test harnesses reset this to re-enter the
-#: freshly-connected state.
+#: losing the late root.  The fix gives the freshly-connected state one bounded
+#: reassurance round-trip before concluding "nothing sent", so a late-arriving
+#: answer is not beaten by a premature cwd fallback.  The budget belongs to the
+#: unsettled *state*, not to whichever caller consumes it first: concurrent
+#: first calls share one unsettled period and every waiter is released once any
+#: re-ask settles it (close-out verifier F4).  Once settled (an empty re-ask or
+#: any root), steady state snaps back to one round-trip per call.  Test
+#: harnesses reset this to re-enter the freshly-connected state.
 _FIRST_EMPTY_REASSURE = True
+_ROOTS_SETTLE_GUARD = Lock()
+_FIRST_EMPTY_WAITERS: list[asyncio.Future] = []
+
+
+def _new_future() -> asyncio.Future:
+    try:
+        return asyncio.get_running_loop().create_future()
+    except RuntimeError:
+        return asyncio.Future()
+
+
+def _roots_settled() -> None:
+    """Conclude the reassurance period: release every concurrent waiter."""
+    global _FIRST_EMPTY_REASSURE
+    _FIRST_EMPTY_REASSURE = False
+    waiters, _FIRST_EMPTY_WAITERS[:] = _FIRST_EMPTY_WAITERS[:], []
+    for waiter in waiters:
+        try:
+            if not waiter.done():
+                waiter.set_result(None)
+        except Exception:
+            pass
 
 
 async def _client_roots(ctx: Context) -> tuple[list[Path] | None, bool]:
@@ -248,16 +274,51 @@ async def _client_roots(ctx: Context) -> tuple[list[Path] | None, bool]:
     except Exception:
         return None, True
 
-    # First empty is provisional (see `_FIRST_EMPTY_REASSURE`): ask once more
-    # so a late-arriving root wins over a premature cwd fallback.
-    if result is not None and not result.roots and _FIRST_EMPTY_REASSURE:
-        _FIRST_EMPTY_REASSURE = False
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                result = await ctx.session.list_roots()
-        except Exception:
-            result = None
+    # First empty is provisional (see `_FIRST_EMPTY_REASSURE`): a fresh
+    # connection reports empty before the harness root lands.  The caller that
+    # catches the unsettled state re-asks (one bounded re-ask per waiter);
+    # when that re-ask lands a root the period settles and every concurrent
+    # waiter falls back to its own one-shot re-ask before concluding — a
+    # first pair of parallel calls must not lose the late root to two
+    # premature fallbacks (close-out verifier F4).
+    if result is not None and not result.roots:
+        settle: asyncio.Future | None = None
+        with _ROOTS_SETTLE_GUARD:
+            if _FIRST_EMPTY_REASSURE:
+                settle = _new_future()
+        if settle is not None:
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    result = await ctx.session.list_roots()
+            except Exception:
+                result = None
+            if result is not None and result.roots:
+                _roots_settled()
+            else:
+                with _ROOTS_SETTLE_GUARD:
+                    if _FIRST_EMPTY_REASSURE:
+                        _FIRST_EMPTY_WAITERS.append(settle)
+                    else:
+                        settle = None
+                if settle is not None:
+                    try:
+                        await asyncio.wait_for(asyncio.shield(settle), timeout=0.1)
+                    except TimeoutError:
+                        # Nobody settled the period in time: conclude empty
+                        # for everyone rather than park (bounded reassurance).
+                        _roots_settled()
+                        return None, False
+                    # The period settled under us (a waiter landed the root):
+                    # decide this call on one more ask, never on the stale empty.
+                    try:
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore")
+                            result = await ctx.session.list_roots()
+                    except Exception:
+                        result = None
+                    if result is not None and result.roots:
+                        _roots_settled()
 
     if result is None:
         return None, True
