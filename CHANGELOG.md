@@ -5,6 +5,12 @@ All notable changes to colgrep-mcp are documented here. The format follows
 `server/pyproject.toml` is the version source of truth; `cz bump` (see `CONTRIBUTING.md`)
 writes each new section below and mirrors the version into the plugin manifests.
 
+## v0.6.1 (2026-11-27)
+
+### Fixed
+
+- **hooks**: mirror the portable hooks under com.github.copilot
+
 ## v0.6.0 (2026-11-01)
 
 ### Added
