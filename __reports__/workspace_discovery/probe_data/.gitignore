@@ -1,2 +1,9 @@
 *
 !.gitignore
+!harness/
+harness/*
+!harness/matrix.md
+!harness/raw/
+harness/raw/*
+!harness/raw/claude_tool-*.jsonl
+!harness/raw/codex_tool-*.jsonl
